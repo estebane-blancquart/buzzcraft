@@ -1,0 +1,80 @@
+# ============================================
+# BUZZCRAFT - FICHIERS GÉNÉRÉS (JAMAIS SUR GIT)
+# ============================================
+
+# Sites générés par parser
+packages/parser/output/
+data/repositories/
+
+# Backups et temporaires  
+*.backup
+*.backup.*
+*.tmp
+*.temp
+*.log
+
+# ============================================
+# NODE.JS STANDARD
+# ============================================
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Cache
+.cache/
+.temp/
+.tmp/
+
+# ============================================
+# ENVIRONMENT & SECRETS
+# ============================================
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+*.pem
+*.key
+*.crt
+
+# ============================================
+# EDITORS & OS
+# ============================================
+
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ============================================
+# DOCKER
+# ============================================
+
+docker-volumes/
+docker-data/
+docker-compose.override.yml
+
+# ============================================
+# PRODUCTION
+# ============================================
+
+*.db
+*.sqlite
+*.sqlite3
+database/
+uploads/
+ssl/
+certs/
