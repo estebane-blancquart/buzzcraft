@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "projectId": "dubois-simple", 
+    "version": "1.0.0",
+    "title": "Dubois Plomberie",
+    "description": "Plombier professionnel à Saint-Étienne",
+    "created": "2025-07-11T09:00:00Z",
+    "lastModified": "2025-07-11T09:00:00Z", 
+    "author": "BUZZCRAFT",
+    "buzzcraft_version": "1.0.0"
+  },
+  "config": {
+    "domain": "dubois-plomberie.fr"
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "modules": []
+      }
+    }
+  },
+  "contentSchema": {}
+}

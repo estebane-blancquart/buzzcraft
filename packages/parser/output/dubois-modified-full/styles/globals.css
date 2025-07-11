@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.container {
+  @apply max-w-7xl mx-auto;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold;
+}
+
+.btn {
+  @apply px-6 py-3 rounded-lg font-semibold transition-colors;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-primary/90;
+}

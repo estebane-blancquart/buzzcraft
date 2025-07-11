@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "projectId": "test-minimal",
+    "version": "1.0.0",
+    "title": "Test Minimal Project",
+    "description": "Un projet de test minimal pour valider le schema BUZZCRAFT",
+    "created": "2025-07-11T09:00:00Z",
+    "lastModified": "2025-07-11T09:00:00Z",
+    "author": "BUZZCRAFT",
+    "buzzcraft_version": "1.0.0"
+  },
+  "config": {
+    "domain": "test-minimal.com",
+    "ssl": true
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "modules": []
+      }
+    }
+  },
+  "contentSchema": {}
+}

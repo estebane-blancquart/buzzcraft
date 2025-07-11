@@ -1,0 +1,10 @@
+{
+  "projectId": "dubois-modified-full",
+  "version": "1.0.0",
+  "generated": "2025-07-11T20:10:06.965Z",
+  "buzzcraft": {
+    "version": "1.0.0",
+    "parser": "json-to-react",
+    "originalFile": "dubois-modified-full.json"
+  }
+}

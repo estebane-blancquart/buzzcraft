@@ -1,0 +1,37 @@
+FROM node:18-alpine
+
+# Installer SQLite
+RUN apk add --no-cache sqlite
+
+WORKDIR /app
+
+# Copier package files
+COPY package*.json ./
+
+# Installer dependencies
+RUN npm install
+
+# Copier le code
+COPY . .
+
+# Créer dossier database
+RUN mkdir -p database
+
+# Permissions
+RUN chmod +x node_modules/.bin/next
+
+# Build l'application
+RUN npm run build
+
+# Créer utilisateur non-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# Permissions sur app et database
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

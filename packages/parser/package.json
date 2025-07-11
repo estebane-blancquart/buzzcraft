@@ -1,0 +1,21 @@
+{
+  "name": "@buzzcraft/parser",
+  "version": "1.0.0",
+  "description": "Bidirectional parser: JSON Project ↔ React/Next.js code",
+  "main": "src/index.js",
+  "scripts": {
+    "test:generate": "node bin/parse.js --test",
+    "test:round-trip": "node bin/parse.js --round-trip",
+    "test": "echo 'Tests coming soon'"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "ajv": "^8.12.0",
+    "@babel/parser": "^7.24.0",
+    "@babel/traverse": "^7.24.0",
+    "@babel/types": "^7.24.0"
+  },
+  "keywords": ["buzzcraft", "parser", "bidirectional"],
+  "author": "BuzzCraft",
+  "license": "MIT"
+}

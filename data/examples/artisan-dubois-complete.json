@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "projectId": "artisan-dubois",
+    "version": "1.0.0",
+    "title": "Dubois Plomberie - Site Vitrine Professionnel",
+    "description": "Site vitrine pour entreprise de plomberie à Saint-Étienne - Dépannage urgence, installation, rénovation",
+    "created": "2025-07-11T09:00:00Z",
+    "lastModified": "2025-07-11T09:00:00Z",
+    "author": "BUZZCRAFT",
+    "buzzcraft_version": "1.0.0"
+  },
+  "config": {
+    "domain": "dubois-plomberie.fr",
+    "ssl": true
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "modules": [
+          {
+            "id": "header_module",
+            "type": "module",
+            "tag": "header"
+          },
+          {
+            "id": "hero_module", 
+            "type": "module",
+            "tag": "section"
+          },
+          {
+            "id": "services_module",
+            "type": "module", 
+            "tag": "section"
+          },
+          {
+            "id": "footer_module",
+            "type": "module",
+            "tag": "footer"
+          }
+        ]
+      },
+      "services": {
+        "route": "/services",
+        "modules": [
+          {
+            "id": "services_hero",
+            "type": "module",
+            "tag": "section"
+          }
+        ]
+      },
+      "contact": {
+        "route": "/contact", 
+        "modules": [
+          {
+            "id": "contact_form",
+            "type": "module",
+            "tag": "main"
+          }
+        ]
+      }
+    }
+  },
+  "contentSchema": {
+    "company": {
+      "name": {
+        "type": "text",
+        "label": "Nom de l'entreprise",
+        "required": true
+      },
+      "phone": {
+        "type": "tel",
+        "label": "Téléphone",
+        "required": true
+      },
+      "email": {
+        "type": "email",
+        "label": "Email professionnel", 
+        "required": true
+      }
+    }
+  }
+}

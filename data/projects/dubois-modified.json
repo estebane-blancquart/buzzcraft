@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "projectId": "dubois-modified",
+    "title": "Dubois Plomberie MODIFIÉ",
+    "description": "Version modifiée depuis l'Editor",
+    "version": "1.0.0"
+  },
+  "config": {
+    "colors": {
+      "primary": "#FF0000",
+      "secondary": "#1E40AF", 
+      "accent": "#EF4444"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "modules": []
+      }
+    }
+  },
+  "contentSchema": {}
+}

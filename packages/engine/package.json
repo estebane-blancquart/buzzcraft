@@ -1,0 +1,33 @@
+{
+  "name": "@buzzcraft/engine",
+  "version": "1.0.0",
+  "description": "BuzzCraft deployment engine - Docker orchestration & VPS management",
+  "main": "src/index.js",
+  "bin": {
+    "buzzcraft-deploy": "./bin/deploy.js"
+  },
+  "scripts": {
+    "deploy": "node bin/deploy.js",
+    "test:local": "node bin/deploy.js --local",
+    "monitor": "node bin/monitor.js",
+    "cleanup": "node bin/cleanup.js"
+  },
+  "dependencies": {
+    "dockerode": "^4.0.2",
+    "fs-extra": "^11.2.0",
+    "node-ssh": "^13.1.0",
+    "tar": "^6.2.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "keywords": [
+    "buzzcraft",
+    "docker",
+    "deployment",
+    "orchestration"
+  ],
+  "author": "BuzzCraft",
+  "license": "MIT"
+}
