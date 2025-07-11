@@ -165,62 +165,37 @@ module.exports = {
     }
   }
 
-
   async generatePage(pageName, pageData, projectPath, jsonProject, contentData) {
     const fileName = pageName === 'home' ? 'index.js' : `${pageName}.js`
-    const meta = pageData.meta || {}
     
-    const moduleJSX = this.generateDynamicModulesJSX(pageData.modules || [])
+    const meta = pageData.meta || {}
+    const title = meta.title ? 
+      this.replaceVariables(meta.title, contentData) : 
+      `${this.capitalize(pageName)} - ${contentData.siteTitle}`
+    
+    // Generate real modules JSX from structure
+    const moduleJSX = this.generateModulesJSX(pageData.modules || [], contentData)
     
     const pageContent = `import Head from 'next/head'
 import Layout from '../components/Layout/Layout'
 
-export async function getServerSideProps() {
-  try {
-    const response = await fetch('http://localhost:3000/api/content')
-    const content = await response.json()
-    return { props: { content } }
-  } catch (error) {
-    return {
-      props: {
-        content: {
-          company: { name: 'Entreprise', description: 'Description' }
-        }
-      }
-    }
-  }
-}
-
-export default function ${this.pascalCase(pageName)}Page({ content }) {
+export default function ${this.pascalCase(pageName)}Page() {
   return (
     <Layout>
       <Head>
-        <title>{\`${this.capitalize(pageName)} - \${content.company?.name}\`}</title>
-        <meta name="description" content={content.company?.description} />
+        <title>${title}</title>
+        <meta name="description" content="${meta.description || contentData.companyDescription}" />
       </Head>
+      
       <main className="min-h-screen">
 ${moduleJSX}
       </main>
     </Layout>
   )
-}`
-
+}
+`
+    
     await fs.writeFile(path.join(projectPath, 'pages', fileName), pageContent)
-    this.log(`✅ Generated dynamic ${fileName}`)
-  }
-
-  generateDynamicModulesJSX(modules) {
-    if (!modules || modules.length === 0) {
-      return `        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-primary mb-8">
-            {content.company?.name || 'Entreprise'}
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            {content.company?.description || 'Description'}
-          </p>
-        </div>`
-    }
-    return `        <section className="py-8"></section>`
   }
 
   generateModulesJSX(modules, contentData) {

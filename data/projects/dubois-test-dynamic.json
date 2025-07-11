@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "projectId": "dubois-test-dynamic",
+    "title": "Dubois TEST DYNAMIQUE",
+    "description": "Test synchronisation admin/site",
+    "version": "1.0.0",
+    "author": "BuzzCraft",
+    "created": "2025-07-11T23:00:00Z",
+    "lastModified": "2025-07-11T23:00:00Z",
+    "buzzcraft_version": "1.0.0"
+  },
+  "config": {
+    "domain": "dubois-test.fr",
+    "colors": {
+      "primary": "#00FF00",
+      "secondary": "#1E40AF",
+      "accent": "#EF4444"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    },
+    "seo": {
+      "title": "{{company.name}} - Test Dynamique",
+      "description": "{{company.description}}",
+      "keywords": "test, dynamique, buzzcraft"
+    }
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "meta": {
+          "title": "Accueil - {{company.name}}",
+          "description": "{{company.description}}"
+        },
+        "modules": []
+      }
+    }
+  },
+  "contentSchema": {
+    "company": {
+      "name": {
+        "type": "text",
+        "label": "Nom de l'entreprise",
+        "required": true,
+        "default": "Dubois TEST DYNAMIQUE"
+      },
+      "description": {
+        "type": "textarea",
+        "label": "Description",
+        "required": true,
+        "default": "Test de synchronisation admin/site en temps réel"
+      },
+      "phone": {
+        "type": "tel",
+        "label": "Téléphone",
+        "required": true,
+        "default": "04 77 TEST TEST"
+      }
+    }
+  }
+}
