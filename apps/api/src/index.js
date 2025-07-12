@@ -14,7 +14,7 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'íº€ BUZZCRAFT API is running!',
+    message: 'ğŸš€ BUZZCRAFT API is running!',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -29,49 +29,89 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Route pour lister les projets
-app.get('/api/projects', async (req, res) => {
+// Route pour charger un projet
+app.get('/api/projects/load/:projectName', async (req, res) => {
   try {
-    const projectsDir = path.join(process.cwd(), '..', '..', 'data', 'projects');
+    const { projectName } = req.params
     
-    if (!await fs.pathExists(projectsDir)) {
-      return res.json({
-        success: true,
-        projects: [],
-        count: 0,
-        message: 'Projects directory not found, but API is working'
-      });
+    const projectsDir = path.join(__dirname, '..', '..', '..', 'data')
+    const possiblePaths = [
+      path.join(projectsDir, 'projects', `${projectName}.json`),
+      path.join(projectsDir, 'examples', `${projectName}.json`)
+    ]
+    
+    let project = null
+    let foundPath = null
+    
+    for (const filePath of possiblePaths) {
+      if (await fs.pathExists(filePath)) {
+        project = await fs.readJSON(filePath)
+        foundPath = filePath
+        break
+      }
     }
     
-    const files = await fs.readdir(projectsDir);
-    const projects = files
-      .filter(file => file.endsWith('.json'))
-      .map(file => file.replace('.json', ''));
+    if (!project) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Project ${projectName} not found` 
+      })
+    }
     
-    res.json({
-      success: true,
-      projects,
-      count: projects.length,
-      projectsDir
-    });
+    console.log(`âœ… Project loaded: ${projectName} from ${foundPath}`)
+    
+    res.json({ 
+      success: true, 
+      project,
+      projectName,
+      loadedFrom: foundPath
+    })
+    
   } catch (error) {
-    res.json({
-      success: false,
-      error: 'Failed to list projects',
-      details: error.message,
-      fallback: 'API is working but projects dir not accessible'
-    });
+    console.error('Load error:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    })
   }
-});
+})
 
-// DÃ©marrage du serveur
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('íº€ Starting BUZZCRAFT API...');
-  console.log(`í¿¢ BUZZCRAFT API running on port ${PORT}`);
-  console.log(`í´— Projects directory: ${path.join(process.cwd(), '..', '..', 'data', 'projects')}`);
-  console.log('âœ… API ready to accept requests');
-});
-
+// Route pour lister tous les projets
+app.get('/api/projects/list', async (req, res) => {
+  try {
+    const projectsDir = path.join(__dirname, '..', '..', '..', 'data', 'projects')
+    await fs.ensureDir(projectsDir)
+    
+    const files = await fs.readdir(projectsDir)
+    const jsonFiles = files.filter(file => file.endsWith('.json'))
+    
+    const projects = []
+    for (const file of jsonFiles) {
+      try {
+        const filePath = path.join(projectsDir, file)
+        const project = await fs.readJSON(filePath)
+        projects.push(project)
+      } catch (error) {
+        console.warn(`Error reading project ${file}:`, error.message)
+      }
+    }
+    
+    console.log(`âœ… Listed ${projects.length} projects`)
+    
+    res.json({ 
+      success: true, 
+      projects,
+      count: projects.length
+    })
+    
+  } catch (error) {
+    console.error('List projects error:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    })
+  }
+})
 
 // Route POST pour sauvegarder un projet
 app.post("/api/projects/save", async (req, res) => {
@@ -82,9 +122,123 @@ app.post("/api/projects/save", async (req, res) => {
     }
     const projectPath = path.join(process.cwd(), "..", "..", "data", "projects", `${projectName}.json`);
     await fs.writeJson(projectPath, project, { spaces: 2 });
+    console.log(`âœ… Project saved: ${projectName}`)
     res.json({ success: true, message: `Project ${projectName} saved` });
   } catch (error) {
+    console.error('Save error:', error)
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// Route pour supprimer un projet
+app.delete('/api/projects/delete/:projectId', async (req, res) => {
+  try {
+    const { projectId } = req.params
+    
+    const projectsDir = path.join(__dirname, '..', '..', '..', 'data', 'projects')
+    const filePath = path.join(projectsDir, `${projectId}.json`)
+    
+    if (await fs.pathExists(filePath)) {
+      await fs.remove(filePath)
+      console.log(`âœ… Project deleted: ${projectId}`)
+      
+      res.json({ 
+        success: true, 
+        message: `Project ${projectId} deleted successfully` 
+      })
+    } else {
+      res.status(404).json({ 
+        success: false, 
+        error: `Project ${projectId} not found` 
+      })
+    }
+    
+  } catch (error) {
+    console.error('Delete project error:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    })
+  }
+})
+
+// Route pour gÃ©nÃ©rer le site (Parser)
+app.post('/api/projects/build', async (req, res) => {
+  try {
+    const { projectId } = req.body
+    
+    if (!projectId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'projectId is required' 
+      })
+    }
+    
+    console.log(`ğŸ”¨ Building project: ${projectId}`)
+    
+    // TODO: IntÃ©grer avec le parser
+    // Pour l'instant, simulation
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    console.log(`âœ… Project built: ${projectId}`)
+    
+    res.json({ 
+      success: true, 
+      message: `Project ${projectId} built successfully`,
+      buildTime: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('Build project error:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    })
+  }
+})
+
+// Route pour dÃ©ployer le site (Engine)
+app.post('/api/projects/deploy', async (req, res) => {
+  try {
+    const { projectId } = req.body
+    
+    if (!projectId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'projectId is required' 
+      })
+    }
+    
+    console.log(`ğŸš€ Deploying project: ${projectId}`)
+    
+    // TODO: IntÃ©grer avec l'engine
+    // Pour l'instant, simulation
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    
+    console.log(`âœ… Project deployed: ${projectId}`)
+    
+    res.json({ 
+      success: true, 
+      message: `Project ${projectId} deployed successfully`,
+      deployTime: new Date().toISOString(),
+      url: `http://localhost:3201` // TODO: port dynamique
+    })
+    
+  } catch (error) {
+    console.error('Deploy project error:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    })
+  }
+})
+
+// DÃ©marrage du serveur
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('ğŸš€ Starting BUZZCRAFT API...');
+  console.log(`ğŸŒ BUZZCRAFT API running on port ${PORT}`);
+  console.log(`ğŸ“ Projects directory: ${path.join(process.cwd(), '..', '..', 'data', 'projects')}`);
+  console.log('âœ… API ready to accept requests');
+});
+
 module.exports = app;

@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "projectId": "projet-1752333029416",
+    "version": "1.0.0",
+    "title": "st",
+    "description": "Projet cree avec BuzzCraft Editor",
+    "created": "2025-07-12T15:10:29.416Z",
+    "lastModified": "2025-07-12T15:10:29.416Z",
+    "author": "BuzzCraft Editor",
+    "buzzcraft_version": "1.0.0",
+    "template": false
+  },
+  "config": {
+    "domain": "projet-1752333029416.example.com",
+    "ssl": true,
+    "colors": {
+      "primary": "#3B82F6",
+      "secondary": "#64748B",
+      "accent": "#16e955"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "meta": {
+          "title": "Accueil",
+          "description": "Page d'accueil"
+        },
+        "modules": []
+      },
+      "test": {
+        "route": "/test",
+        "meta": {
+          "title": "test",
+          "description": "Description de la page"
+        },
+        "modules": [
+          {
+            "id": "servicesgrid_1752333061868",
+            "type": "module",
+            "component": "ServicesGrid"
+          }
+        ]
+      }
+    }
+  },
+  "contentSchema": {
+    "company": {
+      "name": {
+        "type": "text",
+        "label": "Nom de l'entreprise",
+        "required": true,
+        "default": "test"
+      },
+      "phone": {
+        "type": "tel",
+        "label": "Telephone",
+        "required": true,
+        "default": "01 XX XX XX XX"
+      }
+    }
+  }
+}

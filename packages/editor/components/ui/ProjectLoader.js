@@ -1,83 +1,76 @@
-import React, { useState } from 'react';
-import useEditorStore from '../../store/editorStore';
+import React, { useState, useEffect } from "react"
+import useEditorStore from "../../store/editorStore"
+import NewProjectModal from "../modals/NewProjectModal"
 
 const ProjectLoader = () => {
-  const { setJsonProject } = useEditorStore();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { setJsonProject, setLoading } = useEditorStore()
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false)
+
+  // Charger automatiquement le projet depuis l'URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const projectParam = urlParams.get('project')
+    
+    if (projectParam) {
+      console.log('Auto-loading project from URL:', projectParam)
+      loadProject(projectParam)
+    }
+  }, [])
 
   const loadProject = async (projectName) => {
-    setIsLoading(true);
-    setError(null);
-    
+    setLoading(true)
     try {
-      console.log(`🔄 Loading project: ${projectName}`);
+      const response = await fetch(`http://localhost:3004/api/projects/load/${projectName}`)
+      const data = await response.json()
       
-      const response = await fetch(`/api/load-project/${projectName}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+      if (data.success) {
+        setJsonProject(data.project)
+        console.log("Project loaded:", projectName)
+        
+        // Mettre à jour l'URL sans recharger la page
+        const newUrl = new URL(window.location)
+        newUrl.searchParams.set('project', projectName)
+        window.history.replaceState({}, '', newUrl)
+      } else {
+        alert("Erreur: " + data.error)
       }
-      
-      const data = await response.json();
-      console.log('API Response:', data);
-      
-      if (!data.success || !data.project) {
-        throw new Error('Invalid response format');
-      }
-      
-      // IMPORTANT: utiliser data.project, pas data directement
-      console.log('Setting project:', data.project);
-      setJsonProject(data.project);
-      
-      console.log(`✅ Project "${projectName}" loaded successfully`);
-      alert(`✅ Projet "${projectName}" chargé avec succès !`);
-      
     } catch (error) {
-      console.error('Error loading project:', error);
-      setError(error.message);
-      alert(`❌ Erreur lors du chargement: ${error.message}`);
+      console.error("Load error:", error)
+      alert("Erreur de chargement: " + error.message)
     } finally {
-      setIsLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
-        <button 
-          onClick={() => loadProject('dubois-multipage')}
-          disabled={isLoading}
-          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
-        >
-          {isLoading ? '⏳' : '📁'} Charger Dubois
-        </button>
-        
-        <button 
-          onClick={() => loadProject('artisan-dubois-complete')}
-          disabled={isLoading}
-          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
-        >
-          {isLoading ? '⏳' : '📁'} Charger Artisan
-        </button>
-        
-        <button 
-          onClick={() => loadProject('test-minimal')}
-          disabled={isLoading}
-          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
-        >
-          {isLoading ? '⏳' : '📁'} Charger Minimal
-        </button>
-      </div>
+    <div className="flex gap-2">
+      <button
+        onClick={() => setShowNewProjectModal(true)}
+        className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+      >
+        ✨ Nouveau Projet
+      </button>
       
-      {error && (
-        <div className="text-red-600 text-xs">
-          Erreur: {error}
-        </div>
-      )}
-    </div>
-  );
-};
+      <button
+        onClick={() => loadProject("dubois-multipage")}
+        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        📄 Charger Dubois
+      </button>
+      
+      <button
+        onClick={() => loadProject("artisan-dubois-complete")}
+        className="px-3 py-1 text-sm bg-purple-500 text-white rounded hover:bg-purple-600"
+      >
+        🔧 Charger Artisan
+      </button>
 
-export default ProjectLoader;
+      <NewProjectModal 
+        isOpen={showNewProjectModal}
+        onClose={() => setShowNewProjectModal(false)}
+      />
+    </div>
+  )
+}
+
+export default ProjectLoader
