@@ -43,7 +43,7 @@ const useEditorStore = create(
         }
         set({ saving: true })
         try {
-          const response = await fetch("http://localhost:3001/api/projects/save", {
+          const response = await fetch("http://localhost:3002/api/projects/save", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ projectName, project: state.jsonProject })

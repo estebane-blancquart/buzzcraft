@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "projectId": "dubois-multipage",
+    "title": "Dubois Plomberie",
+    "description": "Plombier professionnel à Saint-Étienne depuis 15 ans",
+    "version": "1.0.0",
+    "author": "BuzzCraft",
+    "created": "2025-07-11T02:00:00Z",
+    "lastModified": "2025-07-11T02:00:00Z"
+  },
+  "config": {
+    "domain": "dubois-plomberie.fr",
+    "colors": {
+      "primary": "#3B82F6",
+      "secondary": "#1E40AF",
+      "accent": "#EF4444"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    },
+    "seo": {
+      "title": "{{company.name}} - Plomberie Saint-Étienne",
+      "description": "{{company.description}}",
+      "keywords": "plombier, Saint-Étienne, dépannage, installation"
+    }
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "meta": {
+          "title": "Accueil - {{company.name}}",
+          "description": "{{company.description}}"
+        },
+        "modules": [
+          {
+            "id": "hero_section",
+            "type": "module",
+            "component": "HeroSection"
+          },
+          {
+            "id": "services_preview",
+            "type": "module",
+            "component": "ServicesPreview"
+          }
+        ]
+      },
+      "services": {
+        "route": "/services",
+        "meta": {
+          "title": "Services - {{company.name}}",
+          "description": "Découvrez nos services de plomberie"
+        },
+        "modules": [
+          {
+            "id": "services_list",
+            "type": "module",
+            "component": "ServicesList"
+          }
+        ]
+      },
+      "contact": {
+        "route": "/contact",
+        "meta": {
+          "title": "Contact - {{company.name}}",
+          "description": "Contactez-nous pour vos besoins en plomberie"
+        },
+        "modules": [
+          {
+            "id": "contact_form",
+            "type": "module",
+            "component": "ContactForm"
+          },
+          {
+            "id": "contact_info",
+            "type": "module",
+            "component": "ContactInfo"
+          }
+        ]
+      }
+    }
+  },
+  "contentSchema": {
+    "company": {
+      "name": {
+        "type": "text",
+        "label": "Nom de l'entreprise",
+        "required": true,
+        "default": "Dubois Plomberie"
+      },
+      "description": {
+        "type": "textarea",
+        "label": "Description",
+        "required": true,
+        "default": "Plombier professionnel à Saint-Étienne depuis 15 ans"
+      },
+      "phone": {
+        "type": "tel",
+        "label": "Téléphone",
+        "required": true,
+        "default": "04 77 XX XX XX"
+      },
+      "email": {
+        "type": "email",
+        "label": "Email",
+        "required": true,
+        "default": "contact@dubois-plomberie.fr"
+      },
+      "address": {
+        "type": "textarea",
+        "label": "Adresse complète",
+        "required": false,
+        "default": "15 rue de la République\n42000 Saint-Étienne"
+      }
+    },
+    "services": {
+      "title": {
+        "type": "text",
+        "label": "Titre de la section",
+        "default": "Nos Services"
+      },
+      "description": {
+        "type": "textarea",
+        "label": "Description",
+        "default": "Découvrez notre gamme complète de services"
+      }
+    }
+  }
+}

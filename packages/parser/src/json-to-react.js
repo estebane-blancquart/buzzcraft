@@ -27,6 +27,15 @@ class JsonToReactParser {
       await this.generateBuzzCraftMetadata(jsonProject, projectPath)
       
       const duration = Date.now() - startTime
+
+      // Generate _app.js for styles
+      const appContent = `import "../styles/globals.css"
+
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />
+}`
+      await fs.writeFile(path.join(projectPath, "pages/_app.js"), appContent)
+      this.log("✅ Generated _app.js")
       this.log(`✅ Parsing completed in ${duration}ms`)
       
       return {
@@ -165,62 +174,49 @@ module.exports = {
     }
   }
 
-
   async generatePage(pageName, pageData, projectPath, jsonProject, contentData) {
     const fileName = pageName === 'home' ? 'index.js' : `${pageName}.js`
-    const meta = pageData.meta || {}
     
-    const moduleJSX = this.generateDynamicModulesJSX(pageData.modules || [])
+    const meta = pageData.meta || {}
+    const title = meta.title ? 
+      this.replaceVariables(meta.title, contentData) : 
+      `${this.capitalize(pageName)} - ${contentData.siteTitle}`
+    
+    // Generate real modules JSX from structure
+    const moduleJSX = this.generateModulesJSX(pageData.modules || [], contentData)
     
     const pageContent = `import Head from 'next/head'
 import Layout from '../components/Layout/Layout'
+import HeroSection from "../components/Modules/HeroSection"
+import ServicesPreview from "../components/Modules/ServicesPreview"
 
 export async function getServerSideProps() {
   try {
-    const response = await fetch('http://localhost:3000/api/content')
+    const response = await fetch("http://localhost:3201/api/content")
     const content = await response.json()
     return { props: { content } }
   } catch (error) {
-    return {
-      props: {
-        content: {
-          company: { name: 'Entreprise', description: 'Description' }
-        }
-      }
-    }
+    return { props: { content: { company: {}, services: {} } } }
   }
 }
 
-export default function ${this.pascalCase(pageName)}Page({ content }) {
+export default function HomePage({ content }) {
   return (
     <Layout>
       <Head>
-        <title>{\`${this.capitalize(pageName)} - \${content.company?.name}\`}</title>
-        <meta name="description" content={content.company?.description} />
+        <title>${title}</title>
+        <meta name="description" content="${meta.description || contentData.companyDescription}" />
       </Head>
+      
       <main className="min-h-screen">
 ${moduleJSX}
       </main>
     </Layout>
   )
-}`
-
+}
+`
+    
     await fs.writeFile(path.join(projectPath, 'pages', fileName), pageContent)
-    this.log(`✅ Generated dynamic ${fileName}`)
-  }
-
-  generateDynamicModulesJSX(modules) {
-    if (!modules || modules.length === 0) {
-      return `        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-primary mb-8">
-            {content.company?.name || 'Entreprise'}
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            {content.company?.description || 'Description'}
-          </p>
-        </div>`
-    }
-    return `        <section className="py-8"></section>`
   }
 
   generateModulesJSX(modules, contentData) {
@@ -334,6 +330,31 @@ export default function Header() {
     await fs.writeFile(path.join(projectPath, 'components/Layout/Layout.js'), layoutContent)
     await fs.writeFile(path.join(projectPath, 'components/Layout/Header.js'), headerContent)
     await fs.writeFile(path.join(projectPath, 'components/Layout/Footer.js'), footerContent)
+
+    // Generate module components
+    const heroContent = `export default function HeroSection({ content }) {
+  return (
+    <section className="bg-gradient-to-r from-primary to-secondary text-white py-20">
+      <div className="container mx-auto px-4 text-center">
+        <h1 className="text-5xl font-bold mb-6">{content.company?.name || "Votre Entreprise"}</h1>
+        <p className="text-xl mb-8">{content.company?.description || "Description"}</p>
+      </div>
+    </section>
+  )
+}`
+    await fs.writeFile(path.join(projectPath, "components/Modules/HeroSection.js"), heroContent)
+
+    const servicesContent = `export default function ServicesPreview({ content }) {
+  return (
+    <section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-4xl font-bold text-center mb-12">{content.services?.title || "Nos Services"}</h2>
+        <p className="text-xl text-center mb-8">{content.services?.description || "Description"}</p>
+      </div>
+    </section>
+  )
+}`
+    await fs.writeFile(path.join(projectPath, "components/Modules/ServicesPreview.js"), servicesContent)
   }
 
   async generateStyles(jsonProject, projectPath) {

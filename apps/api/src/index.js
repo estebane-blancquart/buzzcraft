@@ -6,94 +6,85 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log('íº€ Starting BUZZCRAFT API...');
-
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Health check
+// Route principale
+app.get('/', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'íº€ BUZZCRAFT API is running!',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Route de santÃ©
 app.get('/health', (req, res) => {
-  console.log('í³‹ Health check requested');
-  res.json({ status: 'OK', service: 'BUZZCRAFT API' });
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
-// GET /api/projects/:name - Charger un projet  
-app.get('/api/projects/:name', async (req, res) => {
+// Route pour lister les projets
+app.get('/api/projects', async (req, res) => {
   try {
-    const projectName = req.params.name;
-    const projectPath = path.join(__dirname, '../../../data/projects', `${projectName}.json`);
+    const projectsDir = path.join(process.cwd(), '..', '..', 'data', 'projects');
     
-    console.log(`í³‹ Loading project: ${projectName}`);
-    console.log(`í³ Project path: ${projectPath}`);
-    
-    if (!await fs.pathExists(projectPath)) {
-      console.log(`âŒ Project not found: ${projectPath}`);
-      return res.status(404).json({ 
-        success: false, 
-        error: `Project ${projectName} not found` 
+    if (!await fs.pathExists(projectsDir)) {
+      return res.json({
+        success: true,
+        projects: [],
+        count: 0,
+        message: 'Projects directory not found, but API is working'
       });
     }
     
-    const project = await fs.readJson(projectPath);
-    console.log(`âœ… Project loaded successfully: ${projectName}`);
+    const files = await fs.readdir(projectsDir);
+    const projects = files
+      .filter(file => file.endsWith('.json'))
+      .map(file => file.replace('.json', ''));
     
     res.json({
       success: true,
-      project,
-      projectName,
-      loadedAt: new Date().toISOString()
+      projects,
+      count: projects.length,
+      projectsDir
     });
   } catch (error) {
-    console.error(`âŒ Load error:`, error.message);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.json({
+      success: false,
+      error: 'Failed to list projects',
+      details: error.message,
+      fallback: 'API is working but projects dir not accessible'
     });
   }
 });
 
-// POST /api/projects/save - Sauvegarder un projet
-app.post('/api/projects/save', async (req, res) => {
-  try {
-    const { projectName, project } = req.body;
-    
-    console.log(`í²¾ Save request for: ${projectName}`);
-    
-    if (!projectName || !project) {
-      console.log(`âŒ Missing data: projectName=${!!projectName}, project=${!!project}`);
-      return res.status(400).json({ 
-        success: false, 
-        error: 'projectName and project are required' 
-      });
-    }
-    
-    // Mise Ã  jour timestamp
-    project.meta.lastModified = new Date().toISOString();
-    
-    // Sauvegarde dans data/projects/
-    const projectPath = path.join(__dirname, '../../../data/projects', `${projectName}.json`);
-    await fs.writeJson(projectPath, project, { spaces: 2 });
-    
-    console.log(`âœ… Project saved successfully: ${projectName}`);
-    console.log(`í³ Saved to: ${projectPath}`);
-    
-    res.json({
-      success: true,
-      message: `Project ${projectName} saved successfully`,
-      savedAt: new Date().toISOString(),
-      path: projectPath
-    });
-  } catch (error) {
-    console.error('âŒ Save error:', error.message);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`íº€ BUZZCRAFT API running on port ${PORT}`);
-  console.log(`í³ Projects directory: ${path.join(__dirname, '../../../data/projects')}`);
+// DÃ©marrage du serveur
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('íº€ Starting BUZZCRAFT API...');
+  console.log(`í¿¢ BUZZCRAFT API running on port ${PORT}`);
+  console.log(`í´— Projects directory: ${path.join(process.cwd(), '..', '..', 'data', 'projects')}`);
   console.log('âœ… API ready to accept requests');
 });
+
+
+// Route POST pour sauvegarder un projet
+app.post("/api/projects/save", async (req, res) => {
+  try {
+    const { projectName, project } = req.body;
+    if (!projectName || !project) {
+      return res.status(400).json({ success: false, error: "Missing data" });
+    }
+    const projectPath = path.join(process.cwd(), "..", "..", "data", "projects", `${projectName}.json`);
+    await fs.writeJson(projectPath, project, { spaces: 2 });
+    res.json({ success: true, message: `Project ${projectName} saved` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+module.exports = app;

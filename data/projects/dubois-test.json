@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "projectId": "dubois-test",
+    "title": "Test"
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "modules": []
+      }
+    }
+  },
+  "config": {
+    "colors": {
+      "primary": "#FF0000"
+    }
+  },
+  "contentSchema": {}
+}
