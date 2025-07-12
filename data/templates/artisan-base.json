@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "projectId": "artisan-template",
+    "title": "Template Artisan",
+    "description": "Template pour artisans (plombiers, électriciens, menuisiers)",
+    "version": "1.0.0",
+    "template": true,
+    "category": "artisan"
+  },
+  "config": {
+    "colors": {
+      "primary": "#2563eb",
+      "secondary": "#dc2626",
+      "accent": "#f59e0b"
+    }
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "modules": [
+          {"id": "hero_section", "type": "module", "component": "HeroSection"},
+          {"id": "services_preview", "type": "module", "component": "ServicesPreview"}
+        ]
+      },
+      "contact": {
+        "route": "/contact",
+        "modules": [
+          {"id": "contact_form", "type": "module", "component": "ContactForm"}
+        ]
+      }
+    }
+  },
+  "contentSchema": {
+    "company": {
+      "name": {"type": "text", "label": "Nom de l'entreprise", "default": "Mon Entreprise"},
+      "specialty": {"type": "select", "options": ["Plomberie", "Électricité", "Menuiserie", "Chauffage"], "default": "Plomberie"},
+      "city": {"type": "text", "label": "Ville", "default": "Ma Ville"},
+      "phone": {"type": "tel", "label": "Téléphone", "default": "01 XX XX XX XX"},
+      "email": {"type": "email", "label": "Email", "default": "contact@monentreprise.fr"}
+    }
+  }
+}

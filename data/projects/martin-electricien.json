@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "projectId": "martin-electricien",
+    "title": "Martin Électricité",
+    "description": "Électricien professionnel à Lyon",
+    "version": "1.0.0",
+    "author": "BuzzCraft",
+    "created": "2025-07-12T14:00:00Z",
+    "lastModified": "2025-07-12T14:00:00Z",
+    "buzzcraft_version": "1.0.0"
+  },
+  "config": {
+    "domain": "martin-electricite.fr",
+    "colors": {
+      "primary": "#f59e0b",
+      "secondary": "#1f2937",
+      "accent": "#10b981"
+    }
+  },
+  "structure": {
+    "pages": {
+      "home": {
+        "route": "/",
+        "modules": [
+          {"id": "hero_section", "type": "module", "component": "HeroSection"},
+          {"id": "services_preview", "type": "module", "component": "ServicesPreview"}
+        ]
+      }
+    }
+  },
+  "contentSchema": {
+    "company": {
+      "name": {"type": "text", "label": "Nom", "default": "Martin Électricité"},
+      "description": {"type": "textarea", "label": "Description", "default": "Électricien à Lyon"},
+      "phone": {"type": "tel", "label": "Téléphone", "default": "04 78 XX XX XX"}
+    }
+  }
+}
