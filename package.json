@@ -1,0 +1,37 @@
+{
+  "name": "buzzcraft",
+  "version": "1.0.0",
+  "description": "Générateur de sites web professionnel avec architecture TypeScript complète et déploiement Docker",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "app-client",
+    "app-server",
+    "api"
+  ],
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:commit": "node --experimental-vm-modules node_modules/jest/bin/jest.js .tests/architecture",
+    "lint": "eslint . --config .configs/eslint.config.cjs",
+    "setup": "npm install && echo Setup terminé !",
+    "clean": "rimraf node_modules .eslintcache coverage && npm install",
+    "check": "npm test && npm run lint"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/.tests/**/*.test.js",
+      "**/__tests__/**/*.test.js"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "buzzcraft-server",
+  "version": "1.0.0",
+  "description": "BuzzCraft Server - Moteur de génération et orchestration",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Server dev mode ready'",
+    "start": "echo 'Server start ready'",
+    "build": "echo 'Server ready for production'",
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "fs-extra": "^11.1.0",
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "dotenv": "^16.0.0",
+    "handlebars": "^4.7.0",
+    "dockerode": "^3.3.0",
+    "chokidar": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.0",
+    "nodemon": "^3.0.0",
+    "jest": "^29.0.0"
+  }
+}
