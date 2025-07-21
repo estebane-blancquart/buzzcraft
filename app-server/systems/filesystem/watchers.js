@@ -7,11 +7,31 @@
  * ERREURS : WatcherError si système notification indisponible, CallbackError si fonction invalide, PathError si chemin inaccessible
  */
 
+import { access } from 'fs/promises';
+
+export async function validateWatchPath(projectPath) {
+  // Validation
+  if (!projectPath || typeof projectPath !== 'string') {
+    throw new Error('ValidationError: projectPath must be a non-empty string');
+  }
+
+  // Test existence chemin
+  try {
+    await access(projectPath);
+    return {
+      path: projectPath,
+      exists: true,
+      watchable: true
+    };
+  } catch {
+    return {
+      path: projectPath,
+      exists: false,
+      watchable: false
+    };
+  }
+}
+
 // systems/filesystem/watchers : System Filesystem (commit 6)
 // DEPENDENCY FLOW (no circular deps)
 // systems/ → utils/
-
-// TODO: Implémentation du module
-export default function SystemFilesystem() {
-    throw new Error('Module System Filesystem pas encore implémenté');
-}
