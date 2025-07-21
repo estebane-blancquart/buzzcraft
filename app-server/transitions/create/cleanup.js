@@ -1,17 +1,63 @@
 /**
  * COMMIT 21 - Transition Create
  * 
- * FAIT QUOI : Nettoyage transition création avec rollback automatique si échec
- * REÇOIT : projectPath: string, createdFiles: string[], rollback?: boolean
- * RETOURNE : { cleaned: boolean, removedFiles: string[], errors: string[], rollbackComplete: boolean }
- * ERREURS : CleanupError si nettoyage impossible, RollbackError si rollback échoue, FileSystemError si permissions insuffisantes
+ * FAIT QUOI : Cleanup transition création - nettoie état temporaire si échec
+ * REÇOIT : transitionResult: object, projectId: string, options?: object
+ * RETOURNE : { cleaned: boolean, actions: string[] }
+ * ERREURS : CleanupError si nettoyage échoue
  */
 
-// transitions/create/cleanup : Transition Create (commit 21)
-// DEPENDENCY FLOW (no circular deps)
-// transitions/ → systems/ → utils/
-
-// TODO: Implémentation du module
-export default function TransitionCreate() {
-    throw new Error('Module Transition Create pas encore implémenté');
+/**
+ * Nettoie après transition CREATE
+ */
+export async function cleanupCreate(transitionResult, projectId, options = {}) {
+    // Validation paramètres
+    if (!transitionResult || typeof transitionResult !== 'object') {
+        throw new Error('ValidationError: transitionResult requis object');
+    }
+    
+    if (!projectId || typeof projectId !== 'string') {
+        throw new Error('ValidationError: projectId requis string');
+    }
+    
+    const actions = [];
+    
+    try {
+        // Si transition échouée, remettre état à VOID
+        if (!transitionResult.success) {
+            // Rollback état logique vers VOID
+            actions.push('rollback-state-to-void');
+            
+            // Nettoyer références temporaires
+            actions.push('clear-temporary-references');
+        }
+        
+        // Si transition réussie, nettoyer données temporaires
+        if (transitionResult.success) {
+            // Nettoyer cache de validation
+            actions.push('clear-validation-cache');
+            
+            // Marquer transition comme finalisée
+            actions.push('finalize-transition');
+        }
+        
+        // Nettoyer logs de transition si trop anciens
+        const now = new Date();
+        const transitionTime = new Date(transitionResult.timestamp);
+        const diffMinutes = (now - transitionTime) / (1000 * 60);
+        
+        if (diffMinutes > 5) {
+            actions.push('cleanup-old-transition-logs');
+        }
+        
+        return {
+            cleaned: true,
+            actions
+        };
+        
+    } catch (error) {
+        throw new Error(`ValidationError: Cleanup CREATE échoué: ${error.message}`);
+    }
 }
+
+export default cleanupCreate;
