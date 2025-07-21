@@ -1,18 +1,75 @@
 /**
- * COMMIT 28 - Transition Stop
+ * COMMIT 27 - Transition Stop
  * 
- * FAIT QUOI : Validation transition arrêt avec vérification dépendances et impact
- * REÇOIT : stopConfig: object, projectId: string, dependencies: object[], impact?: object
- * RETOURNE : { valid: boolean, dependencies: object[], impact: object, safe: boolean }
- * ERREURS : StopValidationError si config invalide, DependencyError si dépendances actives, ImpactError si impact critique
+ * FAIT QUOI : Validation transition arrêt - vérifie si transition ONLINE→OFFLINE possible
+ * REÇOIT : fromState: string, toState: string, context: object
+ * RETOURNE : { valid: boolean, canTransition: boolean, requirements: string[] }
+ * ERREURS : ValidationError si états invalides
  */
 
-// transitions/stop/validation : Transition Stop (commit 28)
-// DEPENDENCY FLOW (no circular deps)
-// transitions/ → systems/ → utils/
-
-// TODO: Implémentation du module
-
-export default function TransitionStop() {
-    throw new Error('Module Transition Stop pas encore implémenté');
+/**
+ * Valide si transition STOP est possible
+ */
+export async function validateStop(fromState, toState, context) {
+    // Validation paramètres
+    if (!fromState || typeof fromState !== 'string') {
+        throw new Error('ValidationError: fromState requis string');
+    }
+    
+    if (!toState || typeof toState !== 'string') {
+        throw new Error('ValidationError: toState requis string');
+    }
+    
+    if (!context || typeof context !== 'object') {
+        throw new Error('ValidationError: context requis object');
+    }
+    
+    // Vérifier transition valide selon machine à états
+    if (fromState !== 'ONLINE') {
+        throw new Error('ValidationError: STOP seulement depuis ONLINE');
+    }
+    
+    if (toState !== 'OFFLINE') {
+        throw new Error('ValidationError: STOP va vers OFFLINE');
+    }
+    
+    // Vérifier prérequis minimaux dans context
+    const requirements = [];
+    
+    if (!context.projectId) {
+        requirements.push('projectId manquant');
+    }
+    
+    if (!context.stopConfig) {
+        requirements.push('stopConfig manquant');
+    }
+    
+    if (!context.deploymentId) {
+        requirements.push('deploymentId manquant');
+    }
+    
+    // Vérifier configuration arrêt valide
+    if (context.stopConfig) {
+        if (context.stopConfig.graceful === undefined) {
+            requirements.push('stopConfig.graceful manquant');
+        }
+        
+        if (!context.stopConfig.timeout) {
+            requirements.push('stopConfig.timeout manquant');
+        }
+        
+        if (context.stopConfig.drainConnections === undefined) {
+            requirements.push('stopConfig.drainConnections manquant');
+        }
+    }
+    
+    const canTransition = requirements.length === 0;
+    
+    return {
+        valid: true,
+        canTransition,
+        requirements
+    };
 }
+
+export default validateStop;
