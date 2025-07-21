@@ -7,11 +7,31 @@
  * ERREURS : StateError si transition invalide, DeploymentError si déploiement impossible, EditError si retour édition bloqué
  */
 
+export function validateBuiltOperation(currentState, operation) {
+  // Validation
+  if (!currentState || typeof currentState !== 'string') {
+    throw new Error('StateError: currentState must be a non-empty string');
+  }
+  
+  if (!operation || typeof operation !== 'string') {
+    throw new Error('StateError: operation must be a non-empty string');
+  }
+
+  // Test état
+  if (currentState.toUpperCase() !== 'BUILT') {
+    throw new Error('StateError: current state must be BUILT');
+  }
+
+  const allowed = ['deploy', 'edit'].includes(operation.toLowerCase());
+  
+  return {
+    allowed,
+    deployOptions: ['deploy'],
+    editOptions: ['edit'],
+    constraints: allowed ? [] : ['Operation not allowed in BUILT state']
+  };
+}
+
 // states/built/rules : State Built (commit 3)
 // DEPENDENCY FLOW (no circular deps)
 // states/ → independent (called by engines)
-
-// TODO: Implémentation du module
-export default function StateBuilt() {
-    throw new Error('Module State Built pas encore implémenté');
-}
