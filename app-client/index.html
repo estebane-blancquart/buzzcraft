@@ -1,16 +1,75 @@
-/**
- * COMMIT 60 - App Client Main
- * 
- * FAIT QUOI : Template HTML principal application client avec meta tags optimisés
- * REÇOIT : templateData?: object, metadata?: object, customizations?: object
- * RETOURNE : { html: string, metadata: object, assets: string[], optimized: boolean }
- * ERREURS : TemplateError si template invalide, MetadataError si metadata incorrecte, AssetError si assets manquants
- */
-
-// app-client/index : App Client Main (commit 60)
-// DEPENDENCY FLOW (no circular deps)
-
-// TODO: Implémentation du module App Client Main
-export default function AppClientMain() {
-    throw new Error('Not implemented yet');
-}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuzzCraft - Studio Visuel</title>
+    <meta name="description" content="BuzzCraft - Studio de création de sites web avec architecture state machine">
+    <meta name="keywords" content="buzzcraft, studio, visuel, sites web, state machine">
+    <meta name="author" content="BuzzCraft Team">
+    
+    <!-- Favicon et icônes -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://buzzcraft.com/">
+    <meta property="og:title" content="BuzzCraft - Studio Visuel">
+    <meta property="og:description" content="Studio de création de sites web avec architecture state machine">
+    <meta property="og:image" content="/og-image.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://buzzcraft.com/">
+    <meta property="twitter:title" content="BuzzCraft - Studio Visuel">
+    <meta property="twitter:description" content="Studio de création de sites web avec architecture state machine">
+    <meta property="twitter:image" content="/twitter-image.png">
+    
+    <!-- Préchargement des ressources critiques -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Styles CSS critiques -->
+    <style>
+        /* Reset minimal et styles critiques */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-family: system-ui, -apple-system, sans-serif; }
+        body { line-height: 1.6; color: #333; background: #fff; }
+        #root { min-height: 100vh; }
+        .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .loading::after { content: "Chargement..."; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+    <!-- Point de montage React -->
+    <div id="root">
+        <div class="loading" aria-label="Chargement de l'application"></div>
+    </div>
+    
+    <!-- Configuration globale -->
+    <script>
+        window.BUZZCRAFT_CONFIG = {
+            mode: 'development',
+            apiUrl: 'http://localhost:3001',
+            version: '1.0.0',
+            features: {
+                visualEditor: true,
+                codeEditor: true,
+                deployment: false
+            }
+        };
+    </script>
+    
+    <!-- Scripts de l'application -->
+    <script type="module" src="/main.js"></script>
+    
+    <!-- Service Worker pour PWA -->
+    <script>
+        if ('serviceWorker' in navigator && location.protocol === 'https:') {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+</body>
+</html>
