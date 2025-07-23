@@ -12,14 +12,6 @@ states/ → independent (appelé par engines)
 app-client/ → api/ (jamais l'inverse)
 ```
 
-## Mapping Commits → Architecture
-
-🎉 Initial commit - BuzzCraft Architecture
-🎯 feat - implement COMMIT 1 State Void detection
-🔧 fix - resolve INTEGRATION_TIMEOUT undefined error
-🎨 style - standardize headers across 142 files
-♻️ refactor - separate tests by responsibility
-
 ### **COMMITS 1-5 : STATES** (Indépendants)
 ```
 COMMIT 1  - State Void     (detector + validator + rules)
@@ -90,19 +82,32 @@ COMMIT 49 - API Monitoring      (build-progress + performance + errors + analyti
 COMMIT 50 - API Metrics         (exporter + formats + filters + dashboards)
 ```
 
-### **COMMITS 60-70 : APP-CLIENT** (Interface)
+### **COMMITS 51-59 : APP-CLIENT STRUCTURE** (Fondations)
 ```
-COMMIT 60 - App Client Main     (main.js + index.html + router + providers)
-COMMIT 61 - Components Core     (buttons + inputs + forms + layouts)
-COMMIT 62 - Components Advanced (charts + tables + modals + wizards)
-COMMIT 63 - Hooks Custom        (state + effects + context + performance)
-COMMIT 64 - Utils Client        (formatters + validators + helpers + constants)
-COMMIT 65 - Panel Config        (project + components + deployment + themes)
-COMMIT 66 - Panel Dashboard     (overview + metrics + notifications + shortcuts)
-COMMIT 67 - Panel Editor        (code + visual + preview + collaboration)
-COMMIT 68 - Panel Structure     (navigator + editor + search + tree + breadcrumb)
-COMMIT 69 - Panel Deployment    (status + logs + rollback + monitoring)
-COMMIT 70 - Panel Settings      (preferences + integrations + team + billing)
+COMMIT 51 - App Client Structure    (foundations + routing + providers + layouts)
+COMMIT 52 - App Client Components   (buttons + inputs + forms + containers)
+COMMIT 53 - App Client Hooks        (state + effects + context + performance)
+COMMIT 54 - App Client Utils        (formatters + validators + helpers + constants)
+COMMIT 55 - App Client Services     (api-client + storage + cache + sync)
+COMMIT 56 - App Client Themes       (colors + typography + spacing + components)
+COMMIT 57 - App Client i18n         (translations + locales + formatters + plurals)
+COMMIT 58 - App Client Navigation   (router + guards + breadcrumbs + history)
+COMMIT 59 - App Client Error        (boundaries + handlers + recovery + logging)
+```
+
+### **COMMITS 60-70 : APP-CLIENT PANELS** (Interface)
+```
+COMMIT 60 - App Client Main         (main.js + index.html + router + providers)
+COMMIT 61 - Panel Dashboard         (overview + metrics + notifications + shortcuts)
+COMMIT 62 - Panel Projects          (list + create + search + filters)
+COMMIT 63 - Panel Editor            (code + visual + preview + collaboration)
+COMMIT 64 - Panel Structure         (navigator + editor + search + tree + breadcrumb)
+COMMIT 65 - Panel Config            (project + components + deployment + themes)
+COMMIT 66 - Panel Deployment        (status + logs + rollback + monitoring)
+COMMIT 67 - Panel Settings          (preferences + integrations + team + billing)
+COMMIT 68 - Panel Components        (library + preview + documentation + search)
+COMMIT 69 - Panel Analytics         (usage + performance + errors + insights)
+COMMIT 70 - Panel Help              (documentation + tutorials + support + feedback)
 ```
 
 ## Architecture Respectée
@@ -119,20 +124,3 @@ app-client/ → api/ (jamais l'inverse)
 - Headers standardisés (`COMMIT X - Module Name`)
 - Commentaires cohérents avec headers
 - Dependency flow sans cycles
-
-## Validation Continue
-
-```bash
-# Vérifier ordre commits
-grep -r "COMMIT [0-9]*" app-server app-client api | sort -t: -k2 -n
-
-# Valider architecture  
-npm run test:commit
-
-# Contrôle cohérence doc/implémentation
-npm run test:architecture
-
-# Rapport complet
-npm run check
-```
-
