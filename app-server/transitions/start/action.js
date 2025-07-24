@@ -62,3 +62,7 @@ export async function executeStart(projectId, context) {
 }
 
 export default executeStart;
+
+// action : commit 26 - transition start  
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

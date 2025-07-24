@@ -62,3 +62,7 @@ export async function executeStop(projectId, context) {
 }
 
 export default executeStop;
+
+// action : commit 27 - transition stop  
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

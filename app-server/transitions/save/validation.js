@@ -58,3 +58,7 @@ export async function validateSave(fromState, toState, context) {
 }
 
 export default validateSave;
+
+// validation : commit 22 - transition save
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

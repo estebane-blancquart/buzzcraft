@@ -69,3 +69,7 @@ export async function validateEdit(fromState, toState, context) {
 }
 
 export default validateEdit;
+
+// validation : commit 24 - transition edit
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

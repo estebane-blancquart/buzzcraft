@@ -94,3 +94,7 @@ export async function cleanupUpdate(transitionResult, projectId, options = {}) {
 }
 
 export default cleanupUpdate;
+
+// cleanup : commit 28 - transition update
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

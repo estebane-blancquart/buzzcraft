@@ -58,3 +58,6 @@ export async function validateCreate(fromState, toState, context) {
 }
 
 export default validateCreate;
+// validation : commit 21 - transition create
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

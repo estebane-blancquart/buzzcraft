@@ -69,3 +69,7 @@ export async function validateBuild(fromState, toState, context) {
 }
 
 export default validateBuild;
+
+// validation : commit 23 - transition build
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

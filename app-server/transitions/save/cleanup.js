@@ -67,3 +67,7 @@ export async function cleanupSave(transitionResult, projectId, options = {}) {
 }
 
 export default cleanupSave;
+
+// cleanup : commit 22 - transition save
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

@@ -73,3 +73,7 @@ export async function validateDeploy(fromState, toState, context) {
 }
 
 export default validateDeploy;
+
+// validation : commit 25 - transition deploy
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

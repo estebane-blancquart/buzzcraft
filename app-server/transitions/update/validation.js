@@ -77,3 +77,7 @@ export async function validateUpdate(fromState, toState, context) {
 }
 
 export default validateUpdate;
+
+// validation : commit 28 - transition update
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

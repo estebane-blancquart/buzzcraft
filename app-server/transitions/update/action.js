@@ -63,3 +63,7 @@ export async function executeUpdate(projectId, context) {
 }
 
 export default executeUpdate;
+
+// action : commit 28 - transition update  
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

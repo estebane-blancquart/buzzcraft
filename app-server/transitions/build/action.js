@@ -61,3 +61,7 @@ export async function executeBuild(projectId, context) {
 }
 
 export default executeBuild;
+
+// transitions/build/action : Transition Build (commit 23)
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

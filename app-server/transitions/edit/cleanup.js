@@ -79,3 +79,7 @@ export async function cleanupEdit(transitionResult, projectId, options = {}) {
 }
 
 export default cleanupEdit;
+
+// cleanup : commit 24 - transition edit
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

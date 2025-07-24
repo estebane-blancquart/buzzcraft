@@ -73,3 +73,7 @@ export async function validateStop(fromState, toState, context) {
 }
 
 export default validateStop;
+
+// validation : commit 27 - transition stop
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

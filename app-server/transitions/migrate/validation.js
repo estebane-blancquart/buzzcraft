@@ -98,3 +98,7 @@ export async function validateMigrate(fromState, toState, context) {
 }
 
 export default validateMigrate;
+
+// validation : commit 30 - transition migrate
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

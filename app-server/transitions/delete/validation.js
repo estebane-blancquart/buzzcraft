@@ -86,3 +86,7 @@ export async function validateDelete(fromState, toState, context) {
 }
 
 export default validateDelete;
+
+// validation : commit 29 - transition delete
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

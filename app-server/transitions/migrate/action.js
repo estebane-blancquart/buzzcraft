@@ -64,3 +64,7 @@ export async function executeMigrate(projectId, context) {
 }
 
 export default executeMigrate;
+
+// action : commit 30 - transition migrate  
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

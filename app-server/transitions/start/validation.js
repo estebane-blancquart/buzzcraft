@@ -73,3 +73,7 @@ export async function validateStart(fromState, toState, context) {
 }
 
 export default validateStart;
+
+// validation : commit 26 - transition start
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/

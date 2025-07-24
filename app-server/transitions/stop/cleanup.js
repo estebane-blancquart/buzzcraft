@@ -91,3 +91,7 @@ export async function cleanupStop(transitionResult, projectId, options = {}) {
 }
 
 export default cleanupStop;
+
+// cleanup : commit 27 - transition stop
+// DEPENDENCY FLOW (no circular deps)
+// transitions/ → systems/ → utils/
