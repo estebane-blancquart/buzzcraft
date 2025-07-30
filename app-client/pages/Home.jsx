@@ -13,6 +13,21 @@ export default function Home() {
   const [template, setTemplate] = useState('basic');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [projects, setProjects] = useState([]);
+
+  const buildProject = async (projectId) => {
+    try {
+      const response = await fetch(`http://localhost:3000/projects/${projectId}/build`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      setResult({ error: error.message });
+    }
+  };
 
   const createProject = async (e) => {
     e.preventDefault();
@@ -84,6 +99,16 @@ export default function Home() {
           {loading ? 'Création...' : 'Créer Projet'}
         </button>
       </form>
+      
+      <div style={{ marginTop: '20px' }}>
+        <h2>Actions sur les projets</h2>
+        <button 
+          onClick={() => buildProject('interface-test')}
+          style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', marginRight: '10px' }}
+        >
+          Build interface-test
+        </button>
+      </div>
       
       {result && (
         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6' }}>
