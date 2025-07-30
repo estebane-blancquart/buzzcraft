@@ -1,41 +1,35 @@
 import { access, lstat, readFile } from 'fs/promises';
 
 /*
- * FAIT QUOI : Vérifie existence et lit contenu d'un chemin (fichier ou dossier)
- * REÇOIT : path: string
- * RETOURNE : { exists: boolean, type: string|null, content?: string }
+ * FAIT QUOI : Analyse existence et lit contenu d'un chemin
+ * REÇOIT : path: string, options: object
+ * RETOURNE : { success: boolean, data: object }
  * ERREURS : ValidationError si path manquant
  */
 
-export async function readPath(path) {
-  // Validation
-  if (!path) {
-    throw new Error('ValidationError: path required');
+export async function readPath(path, options = {}) {
+  if (!path || typeof path !== 'string') {
+    throw new Error('ValidationError: path must be non-empty string');
   }
   
   try {
-    // Vérifier existence
     await access(path);
     
-    // Détecter type
     const stats = await lstat(path);
     const type = stats.isFile() ? 'file' : stats.isDirectory() ? 'directory' : 'other';
     
-    const result = {
-      exists: true,
-      type: type
-    };
+    const data = { exists: true, type };
     
-    // Lire contenu si c'est un fichier
     if (type === 'file') {
-      result.content = await readFile(path, 'utf8');
+      data.content = await readFile(path, options.encoding || 'utf8');
     }
     
-    return result;
+    return { success: true, data };
+    
   } catch (error) {
-    return {
-      exists: false,
-      type: null
-    };
+    if (error.code === 'ENOENT') {
+      return { success: true, data: { exists: false, type: null } };
+    }
+    return { success: false, error: error.message };
   }
 }
