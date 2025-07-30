@@ -3,6 +3,9 @@ import { createRequest } from "./request/parser.js";
 import { createResponse } from "./response/parser.js";
 import { createWorkflow } from "../app-server/engines/create/coordinator.js";
 import { buildWorkflow } from "../app-server/engines/build/coordinator.js";
+import { deployWorkflow } from "../app-server/engines/deploy/coordinator.js";
+import { startWorkflow } from "../app-server/engines/start/coordinator.js";
+import { stopWorkflow } from "../app-server/engines/stop/coordinator.js";
 
 const app = express();
 app.use(express.json());
@@ -57,6 +60,84 @@ app.post("/projects/:id/build", async (req, res) => {
         fromState: workflowResult.data.fromState,
         toState: workflowResult.data.toState,
         servicesGenerated: workflowResult.data.servicesGenerated,
+        duration: workflowResult.data.duration,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/*
+ * POST /projects/:id/deploy - Déployer un projet BUILT → OFFLINE
+ */
+app.post("/projects/:id/deploy", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const workflowResult = await deployWorkflow(id, {});
+
+    if (!workflowResult.success) {
+      return res.status(500).json({ error: workflowResult.error });
+    }
+
+    res.json({
+      message: `Project ${id} deployed successfully`,
+      deploy: {
+        fromState: workflowResult.data.fromState,
+        toState: workflowResult.data.toState,
+        duration: workflowResult.data.duration,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/*
+ * POST /projects/:id/start - Démarrer un projet OFFLINE → ONLINE
+ */
+app.post("/projects/:id/start", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const workflowResult = await startWorkflow(id, {});
+
+    if (!workflowResult.success) {
+      return res.status(500).json({ error: workflowResult.error });
+    }
+
+    res.json({
+      message: `Project ${id} started successfully`,
+      start: {
+        fromState: workflowResult.data.fromState,
+        toState: workflowResult.data.toState,
+        duration: workflowResult.data.duration,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/*
+ * POST /projects/:id/stop - Arrêter un projet ONLINE → OFFLINE
+ */
+app.post("/projects/:id/stop", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const workflowResult = await stopWorkflow(id, {});
+
+    if (!workflowResult.success) {
+      return res.status(500).json({ error: workflowResult.error });
+    }
+
+    res.json({
+      message: `Project ${id} stopped successfully`,
+      stop: {
+        fromState: workflowResult.data.fromState,
+        toState: workflowResult.data.toState,
         duration: workflowResult.data.duration,
       },
     });
