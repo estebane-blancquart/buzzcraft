@@ -1,0 +1,11 @@
+{
+  "id": "text",
+  "name": "Text",
+  "contentSchema": {
+    "content": { "type": "string", "default": "Sample text" }
+  },
+  "styleOptions": {
+    "color": "gray-900",
+    "size": "base"
+  }
+}

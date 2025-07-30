@@ -1,0 +1,12 @@
+{
+  "id": "button", 
+  "name": "Button",
+  "contentSchema": {
+    "text": { "type": "string", "default": "Click me" },
+    "href": { "type": "string", "default": "#" }
+  },
+  "styleOptions": {
+    "bg": "blue-600",
+    "color": "white"
+  }
+}

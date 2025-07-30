@@ -1,0 +1,18 @@
+/*
+ * FAIT QUOI : Composant Text généré automatiquement
+ * REÇOIT : content: string, styleOptions: object
+ * RETOURNE : JSX Element
+ */
+
+interface TextProps {
+  content: string;
+  className?: string;
+}
+
+export default function Text({ content, className = "" }: TextProps) {
+  return (
+    <div className={`text-{{styleOptions.size}} text-{{styleOptions.color}} ${className}`}>
+      {{content.content}}
+    </div>
+  );
+}
