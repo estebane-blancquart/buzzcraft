@@ -1,9 +1,9 @@
-import { access, lstat } from 'fs/promises';
+import { access, lstat, readFile } from 'fs/promises';
 
-/**
+/*
  * FAIT QUOI : Vérifie existence et lit contenu d'un chemin (fichier ou dossier)
  * REÇOIT : path: string
- * RETOURNE : { exists: boolean, type: string|null }
+ * RETOURNE : { exists: boolean, type: string|null, content?: string }
  * ERREURS : ValidationError si path manquant
  */
 
@@ -21,12 +21,18 @@ export async function readPath(path) {
     const stats = await lstat(path);
     const type = stats.isFile() ? 'file' : stats.isDirectory() ? 'directory' : 'other';
     
-    return {
+    const result = {
       exists: true,
       type: type
     };
+    
+    // Lire contenu si c'est un fichier
+    if (type === 'file') {
+      result.content = await readFile(path, 'utf8');
+    }
+    
+    return result;
   } catch (error) {
-    // Si access() échoue = fichier n'existe pas
     return {
       exists: false,
       type: null
