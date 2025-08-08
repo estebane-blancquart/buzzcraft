@@ -1,6 +1,6 @@
 import express from "express";
-import { createRequest } from "./request/parser.js";
-import { createResponse } from "./response/parser.js";
+import { request } from "./request/parser.js";
+import { response } from "./response/parser.js";
 import { createWorkflow } from "../app-server/engines/create/coordinator.js";
 import { buildWorkflow } from "../app-server/engines/build/coordinator.js";
 import { deployWorkflow } from "../app-server/engines/deploy/coordinator.js";
@@ -16,7 +16,7 @@ app.use(express.json());
 app.post("/projects", async (req, res) => {
   try {
     // Parse request
-    const requestResult = await createRequest(req);
+    const requestResult = await request(req);
     if (!requestResult.success) {
       return res.status(400).json({ error: requestResult.error });
     }
@@ -28,7 +28,7 @@ app.post("/projects", async (req, res) => {
     );
 
     // Parse response
-    const responseResult = await createResponse(workflowResult);
+    const responseResult = await response(workflowResult);
 
     if (!responseResult.success) {
       return res.status(500).json({ error: responseResult.error });

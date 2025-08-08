@@ -13,7 +13,6 @@ test-project/
 .env.production
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo

@@ -5,7 +5,7 @@
  * ERREURS : ValidationError si workflowResult manquant
  */
 
-export async function createResponse(workflowResult) {
+export async function response(workflowResult) {
   if (!workflowResult) {
     throw new Error('ValidationError: workflowResult required');
   }

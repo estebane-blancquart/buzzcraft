@@ -1,0 +1,7 @@
+{
+  "folders": [
+    { "name": "🔌 API", "path": "../api" },
+    { "name": "📱 Client", "path": "../app-client" },
+    { "name": "⚙️ Server", "path": "../app-server" }
+  ]
+}

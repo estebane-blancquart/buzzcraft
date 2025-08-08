@@ -5,7 +5,7 @@
  * ERREURS : ValidationError si données manquantes
  */
 
-export async function createRequest(req) {
+export async function request(req) {
   if (!req.body) {
     throw new Error('ValidationError: request body required');
   }

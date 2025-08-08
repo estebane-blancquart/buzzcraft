@@ -1,0 +1,13 @@
+{
+  // === ICÔNES (pour un explorer plus lisible) ===
+  "workbench.iconTheme": "material-icon-theme",
+  
+  // === INDENTATION PROPRE ===
+  "workbench.tree.indent": 8,
+  "explorer.compactFolders": false,
+  
+  // === MASQUER LES TRUCS INUTILES ===
+  "files.exclude": {
+    "**/node_modules": true
+  }
+}
