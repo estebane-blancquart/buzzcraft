@@ -1,6 +1,6 @@
 import express from "express";
 import { request } from "./request/parser.js";
-import { response } from "./r²esponse/parser.js";
+import { response } from "./response/parser.js";
 import { createWorkflow } from "../app-server/engines/create/coordinator.js";
 import { buildWorkflow } from "../app-server/engines/build/coordinator.js";
 import { deployWorkflow } from "../app-server/engines/deploy/coordinator.js";
