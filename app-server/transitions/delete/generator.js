@@ -1,12 +1,12 @@
 /*
- * [MOCK] FAIT QUOI : Génère projet depuis template pour CREATE
+ * [MOCK] FAIT QUOI : Génère plan de suppression pour DELETE
  * REÇOIT : inputData: object, config: object, options: object
  * RETOURNE : { generated: boolean, output: object, artifacts: string[], metadata: object }
  * ERREURS : GenerationError, CompilationError, ValidationError
  */
 
-export async function generateProject(inputData, config, options = {}) {
-  console.log(`[MOCK] generateProject called for: ${config?.projectId}`);
+export async function generateDeletionPlan(inputData, config, options = {}) {
+  console.log(`[MOCK] generateDeletionPlan called for: ${config?.projectId}`);
   
   if (!inputData || !config) {
     throw new Error('GenerationError: inputData and config required');
@@ -15,12 +15,11 @@ export async function generateProject(inputData, config, options = {}) {
   return {
     generated: true,
     output: {
-      id: config.projectId,
-      name: config.name || config.projectId,
-      template: config.template || 'basic',
-      created: new Date().toISOString()
+      projectId: config.projectId,
+      filesToDelete: ['project.json', 'app-visitor/', 'containers/'],
+      backupCreated: true
     },
-    artifacts: ['project.json'],
+    artifacts: ['backup.tar.gz'],
     metadata: {}
   };
 }

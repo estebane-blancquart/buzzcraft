@@ -1,12 +1,12 @@
 /*
- * [MOCK] FAIT QUOI : Orchestre workflow STOP (ONLINE → OFFLINE)
+ * [MOCK] FAIT QUOI : Orchestre workflow UPDATE (OFFLINE/ONLINE → OFFLINE/ONLINE)
  * REÇOIT : projectId: string, config: object
  * RETOURNE : { success: boolean, data: object }
  * ERREURS : ValidationError si paramètres manquants
  */
 
-export async function stopWorkflow(projectId, config = {}) {
-  console.log(`[MOCK] stopWorkflow called for project: ${projectId}`);
+export async function updateWorkflow(projectId, config = {}) {
+  console.log(`[MOCK] updateWorkflow called for project: ${projectId}`);
   
   if (!projectId || typeof projectId !== 'string') {
     throw new Error('ValidationError: projectId must be non-empty string');
@@ -16,9 +16,9 @@ export async function stopWorkflow(projectId, config = {}) {
     success: true,
     data: {
       projectId,
-      fromState: 'ONLINE',
+      fromState: 'OFFLINE',
       toState: 'OFFLINE',
-      duration: Math.floor(Math.random() * 20) + 5
+      duration: Math.floor(Math.random() * 60) + 15
     }
   };
 }

@@ -1,12 +1,12 @@
 /*
- * [MOCK] FAIT QUOI : Génère projet depuis template pour CREATE
+ * [MOCK] FAIT QUOI : Génère commandes de démarrage pour START
  * REÇOIT : inputData: object, config: object, options: object
  * RETOURNE : { generated: boolean, output: object, artifacts: string[], metadata: object }
  * ERREURS : GenerationError, CompilationError, ValidationError
  */
 
-export async function generateProject(inputData, config, options = {}) {
-  console.log(`[MOCK] generateProject called for: ${config?.projectId}`);
+export async function generateStartCommands(inputData, config, options = {}) {
+  console.log(`[MOCK] generateStartCommands called for: ${config?.projectId}`);
   
   if (!inputData || !config) {
     throw new Error('GenerationError: inputData and config required');
@@ -15,12 +15,11 @@ export async function generateProject(inputData, config, options = {}) {
   return {
     generated: true,
     output: {
-      id: config.projectId,
-      name: config.name || config.projectId,
-      template: config.template || 'basic',
-      created: new Date().toISOString()
+      projectId: config.projectId,
+      commands: ['docker-compose up -d'],
+      ports: [3001, 3002, 3003, 5432]
     },
-    artifacts: ['project.json'],
+    artifacts: ['.running'],
     metadata: {}
   };
 }

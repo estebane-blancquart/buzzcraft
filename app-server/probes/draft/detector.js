@@ -1,35 +1,23 @@
-import { readPath } from '../../systems/reader.js';
-
 /*
- * FAIT QUOI : Détecte si un projet est en état DRAFT (project.json existe)
+ * [MOCK] FAIT QUOI : Détecte si un projet est en état DRAFT (project.json existe)
  * REÇOIT : projectPath: string
  * RETOURNE : { success: boolean, data: object }
  * ERREURS : ValidationError si projectPath manquant
  */
 
 export async function detectDraftState(projectPath) {
+  console.log(`[MOCK] detectDraftState called with: ${projectPath}`);
+  
   if (!projectPath || typeof projectPath !== 'string') {
     throw new Error('ValidationError: projectPath must be non-empty string');
   }
   
-  const projectJsonPath = `${projectPath}/project.json`;
-  const jsonResult = await readPath(projectJsonPath);
-  
-  if (!jsonResult.success) {
-    return {
-      success: false,
-      error: jsonResult.error
-    };
-  }
-  
-  const isDraft = jsonResult.data.exists && jsonResult.data.type === 'file';
-  
   return {
     success: true,
     data: {
-      state: isDraft ? 'DRAFT' : null,
-      confidence: isDraft ? 100 : 0,
-      evidence: isDraft ? ['project.json exists'] : ['project.json missing'],
+      state: 'DRAFT',
+      confidence: 100,
+      evidence: ['[MOCK] project.json exists'],
       timestamp: new Date().toISOString()
     }
   };
