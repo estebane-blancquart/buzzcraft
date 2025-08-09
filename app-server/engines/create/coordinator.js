@@ -1,5 +1,5 @@
-import { detectVoidState } from "../../states/void/detector.js";
-import { detectDraftState } from "../../states/draft/detector.js";
+import { detectVoidState } from "../../probes/void/detector.js";
+import { detectDraftState } from "../../probes/draft/detector.js";
 import { writePath } from "../../systems/writer.js";
 
 /*

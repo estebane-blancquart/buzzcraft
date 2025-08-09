@@ -5,25 +5,25 @@
 
 ## Request
 ### **app-api/request/parser.js**
-- **reçoit :** données utilisateur
+- **reçoit** données utilisateur
 - **nettoie + valide**
-- **retourne :** données propres
+- **retourne** données propres
 
 ### **app-api/request/processor.js**
-- **reçoit :** données propres
+- **reçoit** données propres
 - **enrichit + complète**
-- **retourne :** données système
+- **retourne** données système
 
 ## Response
 ### **app-api/response/parser.js**
-- **reçoit :** données système
+- **reçoit** données système
 - **allège + adapte**
-- **retourne :** données propres
+- **retourne** données propres
 
 ### **app-api/response/processor.js**
-- **reçoit :** données propres
+- **reçoit** données propres
 - **simplifie + finalise**
-- **retourne :** données utilisateur
+- **retourne** données utilisateur
 
 ## Routes
 ```

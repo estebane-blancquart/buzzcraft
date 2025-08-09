@@ -1,5 +1,5 @@
-import { detectDraftState } from '../../states/draft/detector.js';
-import { detectBuiltState } from '../../states/built/detector.js';
+import { detectDraftState } from '../../probes/draft/detector.js';
+import { detectBuiltState } from '../../probes/built/detector.js';
 import { readPath } from '../../systems/reader.js';
 import { writePath } from '../../systems/writer.js';
 import { generateServices } from '../../transitions/build/generator.js';

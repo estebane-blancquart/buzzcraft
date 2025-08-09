@@ -5,8 +5,8 @@
  * ERREURS : WorkflowError, StateError, TransitionError
  */
 
-import { detectOfflineState } from '../../states/offline/detector.js';
-import { detectOnlineState } from '../../states/online/detector.js';
+import { detectOfflineState } from '../../probes/offline/detector.js';
+import { detectOnlineState } from '../../probes/online/detector.js';
 import { manageContainers } from '../../systems/docker/containers.js';
 
 export async function startWorkflow(projectId, config = {}) {
