@@ -1,28 +1,65 @@
+import Handlebars from 'handlebars';
+
 /*
- * [MOCK] FAIT QUOI : Génère les 4 services TypeScript depuis templates
- * REÇOIT : inputData: object, config: object, options: object
+ * FAIT QUOI : Génère services TypeScript depuis templates Handlebars
+ * REÇOIT : projectData: object, templatesData: object, options: object
  * RETOURNE : { generated: boolean, output: object, artifacts: string[], metadata: object }
- * ERREURS : GenerationError, CompilationError, ValidationError
+ * ERREURS : GenerationError si compilation Handlebars échoue
  */
 
-export async function generateServices(inputData, config, options = {}) {
-  console.log(`[MOCK] generateServices called for: ${config?.projectId}`);
+export async function generateServices(projectData, templatesData, options = {}) {
+  console.log(`[STEP] generateServices called for: ${projectData?.id}`);
   
-  if (!inputData || !config) {
-    throw new Error('GenerationError: inputData and config required');
+  if (!projectData || !templatesData) {
+    throw new Error('GenerationError: projectData and templatesData required');
   }
   
-  return {
-    generated: true,
-    output: {
-      services: {
-        'app-visitor': { 'package.json': '{}' },
-        'app-manager': { 'package.json': '{}' },
-        'server': { 'package.json': '{}' },
-        'database': { 'init.sql': '-- mock' }
+  try {
+    const services = {};
+    const artifacts = [];
+    
+    // Variables disponibles pour les templates
+    const templateVariables = {
+      project: {
+        id: projectData.id,
+        name: projectData.name,
+        template: projectData.template
       }
-    },
-    artifacts: ['app-visitor/', 'app-manager/', 'server/', 'database/'],
-    metadata: {}
-  };
+    };
+    
+    // Compiler chaque template
+    for (const [templatePath, templateContent] of Object.entries(templatesData.templates)) {
+      console.log(`[STEP] Compiling template: ${templatePath}`);
+      
+      // Compiler le template Handlebars
+      const template = Handlebars.compile(templateContent);
+      
+      // Générer le contenu avec les variables
+      const compiledContent = template(templateVariables);
+      
+      // Déterminer le chemin de sortie (enlever .hbs)
+      const outputPath = templatePath.replace('.hbs', '');
+      
+      // Stocker le résultat
+      services[outputPath] = compiledContent;
+      artifacts.push(outputPath);
+    }
+    
+    return {
+      generated: true,
+      output: {
+        projectId: projectData.id,
+        services
+      },
+      artifacts,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        templatesCompiled: artifacts.length,
+        templateVariables
+      }
+    };
+    
+  } catch (error) {
+    throw new Error(`GenerationError: Failed to compile templates - ${error.message}`);
+  }
 }
