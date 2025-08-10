@@ -1,4 +1,6 @@
 import { readPath } from '../../systems/reader.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 /*
  * FAIT QUOI : Charge template de projet depuis inputs/templates/structure/projects/
@@ -15,8 +17,10 @@ export async function loadTemplate(templateId, options = {}) {
   }
   
   try {
-    // Construire le chemin vers le template
-    const templatePath = `../app-server/inputs/templates/structure/projects/${templateId}.json`;
+    // Chemin absolu depuis ce fichier
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, '../../inputs/templates/structure/projects', `${templateId}.json`);
     
     // Lire le fichier template avec reader.js
     const templateFile = await readPath(templatePath);
