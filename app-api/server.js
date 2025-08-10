@@ -11,6 +11,11 @@ import { stopWorkflow } from "../app-server/engines/stop/coordinator.js";
 import { deleteWorkflow } from "../app-server/engines/delete/coordinator.js";
 import { updateWorkflow } from "../app-server/engines/update/coordinator.js";
 
+console.log(
+  "[DEBUG] createWorkflow loaded:",
+  createWorkflow.toString().slice(0, 200)
+);
+
 const app = express();
 app.use(express.json());
 
@@ -22,7 +27,7 @@ const workflows = {
   START: startWorkflow,
   STOP: stopWorkflow,
   DELETE: deleteWorkflow,
-  UPDATE: updateWorkflow
+  UPDATE: updateWorkflow,
 };
 
 // Generic request handler
@@ -43,13 +48,23 @@ async function handleRequest(req, res) {
     // Execute workflow
     const workflowFn = workflows[processedRequest.data.action];
     if (!workflowFn) {
-      return res.status(400).json({ error: `Unknown action: ${processedRequest.data.action}` });
+      return res
+        .status(400)
+        .json({ error: `Unknown action: ${processedRequest.data.action}` });
     }
+
+    console.log(
+      "[DEBUG] About to call workflow:",
+      processedRequest.data.action
+    );
+    console.log("[DEBUG] With data:", processedRequest.data);
 
     const workflowResult = await workflowFn(
       processedRequest.data.projectId,
       processedRequest.data.config
     );
+
+    console.log("[DEBUG] Workflow result:", workflowResult);
 
     // Parse response
     const responseResult = await response(workflowResult);
