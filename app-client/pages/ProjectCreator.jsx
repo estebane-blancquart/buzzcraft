@@ -62,31 +62,36 @@ export default function ProjectCreator() {
       <h1>Créer un nouveau projet</h1>
       
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>ID Projet:</label>
+        <div className="form-group">
+          <label htmlFor="projectId">ID Projet :</label>
           <input
+            id="projectId"
             type="text"
             name="projectId"
             value={formData.projectId}
             onChange={handleInputChange}
+            placeholder="mon-projet-id"
             required
           />
         </div>
 
-        <div>
-          <label>Nom:</label>
+        <div className="form-group">
+          <label htmlFor="name">Nom :</label>
           <input
+            id="name"
             type="text"
             name="name"
             value={formData.name}
             onChange={handleInputChange}
+            placeholder="Mon Projet"
             required
           />
         </div>
 
-        <div>
-          <label>Template:</label>
+        <div className="form-group">
+          <label htmlFor="template">Template :</label>
           <select
+            id="template"
             name="template"
             value={formData.template}
             onChange={handleInputChange}
@@ -96,13 +101,23 @@ export default function ProjectCreator() {
           </select>
         </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Création...' : 'Créer Projet'}
-        </button>
-        
-        <button type="button" onClick={() => navigate('/')}>
-          Retour
-        </button>
+        <div className="form-actions">
+          <button 
+            type="submit" 
+            className="btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Création...' : 'Créer Projet'}
+          </button>
+          
+          <button 
+            type="button" 
+            className="btn-secondary"
+            onClick={() => navigate('/')}
+          >
+            Retour
+          </button>
+        </div>
       </form>
     </div>
   );

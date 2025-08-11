@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 /*
@@ -19,11 +19,11 @@ export default function Dashboard() {
 
   const loadProjects = async () => {
     try {
-      const response = await fetch("http://localhost:3000/projects");
+      const response = await fetch('http://localhost:3000/projects');
       const data = await response.json();
       setProjects(data.projects || []);
     } catch (error) {
-      console.error("Failed to load projects:", error);
+      console.error('Failed to load projects:', error);
       setProjects([]); // Fallback si API indispo
     } finally {
       setLoading(false);
@@ -32,123 +32,120 @@ export default function Dashboard() {
 
   const handleAction = async (projectId, action) => {
     console.log(`Action ${action} on project ${projectId}`);
-
-    if (action === "BUILD") {
+    
+    if (action === 'BUILD') {
       try {
-        const response = await fetch(
-          `http://localhost:3000/projects/${projectId}/build`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }
-        );
-
+        const response = await fetch(`http://localhost:3000/projects/${projectId}/build`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        
         if (response.ok) {
           const result = await response.json();
-          console.log("Build success:", result);
+          console.log('Build success:', result);
           loadProjects(); // Recharger la liste
         } else {
-          console.error("Build failed:", response.status);
+          console.error('Build failed:', response.status);
         }
       } catch (error) {
-        console.error("Build error:", error);
+        console.error('Build error:', error);
       }
     }
-
-    if (action === "EDIT" || action === "REVERT") {
+    
+    if (action === 'EDIT' || action === 'REVERT') {
       try {
-        const response = await fetch(
-          `http://localhost:3000/projects/${projectId}/revert`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-
+        const response = await fetch(`http://localhost:3000/projects/${projectId}/revert`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
         if (response.ok) {
           const result = await response.json();
-          console.log("Revert success:", result);
+          console.log('Revert success:', result);
           loadProjects(); // Recharger la liste
         } else {
-          console.error("Revert failed:", response.status);
+          console.error('Revert failed:', response.status);
         }
       } catch (error) {
-        console.error("Revert error:", error);
+        console.error('Revert error:', error);
       }
     }
-
-    if (action === "DELETE") {
-      const confirmed = window.confirm(
-        `Êtes-vous sûr de vouloir supprimer le projet ${projectId} ? Cette action est irréversible.`
-      );
-
+    
+    if (action === 'DELETE') {
+      const confirmed = window.confirm(`Êtes-vous sûr de vouloir supprimer le projet ${projectId} ? Cette action est irréversible.`);
+      
       if (confirmed) {
         try {
-          const response = await fetch(
-            `http://localhost:3000/projects/${projectId}`,
-            {
-              method: "DELETE",
-            }
-          );
-
+          const response = await fetch(`http://localhost:3000/projects/${projectId}`, {
+            method: 'DELETE'
+          });
+          
           if (response.ok) {
             const result = await response.json();
-            console.log("Delete success:", result);
+            console.log('Delete success:', result);
             loadProjects(); // Recharger la liste
           } else {
-            console.error("Delete failed:", response.status);
+            console.error('Delete failed:', response.status);
           }
         } catch (error) {
-          console.error("Delete error:", error);
+          console.error('Delete error:', error);
         }
       }
     }
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="dashboard">Loading...</div>;
   }
 
   return (
     <div className="dashboard">
       <h1>BuzzCraft Dashboard</h1>
-
-      <button onClick={() => console.log("New project")}>
-        <Link to="/create">
-          <button>NEW PROJECT</button>
-        </Link>{" "}
-      </button>
+      
+      <Link to="/create">
+        <button className="btn-primary">NEW PROJECT</button>
+      </Link>
 
       <div className="projects">
-        {projects.map((project) => (
+        {projects.map(project => (
           <div key={project.id} className="project">
             <div className="project-info">
               <h3>{project.name}</h3>
-              <p>
-                {project.id} • {project.state}
-              </p>
+              <p>{project.id} • <span className={`status-badge ${project.state.toLowerCase()}`}>{project.state}</span></p>
             </div>
-
+            
             <div className="project-actions">
-              {project.state === "DRAFT" && (
+              {project.state === 'DRAFT' && (
                 <>
-                  <button onClick={() => handleAction(project.id, "EDIT")}>
+                  <button 
+                    className="btn-secondary"
+                    onClick={() => handleAction(project.id, 'EDIT')}
+                  >
                     EDIT
                   </button>
-                  <button onClick={() => handleAction(project.id, "BUILD")}>
+                  <button 
+                    className="btn-primary"
+                    onClick={() => handleAction(project.id, 'BUILD')}
+                  >
                     BUILD
                   </button>
                 </>
               )}
-
-              {project.state === "BUILT" && (
-                <button onClick={() => handleAction(project.id, "EDIT")}>
+              
+              {project.state === 'BUILT' && (
+                <button 
+                  className="btn-secondary"
+                  onClick={() => handleAction(project.id, 'EDIT')}
+                >
                   EDIT
                 </button>
               )}
-
-              <button onClick={() => handleAction(project.id, "DELETE")}>
+              
+              <button 
+                className="btn-danger"
+                onClick={() => handleAction(project.id, 'DELETE')}
+              >
                 DELETE
               </button>
             </div>
