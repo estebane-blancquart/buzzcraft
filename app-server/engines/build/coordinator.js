@@ -4,13 +4,14 @@ import { loadCodeTemplates } from '../../transitions/build/loader.js';
 import { generateServices } from '../../transitions/build/generator.js';
 import { readPath } from '../../systems/reader.js';
 import { writePath } from '../../systems/writer.js';
-import { validateProjectSchema } from '../../systems/validator.js';
+import { validateProjectSchema } from '../../systems/schema-validator.js';
+import { rm } from 'fs/promises';
 
 /*
- * FAIT QUOI : Orchestre workflow BUILD (DRAFT → BUILT)
+ * FAIT QUOI : Orchestre workflow BUILD (DRAFT → BUILT) - VERSION PERFECTIONNISTE
  * REÇOIT : projectId: string, config: object
  * RETOURNE : { success: boolean, data: object }
- * ERREURS : ValidationError si paramètres manquants
+ * ERREURS : ValidationError si paramètres manquants, rollback automatique si échec partiel
  */
 
 export async function buildWorkflow(projectId, config = {}) {
@@ -21,6 +22,7 @@ export async function buildWorkflow(projectId, config = {}) {
   }
 
   const projectPath = `../app-server/outputs/projects/${projectId}`;
+  const startTime = Date.now();
   
   console.log(`[BUILD] Checking if project is DRAFT...`);
   const stateDetection = await detectDraftState(projectPath);
@@ -43,7 +45,6 @@ export async function buildWorkflow(projectId, config = {}) {
   console.log(`[BUILD] Loading project data...`);
   const projectFile = await readPath(`${projectPath}/project.json`);
   
-  // Reader.js fait déjà toutes les vérifications, on peut faire confiance
   if (!projectFile.success) {
     return {
       success: false,
@@ -68,45 +69,94 @@ export async function buildWorkflow(projectId, config = {}) {
   const generation = await generateServices(projectData, templatesLoad.data);
   console.log(`[BUILD] Services generated:`, generation.generated);
   
-  console.log(`[BUILD] Writing services to filesystem...`);
-  for (const [servicePath, serviceContent] of Object.entries(generation.output.services)) {
-    const fullPath = `${projectPath}/${servicePath}`;
-    console.log(`[BUILD] Writing: ${fullPath}`);
-    const writeResult = await writePath(fullPath, serviceContent);
-    
-    if (!writeResult.success) {
-      return {
-        success: false,
-        error: `Failed to write ${servicePath}: ${writeResult.error}`
-      };
+  // ROLLBACK SYSTEM - tracker fichiers écrits pour nettoyage si erreur
+  const writtenFiles = [];
+  
+  try {
+    console.log(`[BUILD] Writing services to filesystem...`);
+    for (const [servicePath, serviceContent] of Object.entries(generation.output.services)) {
+      const fullPath = `${projectPath}/${servicePath}`;
+      console.log(`[BUILD] Writing: ${fullPath}`);
+      
+      const writeResult = await writePath(fullPath, serviceContent);
+      
+      if (!writeResult.success) {
+        throw new Error(`Failed to write ${servicePath}: ${writeResult.error}`);
+      }
+      
+      writtenFiles.push(fullPath);
     }
-  }
-  
-  console.log(`[BUILD] Updating project state to BUILT...`);
-  // Mettre à jour l'état du projet
-  projectData.state = 'BUILT';
-  projectData.lastBuild = new Date().toISOString();
-  
-  const updateResult = await writePath(`${projectPath}/project.json`, projectData);
-  if (!updateResult.success) {
+    
+    console.log(`[BUILD] Updating project state to BUILT...`);
+    
+    // STATE SYNC PARFAIT - cohérence totale avec doc
+    projectData.state = 'BUILT';
+    projectData.lastBuild = new Date().toISOString();
+    projectData.buildDuration = Date.now() - startTime;
+    projectData.servicesGenerated = generation.artifacts.length;
+    projectData.buildVersion = projectData.buildVersion ? projectData.buildVersion + 1 : 1;
+    projectData.buildMetadata = {
+      templatesUsed: Object.keys(generation.output.services).length,
+      componentsFound: generation.metadata?.componentsFound || 0,
+      containersFound: generation.metadata?.containersFound || 0,
+      usedComponentTypes: generation.metadata?.usedComponentTypes || []
+    };
+    
+    const updateResult = await writePath(`${projectPath}/project.json`, projectData);
+    if (!updateResult.success) {
+      throw new Error(`Failed to update project state: ${updateResult.error}`);
+    }
+    
+    console.log(`[BUILD] Verifying BUILT state...`);
+    const newStateDetection = await detectBuiltState(projectPath);
+    console.log(`[BUILD] New state:`, newStateDetection.data.state);
+    
+    return {
+      success: true,
+      data: {
+        projectId,
+        fromState: 'DRAFT',
+        toState: newStateDetection.data.state,
+        servicesGenerated: generation.artifacts.length,
+        duration: Date.now() - startTime,
+        buildVersion: projectData.buildVersion,
+        filesWritten: writtenFiles.length
+      }
+    };
+    
+  } catch (error) {
+    console.error(`[BUILD] Error during build: ${error.message}`);
+    console.log(`[BUILD] Initiating rollback for ${writtenFiles.length} files...`);
+    
+    // ROLLBACK AUTOMATIQUE - garantit cohérence état
+    await cleanupPartialBuild(writtenFiles);
+    
     return {
       success: false,
-      error: `Failed to update project state: ${updateResult.error}`
+      error: `Build failed: ${error.message}. Rollback completed.`
     };
   }
+}
+
+/*
+ * FAIT QUOI : Nettoie fichiers partiellement écrits en cas d'erreur build
+ * REÇOIT : writtenFiles: string[]
+ * RETOURNE : void (log seulement, ne throw jamais)
+ * ERREURS : Logged, jamais propagées (rollback doit toujours réussir)
+ */
+
+async function cleanupPartialBuild(writtenFiles) {
+  console.log(`[ROLLBACK] Cleaning ${writtenFiles.length} partially written files...`);
   
-  console.log(`[BUILD] Verifying BUILT state...`);
-  const newStateDetection = await detectBuiltState(projectPath);
-  console.log(`[BUILD] New state:`, newStateDetection.data.state);
-  
-  return {
-    success: true,
-    data: {
-      projectId,
-      fromState: 'DRAFT',
-      toState: newStateDetection.data.state,
-      servicesGenerated: generation.artifacts.length,
-      duration: 15
+  for (const filePath of writtenFiles) {
+    try {
+      await rm(filePath, { recursive: true, force: true });
+      console.log(`[ROLLBACK] ✅ Cleaned: ${filePath}`);
+    } catch (error) {
+      console.log(`[ROLLBACK] ⚠️  Failed to clean ${filePath}: ${error.message}`);
+      // Continue anyway - rollback best effort
     }
-  };
+  }
+  
+  console.log(`[ROLLBACK] Rollback completed`);
 }
