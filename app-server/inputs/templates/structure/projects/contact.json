@@ -1,0 +1,160 @@
+{
+  "project": {
+    "id": "contact",
+    "name": "Contact Form Project",
+    "description": "Test project for form components",
+    "version": "1.0.0",
+    "pages": [
+      {
+        "id": "contact",
+        "name": "Contact Page",
+        "layout": {
+          "sections": [
+            {
+              "id": "header-section",
+              "divs": [
+                {
+                  "id": "header-container",
+                  "name": "Header Container",
+                  "classname": "text-center py-8",
+                  "components": [
+                    {
+                      "id": "page-title",
+                      "type": "heading",
+                      "tag": "h1",
+                      "content": "Contactez-nous",
+                      "classname": "text-3xl font-bold text-gray-900 mb-4"
+                    },
+                    {
+                      "id": "page-subtitle",
+                      "type": "paragraph",
+                      "content": "Nous sommes là pour vous aider. Remplissez le formulaire ci-dessous.",
+                      "classname": "text-lg text-gray-600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "form-section",
+              "forms": [
+                {
+                  "id": "contact-form",
+                  "type": "form",
+                  "name": "Contact Form",
+                  "action": "/api/contact",
+                  "method": "POST",
+                  "classname": "max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md",
+                  "inputs": [
+                    {
+                      "id": "name",
+                      "type": "text",
+                      "name": "name",
+                      "label": "Nom complet",
+                      "placeholder": "Votre nom",
+                      "required": true,
+                      "classname": "w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    },
+                    {
+                      "id": "email",
+                      "type": "email",
+                      "name": "email",
+                      "label": "Email",
+                      "placeholder": "votre@email.com",
+                      "required": true,
+                      "classname": "w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    },
+                    {
+                      "id": "phone",
+                      "type": "tel",
+                      "name": "phone",
+                      "label": "Téléphone",
+                      "placeholder": "06 12 34 56 78",
+                      "required": false,
+                      "classname": "w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    },
+                    {
+                      "id": "subject",
+                      "type": "select",
+                      "name": "subject",
+                      "label": "Sujet",
+                      "placeholder": "Choisissez un sujet",
+                      "required": true,
+                      "classname": "w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500",
+                      "options": [
+                        {
+                          "value": "info",
+                          "label": "Demande d'information"
+                        },
+                        {
+                          "value": "support",
+                          "label": "Support technique"
+                        },
+                        {
+                          "value": "sales",
+                          "label": "Contact commercial"
+                        },
+                        {
+                          "value": "other",
+                          "label": "Autre"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "message",
+                      "type": "textarea",
+                      "name": "message",
+                      "label": "Message",
+                      "placeholder": "Décrivez votre demande...",
+                      "required": true,
+                      "classname": "w-full p-3 border border-gray-300 rounded-md h-32 focus:ring-2 focus:ring-blue-500"
+                    },
+                    {
+                      "id": "newsletter",
+                      "type": "checkbox",
+                      "name": "newsletter",
+                      "label": "Je souhaite recevoir la newsletter",
+                      "value": "yes",
+                      "required": false,
+                      "classname": "mr-2"
+                    },
+                    {
+                      "id": "contact-method",
+                      "type": "radio",
+                      "name": "contact_method",
+                      "label": "Méthode de contact préférée",
+                      "required": false,
+                      "classname": "mr-2",
+                      "options": [
+                        {
+                          "value": "email",
+                          "label": "Par email"
+                        },
+                        {
+                          "value": "phone",
+                          "label": "Par téléphone"
+                        }
+                      ]
+                    }
+                  ],
+                  "buttons": [
+                    {
+                      "type": "submit",
+                      "content": "Envoyer le message",
+                      "classname": "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition-colors"
+                    },
+                    {
+                      "type": "reset",
+                      "content": "Réinitialiser",
+                      "classname": "w-full mt-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-3 px-6 rounded-md transition-colors"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

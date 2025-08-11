@@ -1,17 +1,26 @@
 import Handlebars from 'handlebars';
-import { extractAllComponents, extractAllContainers } from '../../systems/extractor.js';
+import { extractAllElements, extractAllContainers } from '../../systems/extractor.js';
 import { validateProjectSchema } from '../../systems/schema-validator.js';
 import { validateTemplateVariables, generateDefaultVariables } from '../../systems/template-validator.js';
 
+// Enregistrer les helpers Handlebars nécessaires
+Handlebars.registerHelper('eq', function(a, b) {
+  return a === b;
+});
+
+Handlebars.registerHelper('ne', function(a, b) {
+  return a !== b;
+});
+
 /*
- * FAIT QUOI : Génère services TypeScript depuis templates Handlebars + données project.json (VERSION PERFECTIONNISTE)
+ * FAIT QUOI : Génère services TypeScript depuis templates Handlebars + données project.json (VERSION CONTAINERS SUPPORT)
  * REÇOIT : projectData: object, templatesData: object, options: object
  * RETOURNE : { generated: boolean, output: object, artifacts: string[], metadata: object }
  * ERREURS : GenerationError si compilation Handlebars échoue, validation template variables incluse
  */
 
 export async function generateServices(projectData, templatesData, options = {}) {
-  console.log(`[BUILD] generateServices called for: ${projectData?.id}`);
+  console.log(`[BUILD] generateServices called for: ${projectData?.id || projectData?.project?.id}`);
   
   if (!projectData || !templatesData) {
     throw new Error('GenerationError: projectData and templatesData required');
@@ -43,18 +52,20 @@ export async function generateServices(projectData, templatesData, options = {})
       }
     };
     
-    // Extraction robuste de tous les components
-    console.log(`[BUILD] Extracting components...`);
-    const allComponents = extractAllComponents(projectData);
-    console.log(`[BUILD] Found ${allComponents.length} components in project`);
+    // Extraction robuste de tous les éléments
+    console.log(`[BUILD] Extracting elements...`);
+    const allElements = extractAllElements(projectData);
+    console.log(`[BUILD] Found ${allElements.length} elements in project`);
     
-    // Extraction des containers pour info
-    const allContainers = extractAllContainers(projectData);
-    console.log(`[BUILD] Found ${allContainers.length} containers in project`);
+    // Séparer components et containers pour traitement spécialisé
+    const components = allElements.filter(e => e._category === 'component');
+    const containers = allElements.filter(e => e._category === 'container');
     
-    // Déterminer les types de components utilisés (CASE INSENSITIVE)
-    const usedComponentTypes = [...new Set(allComponents.map(c => c.type?.toLowerCase()).filter(Boolean))];
-    console.log(`[BUILD] Used component types:`, usedComponentTypes);
+    console.log(`[BUILD] Split: ${components.length} components, ${containers.length} containers`);
+    
+    // Déterminer les types utilisés (CASE INSENSITIVE)
+    const usedElementTypes = [...new Set(allElements.map(e => e.type?.toLowerCase()).filter(Boolean))];
+    console.log(`[BUILD] Used element types:`, usedElementTypes);
     
     // Auto-découverte des templates disponibles
     const availableTemplates = Object.keys(templatesData.templates);
@@ -69,17 +80,20 @@ export async function generateServices(projectData, templatesData, options = {})
         let shouldGenerate = true;
         let templateVariables = { ...baseVariables };
         
-        // Si c'est un template component, vérifier s'il est utilisé ET préparer les variables
-        if (templatePath.includes('/components/')) {
-          const componentType = getComponentTypeFromPath(templatePath);
+        // Normaliser le chemin pour cross-platform
+        const normalizedPath = templatePath.replace(/\\/g, '/');
+        
+        // TRAITEMENT COMPONENTS
+        if (normalizedPath.includes('/components/')) {
+          const componentType = getElementTypeFromPath(templatePath);
           console.log(`[BUILD] Component template detected: ${componentType}`);
           
-          if (!usedComponentTypes.includes(componentType.toLowerCase())) {
+          if (!usedElementTypes.includes(componentType.toLowerCase())) {
             console.log(`[BUILD] ✂️  Skipping unused component: ${componentType}`);
             shouldGenerate = false;
           } else {
             // Utiliser les données du premier component de ce type
-            const componentData = findComponentByType(allComponents, componentType);
+            const componentData = findElementByType(components, componentType);
             
             if (componentData) {
               console.log(`[BUILD] 📦 Using component data for ${componentType}:`, componentData.id);
@@ -88,7 +102,7 @@ export async function generateServices(projectData, templatesData, options = {})
               templateVariables = generateDefaultVariables(projectData, componentData);
               
               // Ajouter variables spéciales pour templates
-              templateVariables.allComponents = allComponents.filter(c => c.type?.toLowerCase() === componentType.toLowerCase());
+              templateVariables.allComponents = components.filter(c => c.type?.toLowerCase() === componentType.toLowerCase());
               templateVariables.componentCount = templateVariables.allComponents.length;
               
             } else {
@@ -96,17 +110,54 @@ export async function generateServices(projectData, templatesData, options = {})
               templateVariables = generateDefaultVariables(projectData, { type: componentType });
             }
           }
-        } else {
-          // Pour les autres templates (package.json, etc.), variables de base + metadata
+        }
+        // TRAITEMENT CONTAINERS
+        else if (normalizedPath.includes('/containers/')) {
+          const containerType = getElementTypeFromPath(templatePath);
+          console.log(`[BUILD] Container template detected: ${containerType}`);
+          
+          if (!usedElementTypes.includes(containerType.toLowerCase())) {
+            console.log(`[BUILD] ✂️  Skipping unused container: ${containerType}`);
+            shouldGenerate = false;
+          } else {
+            // Utiliser les données du premier container de ce type
+            const containerData = findElementByType(containers, containerType);
+            
+            if (containerData) {
+              console.log(`[BUILD] 📦 Using container data for ${containerType}:`, containerData.id);
+              
+              // Générer variables complètes avec données container
+              templateVariables = generateDefaultVariables(projectData, containerData);
+              
+              // Variables spéciales pour containers
+              templateVariables.allContainers = containers.filter(c => c.type?.toLowerCase() === containerType.toLowerCase());
+              templateVariables.containerCount = templateVariables.allContainers.length;
+              
+              // IMPORTANT: Passer directement les propriétés du container
+              Object.keys(containerData).forEach(key => {
+                if (key !== '_path' && key !== '_category') {
+                  templateVariables[key] = containerData[key];
+                }
+              });
+              
+            } else {
+              console.log(`[BUILD] ⚠️  No container data found for ${containerType}, using defaults only`);
+              templateVariables = generateDefaultVariables(projectData, { type: containerType });
+            }
+          }
+        }
+        // TRAITEMENT SERVICES (package.json, etc.)
+        else {
           console.log(`[BUILD] 🛠️  Generating service template: ${templatePath}`);
           templateVariables = {
             ...baseVariables,
             // Variables supplémentaires pour services
             metadata: {
               generatedAt: new Date().toISOString(),
-              componentsCount: allComponents.length,
-              containersCount: allContainers.length,
-              usedTypes: usedComponentTypes,
+              elementsCount: allElements.length,
+              componentsCount: components.length,
+              containersCount: containers.length,
+              usedTypes: usedElementTypes,
               templateEngine: 'handlebars',
               buzzcraft: true
             }
@@ -147,8 +198,9 @@ export async function generateServices(projectData, templatesData, options = {})
     // Résumé génération
     console.log(`[BUILD] 🎉 Generation complete:`);
     console.log(`[BUILD]   - ${artifacts.length} files generated`);
-    console.log(`[BUILD]   - ${allComponents.length} components found`);
-    console.log(`[BUILD]   - ${usedComponentTypes.length} component types used`);
+    console.log(`[BUILD]   - ${availableTemplates.length - artifacts.length} templates skipped (optimization)`);
+    console.log(`[BUILD]   - ${allElements.length} elements found`);
+    console.log(`[BUILD]   - ${usedElementTypes.length} element types used`);
     if (generationErrors.length > 0) {
       console.log(`[BUILD]   - ${generationErrors.length} variable warnings (check logs)`);
     }
@@ -164,9 +216,10 @@ export async function generateServices(projectData, templatesData, options = {})
         generatedAt: new Date().toISOString(),
         templatesCompiled: artifacts.length,
         templatesSkipped: availableTemplates.length - artifacts.length,
-        componentsFound: allComponents.length,
-        containersFound: allContainers.length,
-        usedComponentTypes,
+        elementsFound: allElements.length,
+        componentsFound: components.length,
+        containersFound: containers.length,
+        usedElementTypes,
         schemaValid: validation.valid,
         schemaWarnings: validation.warnings,
         templateWarnings: generationErrors
@@ -179,46 +232,50 @@ export async function generateServices(projectData, templatesData, options = {})
 }
 
 /*
- * FAIT QUOI : Extraire le type de component du chemin template (CASE INSENSITIVE)
+ * FAIT QUOI : Extraire le type d'élément du chemin template (CROSS-PLATFORM)
  * REÇOIT : templatePath: string
- * RETOURNE : string (type component en lowercase)
+ * RETOURNE : string (type élément en lowercase)
  * ERREURS : Aucune (retourne 'unknown' si parsing échoue)
  */
 
-function getComponentTypeFromPath(templatePath) {
+function getElementTypeFromPath(templatePath) {
   try {
-    // "app-visitor/components/Button.tsx.hbs" -> "button"
-    const filename = templatePath.split('/').pop();
-    const componentName = filename.replace('.tsx.hbs', '').replace('.hbs', '');
-    return componentName.toLowerCase();
+    // Normaliser le chemin pour cross-platform (Windows \ → Unix /)
+    const normalizedPath = templatePath.replace(/\\/g, '/');
+    
+    // "app-visitor/components/Button.tsx.hbs" → "button"
+    // "app-visitor/containers/Form.tsx.hbs" → "form"
+    const filename = normalizedPath.split('/').pop();
+    const elementName = filename.replace('.tsx.hbs', '').replace('.hbs', '');
+    return elementName.toLowerCase();
   } catch (error) {
-    console.warn(`[BUILD] Failed to parse component type from path: ${templatePath}`);
+    console.warn(`[BUILD] Failed to parse element type from path: ${templatePath}`);
     return 'unknown';
   }
 }
 
 /*
- * FAIT QUOI : Trouver le premier component d'un type donné (CASE INSENSITIVE)
- * REÇOIT : components: array, type: string
- * RETOURNE : object|undefined (premier component trouvé)
+ * FAIT QUOI : Trouver le premier élément d'un type donné (CASE INSENSITIVE)
+ * REÇOIT : elements: array, type: string
+ * RETOURNE : object|undefined (premier élément trouvé)
  * ERREURS : Aucune (retourne undefined si pas trouvé)
  */
 
-function findComponentByType(components, type) {
-  return components.find(component => 
-    component.type?.toLowerCase() === type.toLowerCase()
+function findElementByType(elements, type) {
+  return elements.find(element => 
+    element.type?.toLowerCase() === type.toLowerCase()
   );
 }
 
 /*
- * FAIT QUOI : Trouver tous les components d'un type donné (CASE INSENSITIVE)
- * REÇOIT : components: array, type: string
- * RETOURNE : array (tous les components du type)
+ * FAIT QUOI : Trouver tous les éléments d'un type donné (CASE INSENSITIVE)
+ * REÇOIT : elements: array, type: string
+ * RETOURNE : array (tous les éléments du type)
  * ERREURS : Aucune (retourne array vide si aucun trouvé)
  */
 
-function findAllComponentsByType(components, type) {
-  return components.filter(component => 
-    component.type?.toLowerCase() === type.toLowerCase()
+function findAllElementsByType(elements, type) {
+  return elements.filter(element => 
+    element.type?.toLowerCase() === type.toLowerCase()
   );
 }

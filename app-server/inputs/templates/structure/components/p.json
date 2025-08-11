@@ -1,6 +1,6 @@
 {
   "id": "p",
-  "type": "p",
+  "type": "paragraph",
   "name": "Paragraph Component", 
   "schema": {
     "content": {

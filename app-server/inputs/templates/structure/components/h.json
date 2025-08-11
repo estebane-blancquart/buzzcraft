@@ -1,6 +1,6 @@
 {
   "id": "h",
-  "type": "h",
+  "type": "heading",
   "name": "Heading Component",
   "schema": {
     "tag": {

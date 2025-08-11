@@ -1,0 +1,89 @@
+export default function Form({ id, action, method, classname, inputs, buttons }) {
+  return (
+    <form 
+      id="{{id}}"
+      action="{{action}}"
+      method="{{method}}"
+      className="{{classname}}"
+    >
+      {{#each inputs}}
+      <div className="form-field">
+        {{#if (eq type "textarea")}}
+        <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
+        <textarea
+          id="{{id}}"
+          name="{{name}}"
+          placeholder="{{placeholder}}"
+          {{#if required}}required{{/if}}
+          className="{{classname}}"
+        ></textarea>
+        {{else if (eq type "select")}}
+        <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
+        <select
+          id="{{id}}"
+          name="{{name}}"
+          {{#if required}}required{{/if}}
+          className="{{classname}}"
+        >
+          <option value="">{{placeholder}}</option>
+          {{#each options}}
+          <option value="{{value}}">{{label}}</option>
+          {{/each}}
+        </select>
+        {{else if (eq type "checkbox")}}
+        <div className="checkbox-field">
+          <input
+            type="checkbox"
+            id="{{id}}"
+            name="{{name}}"
+            value="{{value}}"
+            {{#if required}}required{{/if}}
+            className="{{classname}}"
+          />
+          <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
+        </div>
+        {{else if (eq type "radio")}}
+        <fieldset className="radio-group">
+          <legend>{{label}}{{#if required}} *{{/if}}</legend>
+          {{#each options}}
+          <div className="radio-field">
+            <input
+              type="radio"
+              id="{{../id}}-{{@index}}"
+              name="{{../name}}"
+              value="{{value}}"
+              {{#if ../required}}required{{/if}}
+              className="{{../classname}}"
+            />
+            <label htmlFor="{{../id}}-{{@index}}">{{label}}</label>
+          </div>
+          {{/each}}
+        </fieldset>
+        {{else}}
+        <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
+        <input
+          type="{{type}}"
+          id="{{id}}"
+          name="{{name}}"
+          placeholder="{{placeholder}}"
+          {{#if required}}required{{/if}}
+          className="{{classname}}"
+        />
+        {{/if}}
+      </div>
+      {{/each}}
+
+      <div className="form-actions">
+        {{#each buttons}}
+        <button
+          type="{{type}}"
+          className="{{classname}}"
+          {{#if onclick}}onClick={{{onclick}}}{{/if}}
+        >
+          {{content}}
+        </button>
+        {{/each}}
+      </div>
+    </form>
+  );
+}

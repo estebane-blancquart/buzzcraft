@@ -1,6 +1,6 @@
 {
   "id": "a",
-  "type": "a", 
+  "type": "link", 
   "name": "Link Component",
   "schema": {
     "content": {

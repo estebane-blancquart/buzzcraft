@@ -1,0 +1,108 @@
+{
+  "project": {
+    "id": "basic",
+    "name": "Basic Project Template",
+    "description": "Simple landing page with essential components",
+    "version": "1.0.0",
+    "pages": [
+      {
+        "id": "home",
+        "name": "Home Page",
+        "layout": {
+          "sections": [
+            {
+              "id": "hero-section",
+              "divs": [
+                {
+                  "id": "hero-container",
+                  "name": "Hero Container",
+                  "classname": "text-center py-16 px-8",
+                  "components": [
+                    {
+                      "id": "main-title",
+                      "type": "heading",
+                      "tag": "h1",
+                      "content": "Welcome to Your New Project",
+                      "classname": "text-4xl font-bold text-gray-900 mb-4"
+                    },
+                    {
+                      "id": "subtitle",
+                      "type": "paragraph",
+                      "content": "This is a basic template to get you started. Edit this content to make it your own.",
+                      "classname": "text-xl text-gray-600 mb-8 max-w-2xl mx-auto"
+                    },
+                    {
+                      "id": "cta-button",
+                      "type": "button",
+                      "content": "Get Started",
+                      "href": "#contact",
+                      "classname": "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "content-section",
+              "divs": [
+                {
+                  "id": "content-container",
+                  "name": "Content Container", 
+                  "classname": "py-16 px-8 bg-gray-50",
+                  "components": [
+                    {
+                      "id": "section-title",
+                      "type": "heading",
+                      "tag": "h2",
+                      "content": "About This Project",
+                      "classname": "text-3xl font-bold text-center text-gray-900 mb-8"
+                    },
+                    {
+                      "id": "hero-image",
+                      "type": "image",
+                      "src": "https://picsum.photos/800/400?random=1",
+                      "alt": "Project preview",
+                      "classname": "w-full max-w-4xl mx-auto rounded-lg shadow-lg mb-8"
+                    },
+                    {
+                      "id": "description",
+                      "type": "paragraph", 
+                      "content": "BuzzCraft generates complete web applications from simple templates. This basic template includes the most common components you'll need to build a professional website.",
+                      "classname": "text-lg text-gray-700 text-center max-w-3xl mx-auto mb-8"
+                    },
+                    {
+                      "id": "learn-more-link",
+                      "type": "link",
+                      "content": "Learn more about BuzzCraft →",
+                      "href": "https://github.com/buzzcraft/buzzcraft",
+                      "target": "_blank",
+                      "classname": "text-blue-600 hover:text-blue-800 font-medium"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "footer-section",
+              "divs": [
+                {
+                  "id": "footer-container",
+                  "name": "Footer Container",
+                  "classname": "py-8 px-8 text-center border-t border-gray-200",
+                  "components": [
+                    {
+                      "id": "footer-text",
+                      "type": "paragraph",
+                      "content": "Built with BuzzCraft - Transform ideas into applications",
+                      "classname": "text-gray-600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
