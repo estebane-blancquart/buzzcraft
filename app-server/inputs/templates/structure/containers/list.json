@@ -1,0 +1,49 @@
+{
+  "id": "list",
+  "type": "list",
+  "name": "List Container",
+  "schema": {
+    "id": {
+      "type": "string",
+      "default": "list-id",
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "default": "List Container", 
+      "required": false
+    },
+    "tag": {
+      "type": "enum",
+      "options": ["ul", "ol"],
+      "default": "ul",
+      "required": true
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "schema": {
+          "id": {
+            "type": "string",
+            "required": true
+          },
+          "content": {
+            "type": "string", 
+            "required": true
+          },
+          "classname": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      },
+      "default": [],
+      "required": false
+    }
+  }
+}

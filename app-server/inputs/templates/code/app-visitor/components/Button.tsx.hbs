@@ -1,0 +1,20 @@
+export default function Button({ content, href, classname, id }) {
+  return (
+    {{#if href}}
+    <a 
+      href="{{href}}" 
+      className="{{classname}}"
+      id="{{id}}"
+    >
+      {{content}}
+    </a>
+    {{else}}
+    <button 
+      className="{{classname}}"
+      id="{{id}}"
+    >
+      {{content}}
+    </button>
+    {{/if}}
+  );
+}

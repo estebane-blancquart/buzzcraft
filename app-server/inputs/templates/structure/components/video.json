@@ -1,0 +1,36 @@
+{
+  "id": "video",
+  "type": "video", 
+  "name": "Video Component",
+  "schema": {
+    "src": {
+      "type": "string",
+      "default": "https://sample-videos.com/zip/10/mp4/SampleVideo_640x360_1mb.mp4",
+      "required": true
+    },
+    "controls": {
+      "type": "boolean",
+      "default": true,
+      "required": false
+    },
+    "autoplay": {
+      "type": "boolean",
+      "default": false,
+      "required": false
+    },
+    "loop": {
+      "type": "boolean",
+      "default": false, 
+      "required": false
+    },
+    "muted": {
+      "type": "boolean",
+      "default": false,
+      "required": false
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

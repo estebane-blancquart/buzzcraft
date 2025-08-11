@@ -1,0 +1,16 @@
+{
+  "id": "p",
+  "type": "p",
+  "name": "Paragraph Component", 
+  "schema": {
+    "content": {
+      "type": "string",
+      "default": "Paragraph text here...",
+      "required": true
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

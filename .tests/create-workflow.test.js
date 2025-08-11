@@ -4,7 +4,7 @@ import { unlink, rmdir } from 'fs/promises';
 import { join } from 'path';
 
 describe('CREATE workflow integration', () => {
-  const testProjectId = 'test-integration-project';
+  const testProjectId = 'test-integration-clean';
   const testProjectPath = `../app-server/outputs/projects/${testProjectId}`;
   const testProjectFile = join(testProjectPath, 'project.json');
 
@@ -20,8 +20,8 @@ describe('CREATE workflow integration', () => {
 
   test('crée un projet complet avec template', async () => {
     const config = {
-      name: 'Test Integration',
-      template: 'basic'
+      name: 'Test Integration Clean',
+      template: 'test-button'
     };
 
     const result = await createWorkflow(testProjectId, config);
@@ -40,18 +40,24 @@ describe('CREATE workflow integration', () => {
     // Vérifier le contenu du fichier
     const projectData = JSON.parse(fileCheck.data.content);
     expect(projectData.id).toBe(testProjectId);
-    expect(projectData.name).toBe('Test Integration');
-    expect(projectData.template).toBe('basic');
-    expect(projectData.templateName).toBe('Basic Project Template');
+    expect(projectData.name).toBe('Test Integration Clean');
+    expect(projectData.template).toBe('test-button');
     expect(projectData.state).toBe('DRAFT');
+    expect(projectData.pages).toBeDefined();
   });
 
   test('refuse de créer un projet existant', async () => {
     // Créer le projet une première fois
-    await createWorkflow(testProjectId, { name: 'Premier' });
+    await createWorkflow(testProjectId, { 
+      name: 'Premier', 
+      template: 'test-button' 
+    });
 
     // Tenter de le recréer
-    const result = await createWorkflow(testProjectId, { name: 'Doublon' });
+    const result = await createWorkflow(testProjectId, { 
+      name: 'Doublon', 
+      template: 'test-button' 
+    });
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('already exists');

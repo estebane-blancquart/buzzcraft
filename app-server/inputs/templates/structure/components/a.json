@@ -1,0 +1,27 @@
+{
+  "id": "a",
+  "type": "a", 
+  "name": "Link Component",
+  "schema": {
+    "content": {
+      "type": "string",
+      "default": "Link text",
+      "required": true
+    },
+    "href": {
+      "type": "string",
+      "default": "#",
+      "required": true
+    },
+    "target": {
+      "type": "enum",
+      "options": ["_self", "_blank", "_parent", "_top"],
+      "default": "_self",
+      "required": false
+    },
+    "classname": {
+      "type": "string", 
+      "default": ""
+    }
+  }
+}

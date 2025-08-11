@@ -1,0 +1,12 @@
+export default function Image({ src, alt, width, height, classname, id }) {
+  return (
+    <img 
+      src="{{src}}" 
+      alt="{{alt}}"
+      {{#if width}}width="{{width}}"{{/if}}
+      {{#if height}}height="{{height}}"{{/if}}
+      className="{{classname}}"
+      id="{{id}}"
+    />
+  );
+}

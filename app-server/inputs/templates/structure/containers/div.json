@@ -1,0 +1,30 @@
+{
+  "id": "div",
+  "type": "div",
+  "name": "Div Container",
+  "schema": {
+    "id": {
+      "type": "string",
+      "default": "div-id",
+      "required": true
+    },
+    "name": {
+      "type": "string", 
+      "default": "Div Container",
+      "required": false
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "reference",
+        "allowedTypes": ["button", "a", "p", "h", "image", "video"]
+      },
+      "default": [],
+      "required": false
+    }
+  }
+}

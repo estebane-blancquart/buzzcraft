@@ -11,11 +11,6 @@ import { stopWorkflow } from "../app-server/engines/stop/coordinator.js";
 import { deleteWorkflow } from "../app-server/engines/delete/coordinator.js";
 import { updateWorkflow } from "../app-server/engines/update/coordinator.js";
 
-console.log(
-  "[DEBUG] createWorkflow loaded:",
-  createWorkflow.toString().slice(0, 200)
-);
-
 const app = express();
 app.use(express.json());
 
@@ -53,18 +48,10 @@ async function handleRequest(req, res) {
         .json({ error: `Unknown action: ${processedRequest.data.action}` });
     }
 
-    console.log(
-      "[DEBUG] About to call workflow:",
-      processedRequest.data.action
-    );
-    console.log("[DEBUG] With data:", processedRequest.data);
-
     const workflowResult = await workflowFn(
       processedRequest.data.projectId,
       processedRequest.data.config
     );
-
-    console.log("[DEBUG] Workflow result:", workflowResult);
 
     // Parse response
     const responseResult = await response(workflowResult);

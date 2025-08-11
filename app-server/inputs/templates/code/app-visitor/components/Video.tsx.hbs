@@ -1,0 +1,15 @@
+export default function Video({ src, controls, autoplay, loop, muted, classname, id }) {
+  return (
+    <video 
+      src="{{src}}"
+      {{#if controls}}controls{{/if}}
+      {{#if autoplay}}autoplay{{/if}}
+      {{#if loop}}loop{{/if}}
+      {{#if muted}}muted{{/if}}
+      className="{{classname}}"
+      id="{{id}}"
+    >
+      Your browser does not support the video tag.
+    </video>
+  );
+}

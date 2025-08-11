@@ -1,0 +1,12 @@
+export default function Heading({ content, tag, classname, id }) {
+  const Tag = "{{tag}}";
+  
+  return (
+    <Tag 
+      className="{{classname}}"
+      id="{{id}}"
+    >
+      {{content}}
+    </Tag>
+  );
+}

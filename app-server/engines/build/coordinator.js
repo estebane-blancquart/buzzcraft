@@ -33,8 +33,16 @@ export async function buildWorkflow(projectId, config = {}) {
   }
   
   console.log(`[BUILD] Loading project data...`);
-  const projectFile = await readPath(`${projectPath}/project.json`);
-  const projectData = JSON.parse(projectFile.data.content);
+const projectFile = await readPath(`${projectPath}/project.json`);
+
+if (!projectFile.success || !projectFile.data.exists) {
+  return {
+    success: false,
+    error: `Project ${projectId} must be in DRAFT state for build (project.json not found)`
+  };
+}
+
+const projectData = JSON.parse(projectFile.data.content);
   
   console.log(`[BUILD] Loading code templates...`);
   const templatesLoad = await loadCodeTemplates(projectId);

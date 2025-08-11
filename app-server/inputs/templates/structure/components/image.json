@@ -1,0 +1,31 @@
+{
+  "id": "image",
+  "type": "image",
+  "name": "Image Component",
+  "schema": {
+    "src": {
+      "type": "string",
+      "default": "https://picsum.photos/400/300",
+      "required": true
+    },
+    "alt": {
+      "type": "string",
+      "default": "Image description",
+      "required": true
+    },
+    "width": {
+      "type": "number",
+      "default": 400,
+      "required": false
+    },
+    "height": {
+      "type": "number", 
+      "default": 300,
+      "required": false
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

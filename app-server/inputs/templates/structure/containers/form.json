@@ -1,0 +1,98 @@
+{
+  "id": "form",
+  "type": "form",
+  "name": "Form Container",
+  "schema": {
+    "id": {
+      "type": "string",
+      "default": "form-id",
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "default": "Form Container",
+      "required": false
+    },
+    "action": {
+      "type": "string",
+      "default": "#",
+      "required": false
+    },
+    "method": {
+      "type": "enum",
+      "options": ["GET", "POST"],
+      "default": "POST",
+      "required": false
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "schema": {
+          "id": {
+            "type": "string",
+            "required": true
+          },
+          "type": {
+            "type": "enum",
+            "options": ["text", "email", "password", "tel", "url", "textarea", "select", "checkbox", "radio"],
+            "default": "text",
+            "required": true
+          },
+          "name": {
+            "type": "string",
+            "required": true
+          },
+          "placeholder": {
+            "type": "string",
+            "default": "",
+            "required": false
+          },
+          "required": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "classname": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      },
+      "default": [],
+      "required": false
+    },
+    "buttons": {
+      "type": "array", 
+      "items": {
+        "type": "object",
+        "schema": {
+          "id": {
+            "type": "string",
+            "required": true
+          },
+          "type": {
+            "type": "enum",
+            "options": ["submit", "reset", "button"],
+            "default": "submit",
+            "required": true
+          },
+          "content": {
+            "type": "string",
+            "required": true
+          },
+          "classname": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      },
+      "default": [],
+      "required": false
+    }
+  }
+}
