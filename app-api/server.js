@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import projectsRouter from './routes/projects.js';
+import projectsRouter from './routes.js';
 
 /*
  * FAIT QUOI : Bootstrap du serveur Express BuzzCraft
