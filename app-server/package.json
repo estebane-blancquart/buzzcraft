@@ -1,8 +1,17 @@
 {
   "name": "@buzzcraft/app-server",
   "version": "1.0.0",
+  "description": "BuzzCraft generation engine",
   "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest engines/ transitions/ systems/",
+    "lint": "eslint . --ext .js"
+  },
   "dependencies": {
     "handlebars": "^4.7.8"
-  }
+  },
+  "keywords": ["generator", "templates", "handlebars", "buzzcraft"],
+  "author": "BuzzCraft Team", 
+  "license": "MIT"
 }

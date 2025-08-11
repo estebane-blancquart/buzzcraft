@@ -1,16 +1,19 @@
 {
   "name": "@buzzcraft/app-api",
   "version": "1.0.0",
+  "description": "BuzzCraft API server",
   "type": "module",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "jest"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.0"
   },
-  "devDependencies": {
-    "jest": "^30.0.5"
-  }
+  "keywords": ["api", "express", "buzzcraft"],
+  "author": "BuzzCraft Team",
+  "license": "MIT"
 }

@@ -1,0 +1,19 @@
+export default function List({ id, tag, classname, items }) {
+  const Tag = "{{tag}}";
+  
+  return (
+    <Tag 
+      id="{{id}}"
+      className="{{classname}}"
+    >
+      {{#each items}}
+      <li 
+        id="{{id}}"
+        className="{{classname}}"
+      >
+        {{content}}
+      </li>
+      {{/each}}
+    </Tag>
+  );
+}

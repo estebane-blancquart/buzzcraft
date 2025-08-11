@@ -1,16 +1,59 @@
 {
   "name": "buzzcraft",
   "version": "1.0.0",
+  "description": "Automated web application generator",
   "type": "module",
+  "workspaces": [
+    "app-api",
+    "app-client",
+    "app-server"
+  ],
   "scripts": {
-    "start": "node app-api/server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "start": "npm run start:api",
+    "dev": "npm run dev:all",
+    "start:api": "npm run start --workspace=app-api",
+    "start:client": "npm run dev --workspace=app-client",
+    "dev:api": "npm run dev --workspace=app-api",
+    "dev:client": "npm run dev --workspace=app-client",
+    "dev:all": "concurrently \"npm run dev:api\" \"npm run dev:client\"",
+    "build": "npm run build --workspace=app-client",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint": "eslint . --ext .js,.jsx",
+    "lint:fix": "eslint . --ext .js,.jsx --fix",
+    "format": "prettier --write .",
+    "clean": "rm -rf node_modules app-*/node_modules",
+    "setup": "npm install && npm install --workspaces"
   },
   "dependencies": {
     "express": "^4.18.0",
-    "handlebars": "^4.7.8"
+    "cors": "^2.8.5",
+    "handlebars": "^4.7.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.8.0"
   },
   "devDependencies": {
-    "jest": "^30.0.5"
+    "@vitejs/plugin-react": "^4.0.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^9.0.0",
+    "jest": "^30.0.5",
+    "prettier": "^3.0.0",
+    "sass": "^1.90.0",
+    "stylelint": "^16.0.0",
+    "stylelint-config-standard-scss": "^13.0.0",
+    "stylelint-scss": "^6.0.0",
+    "vite": "^5.0.0"
+  },
+  "keywords": [
+    "generator",
+    "templates",
+    "web-development",
+    "automation"
+  ],
+  "author": "BuzzCraft Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buzzcraft/buzzcraft"
   }
 }

@@ -21,7 +21,7 @@ describe('CREATE workflow integration', () => {
   test('crée un projet complet avec template', async () => {
     const config = {
       name: 'Test Integration Clean',
-      template: 'test-button'
+      template: 'basic'  // ← Utiliser basic au lieu de test-button
     };
 
     const result = await createWorkflow(testProjectId, config);
@@ -41,22 +41,23 @@ describe('CREATE workflow integration', () => {
     const projectData = JSON.parse(fileCheck.data.content);
     expect(projectData.id).toBe(testProjectId);
     expect(projectData.name).toBe('Test Integration Clean');
-    expect(projectData.template).toBe('test-button');
+    expect(projectData.template).toBe('basic');
     expect(projectData.state).toBe('DRAFT');
-    expect(projectData.pages).toBeDefined();
+    expect(projectData.pages).toBeDefined();  // ← basic a des pages
+    expect(Array.isArray(projectData.pages)).toBe(true);
   });
 
   test('refuse de créer un projet existant', async () => {
     // Créer le projet une première fois
     await createWorkflow(testProjectId, { 
       name: 'Premier', 
-      template: 'test-button' 
+      template: 'basic'  // ← basic aussi ici
     });
 
     // Tenter de le recréer
     const result = await createWorkflow(testProjectId, { 
       name: 'Doublon', 
-      template: 'test-button' 
+      template: 'basic'
     });
 
     expect(result.success).toBe(false);

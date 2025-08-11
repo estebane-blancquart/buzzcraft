@@ -1,0 +1,122 @@
+{
+  "project": {
+    "id": "features",
+    "name": "Features List Project",
+    "description": "Test project for list containers",
+    "version": "1.0.0",
+    "pages": [
+      {
+        "id": "features",
+        "name": "Features Page",
+        "layout": {
+          "sections": [
+            {
+              "id": "header-section",
+              "divs": [
+                {
+                  "id": "header-container",
+                  "name": "Header Container",
+                  "classname": "text-center py-8",
+                  "components": [
+                    {
+                      "id": "page-title",
+                      "type": "heading",
+                      "tag": "h1",
+                      "content": "Nos Fonctionnalités",
+                      "classname": "text-3xl font-bold text-gray-900 mb-4"
+                    },
+                    {
+                      "id": "page-subtitle",
+                      "type": "paragraph",
+                      "content": "Découvrez tout ce que notre produit peut faire pour vous.",
+                      "classname": "text-lg text-gray-600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "features-section",
+              "lists": [
+                {
+                  "id": "main-features",
+                  "type": "list",
+                  "name": "Main Features List",
+                  "tag": "ul",
+                  "classname": "space-y-4 max-w-lg mx-auto",
+                  "items": [
+                    {
+                      "id": "feature-1",
+                      "content": "Interface intuitive et moderne",
+                      "classname": "flex items-center space-x-3 text-gray-700"
+                    },
+                    {
+                      "id": "feature-2", 
+                      "content": "Performance optimisée",
+                      "classname": "flex items-center space-x-3 text-gray-700"
+                    },
+                    {
+                      "id": "feature-3",
+                      "content": "Support client 24/7",
+                      "classname": "flex items-center space-x-3 text-gray-700"
+                    },
+                    {
+                      "id": "feature-4",
+                      "content": "Sécurité de niveau entreprise",
+                      "classname": "flex items-center space-x-3 text-gray-700"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "steps-section",
+              "divs": [
+                {
+                  "id": "steps-container",
+                  "name": "Steps Container",
+                  "classname": "mt-12",
+                  "components": [
+                    {
+                      "id": "steps-title",
+                      "type": "heading",
+                      "tag": "h2",
+                      "content": "Comment commencer",
+                      "classname": "text-2xl font-bold text-center text-gray-900 mb-6"
+                    }
+                  ]
+                }
+              ],
+              "lists": [
+                {
+                  "id": "getting-started",
+                  "type": "list",
+                  "name": "Getting Started Steps",
+                  "tag": "ol",
+                  "classname": "space-y-3 max-w-md mx-auto counter-reset",
+                  "items": [
+                    {
+                      "id": "step-1",
+                      "content": "Créez votre compte gratuitement",
+                      "classname": "flex items-center space-x-3 text-gray-700"
+                    },
+                    {
+                      "id": "step-2",
+                      "content": "Configurez votre profil",
+                      "classname": "flex items-center space-x-3 text-gray-700"
+                    },
+                    {
+                      "id": "step-3",
+                      "content": "Commencez à utiliser nos outils",
+                      "classname": "flex items-center space-x-3 text-gray-700"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
