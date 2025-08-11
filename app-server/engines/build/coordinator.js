@@ -33,16 +33,8 @@ export async function buildWorkflow(projectId, config = {}) {
   }
   
   console.log(`[BUILD] Loading project data...`);
-const projectFile = await readPath(`${projectPath}/project.json`);
-
-if (!projectFile.success || !projectFile.data.exists) {
-  return {
-    success: false,
-    error: `Project ${projectId} must be in DRAFT state for build (project.json not found)`
-  };
-}
-
-const projectData = JSON.parse(projectFile.data.content);
+  const projectFile = await readPath(`${projectPath}/project.json`);
+  const projectData = JSON.parse(projectFile.data.content);
   
   console.log(`[BUILD] Loading code templates...`);
   const templatesLoad = await loadCodeTemplates(projectId);
@@ -71,6 +63,19 @@ const projectData = JSON.parse(projectFile.data.content);
         error: `Failed to write ${servicePath}: ${writeResult.error}`
       };
     }
+  }
+  
+  console.log(`[BUILD] Updating project state to BUILT...`);
+  // Mettre à jour l'état du projet
+  projectData.state = 'BUILT';
+  projectData.lastBuild = new Date().toISOString();
+  
+  const updateResult = await writePath(`${projectPath}/project.json`, projectData);
+  if (!updateResult.success) {
+    return {
+      success: false,
+      error: `Failed to update project state: ${updateResult.error}`
+    };
   }
   
   console.log(`[BUILD] Verifying BUILT state...`);

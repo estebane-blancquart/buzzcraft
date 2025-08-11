@@ -1,4 +1,7 @@
 import express from "express";
+import cors from "cors";
+import { readdir, readFile, writeFile, rm } from 'fs/promises';
+import { join } from "path";
 import { request } from "./request/parser.js";
 import { process as processRequest } from "./request/processor.js";
 import { response } from "./response/parser.js";
@@ -12,6 +15,7 @@ import { deleteWorkflow } from "../app-server/engines/delete/coordinator.js";
 import { updateWorkflow } from "../app-server/engines/update/coordinator.js";
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // Workflow mapping
@@ -72,6 +76,124 @@ async function handleRequest(req, res) {
 }
 
 // Routes
+
+
+// Route pour supprimer complètement un projet
+app.delete("/projects/:id", async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const projectPath = `../app-server/outputs/projects/${projectId}`;
+
+    // Vérifier que le projet existe
+    try {
+      const projectFile = join(projectPath, "project.json");
+      const content = await readFile(projectFile, "utf8");
+      const projectData = JSON.parse(content);
+
+      console.log(
+        `[DELETE] Deleting project ${projectId} (${projectData.state})`
+      );
+    } catch (error) {
+      return res.status(404).json({
+        error: `Project ${projectId} not found`,
+      });
+    }
+
+    // Supprimer tout le dossier projet
+    await rm(projectPath, { recursive: true, force: true });
+
+    console.log(`[DELETE] Project ${projectId} deleted successfully`);
+
+    res.json({
+      message: `Project ${projectId} deleted successfully`,
+      project: {
+        id: projectId,
+        fromState: "ANY",
+        toState: "VOID",
+      },
+    });
+  } catch (error) {
+    console.error("Delete error:", error);
+    res.status(500).json({ error: "Failed to delete project" });
+  }
+});
+// Route pour remettre un projet BUILT en DRAFT
+app.put("/projects/:id/revert", async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const projectPath = `../app-server/outputs/projects/${projectId}`;
+
+    // Lire le project.json
+    const projectFile = join(projectPath, "project.json");
+    const content = await readFile(projectFile, "utf8");
+    const projectData = JSON.parse(content);
+
+    // Vérifier que le projet est BUILT
+    if (projectData.state !== "BUILT") {
+      return res.status(400).json({
+        error: `Project ${projectId} must be in BUILT state for revert (current: ${projectData.state})`,
+      });
+    }
+
+    // Remettre en DRAFT
+    projectData.state = "DRAFT";
+    projectData.revertedAt = new Date().toISOString();
+
+    // Sauvegarder project.json
+    await writeFile(projectFile, JSON.stringify(projectData, null, 2), "utf8");
+
+    // TODO: Supprimer les services générés (app-visitor/, server/, etc.)
+    // Pour l'instant on les garde, juste changement d'état
+
+    res.json({
+      message: `Project ${projectId} reverted to DRAFT successfully`,
+      project: {
+        id: projectId,
+        fromState: "BUILT",
+        toState: "DRAFT",
+      },
+    });
+  } catch (error) {
+    console.error("Revert error:", error);
+    res.status(500).json({ error: "Failed to revert project" });
+  }
+});
+
+// Route pour lister tous les projets
+app.get("/projects", async (req, res) => {
+  try {
+    const projectsDir = "../app-server/outputs/projects";
+    const projects = [];
+
+    // Lire tous les dossiers dans outputs/projects/
+    const folders = await readdir(projectsDir);
+
+    for (const folder of folders) {
+      try {
+        // Lire le project.json de chaque dossier
+        const projectFile = join(projectsDir, folder, "project.json");
+        const content = await readFile(projectFile, "utf8");
+        const projectData = JSON.parse(content);
+
+        projects.push({
+          id: projectData.id,
+          name: projectData.name,
+          state: projectData.state,
+          template: projectData.template,
+          created: projectData.created,
+        });
+      } catch (error) {
+        // Skip si pas de project.json ou erreur de lecture
+        console.log(`Skipping ${folder}: ${error.message}`);
+      }
+    }
+
+    res.json({ projects });
+  } catch (error) {
+    console.error("Error loading projects:", error);
+    res.status(500).json({ error: "Failed to load projects" });
+  }
+});
 app.post("/projects", handleRequest);
 app.post("/projects/:id/build", handleRequest);
 app.post("/projects/:id/deploy", handleRequest);
