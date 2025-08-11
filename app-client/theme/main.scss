@@ -15,6 +15,7 @@ $orange: #f59e0b;
 $green: #10b981;
 $red: #ef4444;
 $red-dark: #dc2626;
+$yellow: #f59e0b;
 
 // === BASE ===
 body {
@@ -85,11 +86,21 @@ input, select {
   padding: 8px 12px;
   color: $text-primary;
   font-size: 14px;
+  transition: border-color 0.2s;
   
   &:focus {
     outline: none;
     border-color: $blue;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  &.error {
+    border-color: $red;
+    
+    &:focus {
+      border-color: $red;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
   }
 }
 
@@ -108,6 +119,53 @@ input, select {
   margin: 0 auto;
 }
 
+// === LOADING & ERROR STATES ===
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: $text-secondary;
+  font-style: italic;
+}
+
+.error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid $red;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fecaca;
+  
+  .error-close {
+    background: none;
+    border: none;
+    color: #fecaca;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    
+    &:hover {
+      color: white;
+    }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: $text-secondary;
+  
+  p {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+}
+
 // === COMPONENTS ===
 .projects {
   display: flex;
@@ -122,9 +180,14 @@ input, select {
   border-radius: 8px;
   padding: 1.5rem;
   display: flex;
-  justify-content: between;
+  justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  transition: border-color 0.2s;
+  
+  &:hover {
+    border-color: $border-color;
+  }
 }
 
 .project-info {
@@ -165,22 +228,49 @@ input, select {
     background: rgba(139, 92, 246, 0.2);
     color: $purple;
   }
+  
+  &.offline {
+    background: rgba(245, 158, 11, 0.2);
+    color: $orange;
+  }
+  
+  &.online {
+    background: rgba(16, 185, 129, 0.2);
+    color: $green;
+  }
 }
 
 // === FORMS ===
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   
   label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
     color: $text-primary;
+    
+    .required {
+      color: $red;
+      margin-left: 2px;
+    }
   }
   
   input, select {
     width: 100%;
   }
+}
+
+.field-error {
+  color: #fecaca;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.field-hint {
+  color: $text-muted;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 .form-actions {
