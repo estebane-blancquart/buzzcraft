@@ -1,0 +1,17 @@
+{
+  "project": {
+    "id": "empty",
+    "name": "Empty Project Template",
+    "description": "Blank project to build from scratch",
+    "version": "1.0.0",
+    "pages": [
+      {
+        "id": "home",
+        "name": "Home Page",
+        "layout": {
+          "sections": []
+        }
+      }
+    ]
+  }
+}

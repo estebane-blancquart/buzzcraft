@@ -1,0 +1,79 @@
+@use 'variables' as *;
+
+// === LOADING STATES ===
+.loading {
+  text-align: center;
+  padding: $spacing-xl;
+  color: $text-secondary;
+  font-style: italic;
+}
+
+// === ERROR STATES ===
+.error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid $red;
+  border-radius: $radius-sm;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fecaca;
+
+  .error-close {
+    background: none;
+    border: none;
+    color: #fecaca;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+
+    &:hover {
+      color: white;
+    }
+  }
+}
+
+// === EMPTY STATES ===
+.empty-state {
+  text-align: center;
+  padding: $spacing-2xl $spacing-md;
+  color: $text-secondary;
+
+  p {
+    margin-bottom: $spacing-md;
+    font-size: $text-lg;
+  }
+}
+
+// === STATUS BADGES ===
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: $text-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  &.draft {
+    background: rgba(139, 92, 246, 0.2);
+    color: $purple;
+  }
+
+  &.built {
+    background: rgba(59, 130, 246, 0.2);
+    color: $blue;
+  }
+
+  &.offline {
+    background: rgba(245, 158, 11, 0.2);
+    color: $orange;
+  }
+
+  &.online {
+    background: rgba(16, 185, 129, 0.2);
+    color: $green;
+  }
+}

@@ -2,8 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './theme/main.scss';
-import Dashboard from './pages/Dashboard.jsx';
-import ProjectCreator from './pages/ProjectCreator.jsx';
+import Dashboard from './dashboard/Dashboard.jsx';
+import ProjectCreator from './editor/ProjectCreator.jsx';
+import ProjectEditor from './editor/ProjectEditor.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -11,6 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/create" element={<ProjectCreator />} />
+        <Route path="/editor/:projectId" element={<ProjectEditor />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

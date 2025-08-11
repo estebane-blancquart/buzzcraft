@@ -1,0 +1,34 @@
+@use 'variables' as *;
+
+// === BASE RESET ===
+body {
+  margin: 0;
+  background: $bg-primary;
+  color: $text-primary;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+// === TYPOGRAPHY ===
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+// === LINKS ===
+a {
+  color: inherit;
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}

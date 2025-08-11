@@ -1,0 +1,180 @@
+@use 'variables' as *;
+
+// === DASHBOARD LAYOUT ===
+.dashboard {
+  min-height: 100vh;
+  padding: $spacing-xl;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+// === PROJECT STATS ===
+.project-stats {
+  display: flex;
+  gap: $spacing-md;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: $spacing-xl;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  background: $bg-secondary;
+  border: 2px solid transparent;
+  border-radius: $radius-md;
+  min-width: 100px;
+
+  .stat-number {
+    font-size: $text-2xl;
+    font-weight: bold;
+    margin-bottom: $spacing-xs;
+  }
+
+  .stat-label {
+    font-size: $text-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  &.stat-total {
+    border-color: $text-primary;
+    color: $text-primary;
+  }
+
+  &.stat-draft {
+    border-color: $purple;
+    color: $purple;
+  }
+
+  &.stat-built {
+    border-color: $blue;
+    color: $blue;
+  }
+
+  &.stat-offline {
+    border-color: $orange;
+    color: $orange;
+  }
+
+  &.stat-online {
+    border-color: $green;
+    color: $green;
+  }
+}
+
+// === NEW PROJECT BUTTON ===
+.new-project-button {
+  background: $bg-secondary;
+  border: 2px solid $border-color;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-xl;
+  font-size: $text-base;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $text-primary;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 auto $spacing-xl auto;
+  display: block;
+
+  &:hover {
+    background: $bg-tertiary;
+    border-color: $blue;
+  }
+}
+
+// === PROJECTS LIST ===
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.project-card {
+  background: $bg-secondary;
+  border: 2px solid $border-color;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: $blue;
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+  }
+}
+
+.project-info {
+  flex: 1;
+
+  .project-name {
+    font-size: $text-xl;
+    font-weight: 600;
+    margin-bottom: $spacing-sm;
+    color: $text-primary;
+  }
+
+  .project-meta {
+    display: flex;
+    gap: $spacing-md;
+    margin-bottom: 0.75rem;
+
+    .project-id {
+      color: $text-secondary;
+      font-size: $text-sm;
+      font-family: "Monaco", "Menlo", monospace;
+    }
+
+    .project-date {
+      color: $text-muted;
+      font-size: $text-sm;
+    }
+  }
+
+  .project-status {
+    display: inline-block;
+    padding: $spacing-xs 0.75rem;
+    border-radius: $radius-xl;
+    font-size: $text-xs;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.status-draft {
+      background: rgba(139, 92, 246, 0.2);
+      color: $purple;
+    }
+
+    &.status-built {
+      background: rgba(59, 130, 246, 0.2);
+      color: $blue;
+    }
+
+    &.status-offline {
+      background: rgba(245, 158, 11, 0.2);
+      color: $orange;
+    }
+
+    &.status-online {
+      background: rgba(16, 185, 129, 0.2);
+      color: $green;
+    }
+  }
+}
+
+.project-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
