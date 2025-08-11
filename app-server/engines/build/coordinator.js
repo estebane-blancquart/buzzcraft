@@ -25,6 +25,13 @@ export async function buildWorkflow(projectId, config = {}) {
   const stateDetection = await detectDraftState(projectPath);
   console.log(`[BUILD] State detection:`, stateDetection.data.state);
   
+  if (!stateDetection.success) {
+    return {
+      success: false,
+      error: `Failed to detect project state: ${stateDetection.error}`
+    };
+  }
+  
   if (stateDetection.data.state !== 'DRAFT') {
     return {
       success: false,
@@ -34,6 +41,15 @@ export async function buildWorkflow(projectId, config = {}) {
   
   console.log(`[BUILD] Loading project data...`);
   const projectFile = await readPath(`${projectPath}/project.json`);
+  
+  // Reader.js fait déjà toutes les vérifications, on peut faire confiance
+  if (!projectFile.success) {
+    return {
+      success: false,
+      error: `Failed to read project file: ${projectFile.error}`
+    };
+  }
+  
   const projectData = JSON.parse(projectFile.data.content);
   
   console.log(`[BUILD] Loading code templates...`);
