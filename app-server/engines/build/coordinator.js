@@ -4,6 +4,7 @@ import { loadCodeTemplates } from '../../transitions/build/loader.js';
 import { generateServices } from '../../transitions/build/generator.js';
 import { readPath } from '../../systems/reader.js';
 import { writePath } from '../../systems/writer.js';
+import { validateProjectSchema } from '../../systems/validator.js';
 
 /*
  * FAIT QUOI : Orchestre workflow BUILD (DRAFT → BUILT)

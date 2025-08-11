@@ -1,12 +1,5 @@
-import { TEMPLATES, PROJECT_ID_PATTERN, VALIDATION_LIMITS, ERROR_MESSAGES } from '../config/constants.js';
-
-console.log('[DEBUG] Constants loaded:');
-console.log('- TEMPLATES:', TEMPLATES);
-console.log('- PROJECT_ID_PATTERN:', PROJECT_ID_PATTERN);
-console.log('- ERROR_MESSAGES:', ERROR_MESSAGES?.PROJECT_ID_REQUIRED);
-
 /*
- * [MOCK] FAIT QUOI : Parse toutes les requêtes HTTP (CREATE, BUILD, DEPLOY, etc.)
+ * FAIT QUOI : Parse toutes les requêtes HTTP (CREATE, BUILD, DEPLOY, etc.) - VERSION SIMPLE
  * REÇOIT : req: Request (Express)
  * RETOURNE : { success: boolean, data: object }
  * ERREURS : ValidationError si données manquantes
@@ -14,7 +7,6 @@ console.log('- ERROR_MESSAGES:', ERROR_MESSAGES?.PROJECT_ID_REQUIRED);
 
 export async function request(req) {
   console.log(`[DEBUG] request parser called for ${req.method} ${req.path}`);
-  console.log('[DEBUG] req.body:', JSON.stringify(req.body, null, 2));
   
   try {
     // Extract route info
@@ -50,84 +42,54 @@ export async function request(req) {
       projectId = params.id;
     }
     
-    console.log('[DEBUG] Extracted projectId:', projectId, typeof projectId);
-    
-    // Validate projectId avec constantes
+    // Validate projectId (simple et direct)
     if (!projectId || typeof projectId !== 'string') {
-      console.log('[DEBUG] FAIL: projectId empty or not string');
       return {
         success: false,
-        error: ERROR_MESSAGES.PROJECT_ID_REQUIRED
+        error: 'Project ID is required'
       };
     }
     
-    console.log('[DEBUG] projectId is valid string, checking pattern...');
-    
-    if (!PROJECT_ID_PATTERN.test(projectId)) {
-      console.log('[DEBUG] FAIL: projectId pattern invalid');
+    if (!/^[a-z0-9-]+$/.test(projectId)) {
       return {
         success: false,
-        error: ERROR_MESSAGES.PROJECT_ID_INVALID
+        error: 'Project ID must contain only lowercase letters, numbers and hyphens'
       };
     }
     
-    console.log('[DEBUG] Pattern OK, checking length...');
-    
-    if (projectId.length < VALIDATION_LIMITS.PROJECT_ID_MIN_LENGTH) {
-      console.log('[DEBUG] FAIL: projectId too short');
+    if (projectId.length < 3) {
       return {
         success: false,
-        error: ERROR_MESSAGES.PROJECT_ID_TOO_SHORT
+        error: 'Project ID must be at least 3 characters'
       };
     }
-    
-    console.log('[DEBUG] ProjectId validation passed!');
     
     // Validation spécifique CREATE
     if (action === 'CREATE') {
-      console.log('[DEBUG] Validating CREATE action...');
-      
       if (!body.config || typeof body.config !== 'object') {
-        console.log('[DEBUG] FAIL: config missing or not object');
-        console.log('[DEBUG] FAIL: config missing or not object');
         return {
           success: false,
-          error: ERROR_MESSAGES.CONFIG_REQUIRED
+          error: 'Config object is required'
         };
       }
-      
-      console.log('[DEBUG] Config OK, checking name...');
       
       if (!body.config.name || typeof body.config.name !== 'string') {
-        console.log('[DEBUG] FAIL: config.name missing or not string');
         return {
           success: false,
-          error: ERROR_MESSAGES.CONFIG_NAME_REQUIRED
+          error: 'Project name is required in config'
         };
       }
       
-      if (body.config.name.length < VALIDATION_LIMITS.PROJECT_NAME_MIN_LENGTH) {
-        console.log('[DEBUG] FAIL: config.name too short');
+      if (body.config.name.length < 2) {
         return {
           success: false,
-          error: ERROR_MESSAGES.CONFIG_NAME_TOO_SHORT
+          error: 'Project name must be at least 2 characters'
         };
       }
       
-      console.log('[DEBUG] Name OK, checking template...');
-      
-      if (body.config.template && !TEMPLATES.includes(body.config.template)) {
-        console.log('[DEBUG] FAIL: invalid template');
-        return {
-          success: false,
-          error: ERROR_MESSAGES.TEMPLATE_INVALID
-        };
-      }
-      
-      console.log('[DEBUG] CREATE validation passed!');
+      // Template validation : laisse loader.js se débrouiller
+      // Si template invalide, loadTemplate() échouera naturellement
     }
-    
-    console.log('[DEBUG] All validation passed, returning success');
     
     return {
       success: true,

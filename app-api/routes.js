@@ -1,5 +1,5 @@
 import express from 'express';
-import { readdir, readFile, writeFile, rm } from 'fs/promises';
+import { readdir, readFile, writeFile, rm, stat } from 'fs/promises';
 import { join } from 'path';
 import { request } from './request/parser.js';
 import { process as processRequest } from './request/processor.js';
@@ -7,6 +7,7 @@ import { response } from './response/parser.js';
 import { process as processResponse } from './response/processor.js';
 import { createWorkflow } from '../app-server/engines/create/coordinator.js';
 import { buildWorkflow } from '../app-server/engines/build/coordinator.js';
+import { validateProjectSchema } from '../app-server/systems/validator.js';
 
 /*
  * FAIT QUOI : Routes HTTP pour gestion des projets
@@ -128,17 +129,147 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /projects/:id - Charger un projet pour édition
+router.get('/:id', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const projectPath = `../app-server/outputs/projects/${projectId}`;
+    const projectFile = join(projectPath, 'project.json');
+    
+    try {
+      const content = await readFile(projectFile, 'utf8');
+      const projectData = JSON.parse(content);
+      
+      // Validation du schema
+      const validation = validateProjectSchema(projectData);
+      
+      res.json({ 
+        success: true,
+        project: projectData,
+        validation: {
+          valid: validation.valid,
+          errors: validation.errors,
+          warnings: validation.warnings
+        }
+      });
+      
+    } catch (error) {
+      res.status(404).json({ 
+        success: false,
+        error: `Project ${projectId} not found` 
+      });
+    }
+    
+  } catch (error) {
+    console.error('Load project error:', error.message);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to load project' 
+    });
+  }
+});
+
 // POST /projects - Créer un projet (pattern 12 CALLS)
 router.post('/', handleRequest);
 
-// PUT /projects/:id/revert - Remettre BUILT en DRAFT (défaire le build)
+// PATCH /projects/:id - Modification partielle d'un projet
+router.patch('/:id', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const projectPath = `../app-server/outputs/projects/${projectId}`;
+    const projectFile = join(projectPath, 'project.json');
+    const updates = req.body;
+    
+    // Charger le projet existant
+    let currentProject;
+    try {
+      const content = await readFile(projectFile, 'utf8');
+      currentProject = JSON.parse(content);
+    } catch (error) {
+      return res.status(404).json({ 
+        success: false,
+        error: `Project ${projectId} not found` 
+      });
+    }
+    
+    // Appliquer les modifications (merge profond)
+    const updatedProject = deepMerge(currentProject, updates);
+    
+    // Validation du schema après modification
+    const validation = validateProjectSchema(updatedProject);
+    
+    if (!validation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Schema validation failed',
+        details: validation.errors,
+        warnings: validation.warnings
+      });
+    }
+    
+    // Mettre à jour la date de modification
+    updatedProject.lastModified = new Date().toISOString();
+    
+    // Si le projet était BUILT, le remettre en DRAFT
+    if (currentProject.state === 'BUILT') {
+      console.log(`[PATCH] Project ${projectId} was BUILT, reverting to DRAFT due to modifications`);
+      
+      // Nettoyer les services générés
+      const servicesToClean = [
+        join(projectPath, 'app-visitor'),
+        join(projectPath, 'server'),
+        join(projectPath, 'app-manager')
+      ];
+      
+      for (const servicePath of servicesToClean) {
+        try {
+          await rm(servicePath, { recursive: true, force: true });
+        } catch (error) {
+          console.log(`[PATCH] Service not found (OK): ${servicePath}`);
+        }
+      }
+      
+      updatedProject.state = 'DRAFT';
+    }
+    
+    // Sauvegarder
+    await writeFile(projectFile, JSON.stringify(updatedProject, null, 2), 'utf8');
+    
+    console.log(`[PATCH] Project ${projectId} updated successfully`);
+    
+    res.json({ 
+      success: true,
+      message: `Project ${projectId} updated successfully`,
+      project: updatedProject,
+      validation: {
+        valid: true,
+        warnings: validation.warnings
+      }
+    });
+    
+  } catch (error) {
+    console.error('Patch project error:', error.message);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update project' 
+    });
+  }
+});
+
+// PUT /projects/:id/revert - Remettre BUILT en DRAFT (défaire le build) - VERSION FIXÉE
 router.put('/:id/revert', async (req, res) => {
   try {
     const projectId = req.params.id;
     const projectPath = `../app-server/outputs/projects/${projectId}`;
     const projectFile = join(projectPath, 'project.json');
+    
+    console.log(`[REVERT] Starting revert for project: ${projectId}`);
+    console.log(`[REVERT] Project path: ${projectPath}`);
+    
     const content = await readFile(projectFile, 'utf8');
     const projectData = JSON.parse(content);
+    
+    console.log(`[REVERT] Current project state: ${projectData.state}`);
     
     if (projectData.state !== 'BUILT') {
       return res.status(400).json({ 
@@ -147,19 +278,48 @@ router.put('/:id/revert', async (req, res) => {
       });
     }
     
-    // Supprimer les services générés par BUILD
+    // Vérifier ce qui existe avant suppression
     const servicesToClean = [
       join(projectPath, 'app-visitor'),
       join(projectPath, 'server'),
       join(projectPath, 'app-manager')
     ];
     
+    console.log(`[REVERT] Services to clean:`, servicesToClean);
+    
+    // Vérifier l'existence avant suppression
     for (const servicePath of servicesToClean) {
       try {
-        await rm(servicePath, { recursive: true, force: true });
-        console.log(`[REVERT] Cleaned: ${servicePath}`);
+        const stats = await stat(servicePath);
+        console.log(`[REVERT] Found service to delete: ${servicePath} (${stats.isDirectory() ? 'directory' : 'file'})`);
       } catch (error) {
-        console.log(`[REVERT] Service not found (OK): ${servicePath}`);
+        console.log(`[REVERT] Service not found (will skip): ${servicePath}`);
+      }
+    }
+    
+    // Suppression avec logs détaillés
+    let cleanedServices = 0;
+    for (const servicePath of servicesToClean) {
+      try {
+        console.log(`[REVERT] Attempting to delete: ${servicePath}`);
+        await rm(servicePath, { recursive: true, force: true });
+        console.log(`[REVERT] ✅ Successfully deleted: ${servicePath}`);
+        cleanedServices++;
+      } catch (error) {
+        console.log(`[REVERT] ⚠️  Failed to delete ${servicePath}: ${error.message}`);
+      }
+    }
+    
+    console.log(`[REVERT] Cleaned ${cleanedServices} services`);
+    
+    // Vérifier que les services ont bien été supprimés
+    console.log(`[REVERT] Verification after cleanup:`);
+    for (const servicePath of servicesToClean) {
+      try {
+        await stat(servicePath);
+        console.log(`[REVERT] ❌ STILL EXISTS: ${servicePath}`);
+      } catch (error) {
+        console.log(`[REVERT] ✅ DELETED: ${servicePath}`);
       }
     }
     
@@ -170,7 +330,7 @@ router.put('/:id/revert', async (req, res) => {
     
     await writeFile(projectFile, JSON.stringify(projectData, null, 2), 'utf8');
     
-    console.log(`[REVERT] Project ${projectId} reverted to DRAFT, services cleaned`);
+    console.log(`[REVERT] Project ${projectId} state updated to DRAFT`);
     
     res.json({ 
       success: true,
@@ -179,11 +339,15 @@ router.put('/:id/revert', async (req, res) => {
         id: projectId,
         fromState: 'BUILT',
         toState: 'DRAFT'
+      },
+      debug: {
+        servicesFound: cleanedServices,
+        servicesExpected: servicesToClean.length
       }
     });
     
   } catch (error) {
-    console.error('Revert error:', error.message);
+    console.error('[REVERT] Error:', error.message);
     res.status(500).json({ 
       success: false,
       error: 'Failed to revert project' 
@@ -235,5 +399,86 @@ router.delete('/:id', async (req, res) => {
 
 // POST /projects/:id/build - Builder un projet (pattern 12 CALLS)
 router.post('/:id/build', handleRequest);
+
+// GET /projects/meta/templates - Lister les templates disponibles
+router.get('/meta/templates', async (req, res) => {
+  try {
+    const { discoverAvailableTemplates } = await import('../app-server/transitions/build/loader.js');
+    const discovery = await discoverAvailableTemplates();
+    
+    if (!discovery.loaded) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to discover templates'
+      });
+    }
+    
+    res.json({
+      success: true,
+      templates: discovery.data.templates,
+      count: discovery.data.count
+    });
+    
+  } catch (error) {
+    console.error('Templates discovery error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to discover templates'
+    });
+  }
+});
+
+// POST /projects/:id/validate - Validation du schema sans sauvegarde
+router.post('/:id/validate', async (req, res) => {
+  try {
+    const projectData = req.body;
+    
+    if (!projectData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project data is required'
+      });
+    }
+    
+    const validation = validateProjectSchema(projectData);
+    
+    res.json({
+      success: true,
+      validation: {
+        valid: validation.valid,
+        errors: validation.errors,
+        warnings: validation.warnings
+      }
+    });
+    
+  } catch (error) {
+    console.error('Validation error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate project'
+    });
+  }
+});
+
+// Fonction helper pour merge profond
+function deepMerge(target, source) {
+  const result = { ...target };
+  
+  for (const key in source) {
+    if (source.hasOwnProperty(key)) {
+      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        // Merge récursif pour les objets
+        result[key] = result[key] && typeof result[key] === 'object' && !Array.isArray(result[key])
+          ? deepMerge(result[key], source[key])
+          : source[key];
+      } else {
+        // Remplacement direct pour les primitives et arrays
+        result[key] = source[key];
+      }
+    }
+  }
+  
+  return result;
+}
 
 export default router;
