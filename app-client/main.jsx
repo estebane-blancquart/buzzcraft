@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './theme/main.scss';
-import Dashboard from './dashboard/Dashboard.jsx';
+import Dashboard from './dashboard/index.jsx';
 import ProjectCreator from './editor/ProjectCreator.jsx';
 import ProjectEditor from './editor/ProjectEditor.jsx';
 

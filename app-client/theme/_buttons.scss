@@ -70,25 +70,19 @@ button {
     &:hover {
       background: $bg-tertiary;
       
-      .tree-node-actions {
+      .tree-delete-btn {
         opacity: 1;
       }
     }
   }
   
-  .tree-node-actions {
+  .tree-delete-btn {
     opacity: 0;
     transition: opacity 0.2s;
-    display: flex;
-    gap: 2px;
-    margin-left: auto;
-  }
-  
-  .tree-action-btn {
     background: none;
     border: none;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 3px;
     font-size: $text-xs;
     font-weight: bold;
@@ -96,23 +90,43 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
+    color: $red;
+    margin-left: auto;
+    
+    &:hover {
+      background: $red;
+      color: white;
+    }
+  }
+  
+  .tree-action-zone {
+    padding: $spacing-xs 0;
+    
+    &.container-actions {
+      display: flex;
+      gap: $spacing-xs;
+      flex-wrap: wrap;
+    }
+  }
+  
+  .add-zone-btn {
+    background: $bg-tertiary;
+    border: 1px dashed $border-color;
+    border-radius: $radius-sm;
+    padding: $spacing-xs $spacing-sm;
+    font-size: $text-xs;
+    color: $text-secondary;
+    cursor: pointer;
     transition: all 0.2s;
     
-    &.add-btn {
-      color: $green;
-      
-      &:hover {
-        background: $green;
-        color: white;
-      }
+    &:hover {
+      background: $blue;
+      color: white;
+      border-color: $blue;
     }
     
-    &.delete-btn {
-      color: $red;
-      
-      &:hover {
-        background: $red;
-        color: white;
-      }
+    &.small {
+      padding: 4px $spacing-xs;
+      font-size: 10px;
     }
   }

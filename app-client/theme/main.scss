@@ -4,5 +4,7 @@
 @use 'buttons';
 @use 'forms';
 @use 'components';
-@use 'dashboard';
 @use 'editor';
+@use '../dashboard/styles/dashboard';
+@use '../dashboard/styles/stats-bar';
+@use '../dashboard/styles/project-card';

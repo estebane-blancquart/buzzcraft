@@ -1,0 +1,41 @@
+@use '../../theme/variables' as *;
+
+// === DASHBOARD LAYOUT ===
+.dashboard {
+  min-height: 100vh;
+  padding: $spacing-xl;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+// === NEW PROJECT BUTTON ===
+.new-project-button {
+  background: $bg-secondary;
+  border: 2px solid $border-color;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-xl;
+  font-size: $text-base;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $text-primary;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 auto $spacing-xl auto;
+  display: block;
+
+  &:hover {
+    background: $bg-tertiary;
+    border-color: $blue;
+  }
+}
+
+// === PROJECTS LIST ===
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
