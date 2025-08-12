@@ -2,9 +2,17 @@ import React from 'react';
 import { useProjectActions } from './hooks/useProjectActions.js';
 import ProjectStats from './modules/project-stats/index.jsx';
 import ProjectList from './modules/project-list/index.jsx';
+import CreateModal from './modules/create-modal/index.jsx';
 
 export default function Dashboard() {
-  const { error, clearError } = useProjectActions();
+  const hookData = useProjectActions(); // Hook unique
+  const { 
+    error, 
+    clearError,
+    showCreateModal,
+    handleCloseModal,
+    handleCreateProject
+  } = hookData;
 
   return (
     <div className="dashboard">
@@ -15,8 +23,14 @@ export default function Dashboard() {
         </div>
       )}
 
-      <ProjectStats />
-      <ProjectList />
+      <ProjectStats hookData={hookData} />
+      <ProjectList hookData={hookData} />
+      
+      <CreateModal 
+        isOpen={showCreateModal}
+        onClose={handleCloseModal}
+        onSubmit={handleCreateProject}
+      />
     </div>
   );
 }

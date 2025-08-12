@@ -1,227 +1,36 @@
 @use "../../../theme/variables" as *;
+@use "project-stats";
+@use "project-list";
 
 .dashboard {
   padding: $spacing-xl;
   max-width: 900px;
   margin: 0 auto;
-}
-
-// === STATS BAR ===
-.project-stats {
-  display: flex;
-  gap: $spacing-lg;
-  margin-bottom: $spacing-2xl;
-  justify-content: space-between;
-}
-
-.stat-card {
-  background: $bg-secondary;
-  border: 2px solid;
-  border-radius: 10px;
-  padding: $spacing-md $spacing-lg;
-  text-align: center;
-  min-width: 120px;
-
-  // Couleurs par état
-  &:first-child {
-    font-weight: 700;
-    border-color: #6b7280; // gray - TOTAL
-    margin-right: 5%;
-  }
-
-  &:nth-child(2) {
-    border-color: #8b5cf6; // purple - DRAFT
-  }
-
-  &:nth-child(3) {
-    border-color: $blue; // bleu - BUILT
-  }
-
-  &:nth-child(4) {
-    border-color: $orange; // orange - OFFLINE
-  }
-
-  &:nth-child(5) {
-    border-color: $green; // vert - ONLINE
-  }
-}
-
-.stat-number {
-  font-size: 2rem;
-  margin-bottom: 8px;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: $text-secondary;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
-
-// === PROJECT LIST ===
-.project-list {
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
 }
 
-// Bouton NEW PROJECT pleine largeur
-.project-list > .btn-primary {
+.btn-primary {
   width: 100%;
   padding: $spacing-md $spacing-lg;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border-radius: 10px;
-  margin-bottom: $spacing-2xl;
-}
-
-// === PROJECT CARDS ===
-.projects-grid {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-}
-
-.project-card {
-  background: $bg-secondary;
-  border: 2px solid #4b5563;
-  border-radius: 12px;
-  padding: $spacing-lg $spacing-xl;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #6b7280;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-  }
-}
-
-.project-info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-
-  .project-header {
-    flex-shrink: 0;
-
-    h3 {
-      font-size: 1.1rem;
-      font-weight: 500;
-      line-height: 1.2;
-      color: $text-primary;
-      height: 2.5vh;
-      width: 15vw;
-      display: flex;
-      align-items: center;
-      margin-bottom: 1vh;
-    }
-
-    .project-meta {
-      font-size: 0.75rem;
-      color: $text-secondary;
-      font-weight: 400;
-      margin: 0;
-    }
-  }
-}
-
-.project-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-radius: 6px;
-  min-width: 5vw;
-  height: 2.5vh;
-  text-align: center;
+  border-radius: $radius;
+  background: $primary;
+  color: $bg-primary;
+  border: 1px solid $primary;
+  cursor: pointer;
+  transition: background-color $transition;
 
-  // Couleurs par état
-  &[data-state="DRAFT"] {
-    background: rgba(139, 92, 246, 0.15);
-    color: $purple;
-    border: 1px solid $purple;
+  &:hover:not(:disabled) {
+    background: lighten($primary, 5%);
   }
 
-  &[data-state="BUILT"] {
-    background: rgba(59, 130, 246, 0.15);
-    color: $blue;
-    border: 1px solid $blue;
-  }
-
-  &[data-state="OFFLINE"] {
-    background: rgba(245, 158, 11, 0.15);
-    color: $orange;
-    border: 1px solid $orange;
-  }
-
-  &[data-state="ONLINE"] {
-    background: rgba(16, 185, 129, 0.15);
-    color: $green;
-    border: 1px solid $green;
-  }
-}
-
-// === PROJECT ACTIONS ===
-.project-actions {
-  display: flex;
-  gap: $spacing-sm;
-  align-items: center;
-  flex-shrink: 0;
-
-  button {
-    padding: $spacing-sm $spacing-md;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all 0.2s;
-    min-width: 65px;
-
-    // Premier bouton = EDIT (gris foncé)
-    &:nth-child(1) {
-      background: #374151;
-      color: #d1d5db;
-      border: 1px solid #4b5563;
-
-      &:hover:not(:disabled) {
-        background: #4b5563;
-        border-color: #6b7280;
-      }
-    }
-
-    // Deuxième bouton = BUILD (bleu)
-    &:nth-child(2) {
-      background: $blue;
-      color: $text-primary;
-      border: 1px solid $blue;
-
-      &:hover:not(:disabled) {
-        background: #2563eb;
-      }
-    }
-
-    // Troisième bouton = DELETE (rouge foncé)
-    &:nth-child(3) {
-      background: #7f1d1d;
-      color: #fca5a5;
-      border: 1px solid $red;
-      margin-left: $spacing-lg;
-      padding: $spacing-sm $spacing-lg;
-
-      &:hover:not(:disabled) {
-        background: $red;
-        color: $text-primary;
-      }
-    }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }

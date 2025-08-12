@@ -1,0 +1,67 @@
+@use "../../../theme/variables" as *;
+
+.project-stats {
+  display: flex;
+  gap: $spacing-lg;
+  align-items: center; // Alignement uniforme
+}
+
+.stat-card {
+  background: $bg-secondary;
+  border: 1px solid;
+  border-radius: $radius;
+  padding: $spacing-md $spacing-lg;
+  text-align: center;
+  flex: 1;
+  transition: border-color $transition;
+
+  // TOTAL - juste décalé visuellement
+  &:first-child {
+    border-color: lighten($text-secondary, 8%);
+    margin-right: $spacing-xl; 
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    
+    .stat-label {
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    &:hover {
+      border-color: lighten($text-secondary, 18%);
+    }
+  }
+
+  &:not(:first-child) {
+    border-color: var(--state-color);
+
+    &:nth-child(2) { --state-color: #{$purple}; }
+    &:nth-child(3) { --state-color: #{$blue}; }
+    &:nth-child(4) { --state-color: #{$orange}; }
+    &:nth-child(5) { --state-color: #{$green}; }
+
+    &:hover {
+      border-color: var(--state-color-hover);
+    }
+
+    &:nth-child(2):hover { --state-color-hover: #{lighten($purple, 8%)}; }
+    &:nth-child(3):hover { --state-color-hover: #{lighten($blue, 8%)}; }
+    &:nth-child(4):hover { --state-color-hover: #{lighten($orange, 8%)}; }
+    &:nth-child(5):hover { --state-color-hover: #{lighten($green, 8%)}; }
+  }
+}
+
+.stat-number {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: $spacing-sm;
+  line-height: 1;
+  color: $text-primary;
+}
+
+.stat-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  color: lighten($text-secondary, 5%);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}

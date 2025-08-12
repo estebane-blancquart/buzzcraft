@@ -2,34 +2,43 @@
 
 button {
   border: 1px solid;
-  border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 0.875rem;
+  border-radius: $radius;
+  padding: $spacing-sm $spacing-md;
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color $transition;
+  font-family: inherit;
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  &:focus {
+    outline: 1px solid $primary;
+    outline-offset: 1px;
+  }
 }
 
 .btn-primary {
-  background: $blue;
-  color: white;
-  border-color: $blue;
+  background: $primary;
+  color: $bg-primary;
+  border-color: $primary;
+  font-weight: 600;
 
   &:hover:not(:disabled) {
-    background: darken($blue, 10%);
+    background: lighten($primary, 5%);
   }
 }
 
 .btn-secondary {
   background: $bg-secondary;
   color: $text-primary;
-  border-color: $bg-secondary;
+  border-color: lighten($bg-secondary, 15%);
 
   &:hover:not(:disabled) {
-    background: lighten($bg-secondary, 10%);
+    background: lighten($bg-secondary, 5%);
+    border-color: lighten($bg-secondary, 20%);
   }
 }

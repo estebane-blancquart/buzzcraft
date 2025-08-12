@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './theme/main.scss';
 import Dashboard from './features/dashboard/index.jsx';
-import Creator from './features/creator/index.jsx';
 import Editor from './features/editor/index.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -11,7 +10,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/create" element={<Creator />} />
         <Route path="/editor/:projectId" element={<Editor />} />
       </Routes>
     </BrowserRouter>

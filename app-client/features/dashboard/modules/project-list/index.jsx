@@ -1,8 +1,7 @@
 import React from 'react';
-import { useProjectActions } from '../../hooks/useProjectActions.js';
 
-export default function ProjectList() {
-  const { projects, loading, handleNewProject, handleProjectAction } = useProjectActions();
+export default function ProjectList({ hookData }) {
+  const { projects, loading, actionLoading, handleNewProject, handleProjectAction } = hookData;
 
   if (loading) {
     return <div className="loading">Chargement...</div>;
@@ -10,7 +9,13 @@ export default function ProjectList() {
 
   return (
     <div className="project-list">
-      <button className="btn-primary" onClick={handleNewProject}>
+      <button 
+        className="btn-primary" 
+        onClick={() => {
+          console.log('Bouton NEW PROJECT cliqué !');
+          handleNewProject();
+        }}
+      >
         NEW PROJECT
       </button>
 
@@ -29,14 +34,23 @@ export default function ProjectList() {
               </span>
             </div>
             <div className="project-actions">
-              <button onClick={() => handleProjectAction(project.id, 'EDIT')}>
-                EDIT
+              <button 
+                onClick={() => handleProjectAction(project.id, 'EDIT')}
+                disabled={actionLoading[`${project.id}-EDIT`]}
+              >
+                {actionLoading[`${project.id}-EDIT`] ? '...' : 'EDIT'}
               </button>
-              <button onClick={() => handleProjectAction(project.id, 'BUILD')}>
-                BUILD
+              <button 
+                onClick={() => handleProjectAction(project.id, 'BUILD')}
+                disabled={actionLoading[`${project.id}-BUILD`]}
+              >
+                {actionLoading[`${project.id}-BUILD`] ? '...' : 'BUILD'}
               </button>
-              <button onClick={() => handleProjectAction(project.id, 'DELETE')}>
-                DELETE
+              <button 
+                onClick={() => handleProjectAction(project.id, 'DELETE')}
+                disabled={actionLoading[`${project.id}-DELETE`]}
+              >
+                {actionLoading[`${project.id}-DELETE`] ? '...' : 'DELETE'}
               </button>
             </div>
           </div>

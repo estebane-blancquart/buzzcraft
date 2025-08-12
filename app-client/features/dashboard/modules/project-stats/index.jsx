@@ -1,8 +1,7 @@
 import React from 'react';
-import { useProjectActions } from '../../hooks/useProjectActions.js';
 
-export default function ProjectStats() {
-  const { projects } = useProjectActions();
+export default function ProjectStats({ hookData }) {
+  const { projects } = hookData;
 
   const stats = {
     TOTAL: projects.length,

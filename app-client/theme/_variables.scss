@@ -1,18 +1,24 @@
-// === COLORS ===
-$bg-primary: #111827;
-$bg-secondary: #1f2937; 
-$text-primary: #ffffff;
+// === COULEURS ENTREPRISE ===
+$primary: #c6c3ff;
+$bg-primary: #171717;
+$bg-secondary: #2a2e48;
+$text-primary: #dfdfdf;
 $text-secondary: #9ca3af;
 
+// === COULEURS ÉTATS ===
 $blue: #3b82f6;
 $green: #10b981;
-$red: #ef4444;
 $orange: #f59e0b;
-$purple: #8b5cf6;
+$red: #ef4444;
+$purple: #b044ef;
 
 // === SPACING ===
-$spacing-sm: 0.5rem;
-$spacing-md: 1rem;
-$spacing-lg: 1.5rem;
-$spacing-xl: 2rem;
-$spacing-2xl: 2.5rem;
+$spacing-xs: 0.25rem;  // 4px
+$spacing-sm: 0.5rem;   // 8px  
+$spacing-md: 1rem;     // 16px
+$spacing-lg: 1.5rem;   // 24px
+$spacing-xl: 2rem;     // 32px
+
+// === DESIGN SYSTEM ===
+$radius: 6px;
+$transition: 0.15s ease;
