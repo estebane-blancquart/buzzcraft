@@ -1,34 +1,30 @@
 @use 'variables' as *;
 
-// === BASE RESET ===
-body {
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+}
+
+body {
   background: $bg-primary;
   color: $text-primary;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: system-ui, sans-serif;
   line-height: 1.5;
 }
 
-* {
-  box-sizing: border-box;
+.loading {
+  text-align: center;
+  padding: $spacing-xl;
+  color: $text-secondary;
 }
 
-// === TYPOGRAPHY ===
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  font-weight: 600;
-}
-
-p {
-  margin: 0;
-}
-
-// === LINKS ===
-a {
-  color: inherit;
-  text-decoration: none;
-  
-  &:hover {
-    text-decoration: underline;
-  }
+.error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid $red;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  display: flex;
+  justify-content: space-between;
+  color: #fecaca;
 }

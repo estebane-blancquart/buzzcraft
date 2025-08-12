@@ -1,0 +1,80 @@
+@use '../../../theme/variables' as *;
+
+.creator {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.creator-header {
+  background: $bg-secondary;
+  padding: $spacing-lg $spacing-xl;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  h1 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+}
+
+.creator-content {
+  flex: 1;
+  padding: $spacing-xl;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.creator-form {
+  background: $bg-secondary;
+  padding: $spacing-xl;
+  border-radius: 8px;
+}
+
+.form-group {
+  margin-bottom: $spacing-lg;
+
+  label {
+    display: block;
+    margin-bottom: $spacing-sm;
+    font-weight: 500;
+
+    .required {
+      color: $red;
+    }
+  }
+
+  input, select {
+    width: 100%;
+    background: $bg-primary;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: $text-primary;
+
+    &:focus {
+      outline: none;
+      border-color: $blue;
+    }
+
+    &.error {
+      border-color: $red;
+    }
+
+    &::placeholder {
+      color: $text-secondary;
+    }
+  }
+}
+
+.field-error {
+  color: $red;
+  font-size: 0.875rem;
+  margin-top: $spacing-sm;
+}
+
+.form-actions {
+  margin-top: $spacing-xl;
+}

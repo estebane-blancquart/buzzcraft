@@ -1,10 +1,9 @@
-// === IMPORTS ===
+// === BASE ===
 @use 'variables' as *;
 @use 'base';
 @use 'buttons';
-@use 'forms';
-@use 'components';
-@use 'editor';
-@use '../dashboard/styles/dashboard';
-@use '../dashboard/styles/stats-bar';
-@use '../dashboard/styles/project-card';
+
+// === FEATURES ===
+@use '../features/dashboard/styles/dashboard';
+@use '../features/creator/styles/creator';  
+@use '../features/editor/styles/editor';
