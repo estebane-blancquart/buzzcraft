@@ -1,11 +1,15 @@
 @use "../../../theme/variables" as *;
 
+.project-list {
+  margin-top: 5vh;
+}
+
 .projects-grid {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
-  margin-top: $spacing-xl * 2;
-  max-height: 65vh;
+  gap: $spacing-md;
+  margin-top: $spacing-xl;
+  height: 45vh;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -103,7 +107,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: background-color $transition;
-    min-width: 52px;
+    min-width: 60px;
     height: 26px;
     border: 1px solid;
     cursor: pointer;
