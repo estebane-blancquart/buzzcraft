@@ -10,7 +10,7 @@ export default function ProjectProperties({ selectedElement, device, onElementUp
           <h3>Propriétés</h3>
         </div>
         <div className="properties-empty">
-          <p>Sélectionnez un élément pour éditer ses propriétés</p>
+          <p>Sélectionnez un élément</p>
         </div>
       </div>
     );
@@ -36,6 +36,94 @@ export default function ProjectProperties({ selectedElement, device, onElementUp
     return localValues[field] !== undefined ? localValues[field] : element[field] || '';
   };
 
+  const renderField = (field, label, type = 'text', options = null) => (
+    <div className="property-field" key={field}>
+      <label>{label}</label>
+      {type === 'select' ? (
+        <select
+          value={getValue(field)}
+          onChange={(e) => handleInputChange(field, e.target.value)}
+        >
+          {options.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type={type}
+          value={getValue(field)}
+          onChange={(e) => handleInputChange(field, e.target.value)}
+          placeholder={`${label}...`}
+        />
+      )}
+    </div>
+  );
+
+  const getElementFields = () => {
+    const commonFields = [
+      { field: 'id', label: 'ID' },
+      { field: 'name', label: 'Nom' }
+    ];
+
+    const typeFields = {
+      page: [
+        { field: 'name', label: 'Nom de la page' }
+      ],
+      section: [
+        { field: 'name', label: 'Nom de la section' },
+        { field: 'desktop', label: 'Colonnes Desktop', type: 'select', options: [
+          { value: 1, label: '1 colonne' },
+          { value: 2, label: '2 colonnes' },
+          { value: 3, label: '3 colonnes' }
+        ]},
+        { field: 'tablet', label: 'Colonnes Tablet', type: 'select', options: [
+          { value: 1, label: '1 colonne' },
+          { value: 2, label: '2 colonnes' }
+        ]},
+        { field: 'mobile', label: 'Colonnes Mobile', type: 'select', options: [
+          { value: 1, label: '1 colonne' }
+        ]}
+      ],
+      div: [
+        { field: 'name', label: 'Nom du div' },
+        { field: 'classname', label: 'Classes CSS' }
+      ],
+      heading: [
+        { field: 'tag', label: 'Balise', type: 'select', options: [
+          { value: 'h1', label: 'h1' },
+          { value: 'h2', label: 'h2' },
+          { value: 'h3', label: 'h3' },
+          { value: 'h4', label: 'h4' },
+          { value: 'h5', label: 'h5' },
+          { value: 'h6', label: 'h6' }
+        ]},
+        { field: 'content', label: 'Contenu' },
+        { field: 'classname', label: 'Classes CSS' }
+      ],
+      paragraph: [
+        { field: 'content', label: 'Contenu' },
+        { field: 'classname', label: 'Classes CSS' }
+      ],
+      button: [
+        { field: 'content', label: 'Texte du bouton' },
+        { field: 'href', label: 'Lien (optionnel)' },
+        { field: 'classname', label: 'Classes CSS' }
+      ],
+      image: [
+        { field: 'src', label: 'URL de l\'image' },
+        { field: 'alt', label: 'Texte alternatif' },
+        { field: 'classname', label: 'Classes CSS' }
+      ]
+    };
+
+    const elementType = element.type || 'div';
+    const fields = typeFields[elementType] || commonFields;
+    
+    return fields;
+  };
+
   return (
     <div className="project-properties">
       <div className="properties-header">
@@ -48,50 +136,8 @@ export default function ProjectProperties({ selectedElement, device, onElementUp
       </div>
 
       <div className="properties-content">
-        <div className="property-field">
-          <label>ID</label>
-          <input
-            type="text"
-            value={getValue('id')}
-            onChange={(e) => handleInputChange('id', e.target.value)}
-          />
-        </div>
-
-        <div className="property-field">
-          <label>Nom</label>
-          <input
-            type="text"
-            value={getValue('name')}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-          />
-        </div>
-
-        {element.type === 'heading' && (
-          <div className="property-field">
-            <label>Balise</label>
-            <select
-              value={getValue('tag')}
-              onChange={(e) => handleInputChange('tag', e.target.value)}
-            >
-              <option value="h1">h1</option>
-              <option value="h2">h2</option>
-              <option value="h3">h3</option>
-              <option value="h4">h4</option>
-              <option value="h5">h5</option>
-              <option value="h6">h6</option>
-            </select>
-          </div>
-        )}
-
-        {(element.type === 'heading' || element.type === 'paragraph') && (
-          <div className="property-field">
-            <label>Contenu</label>
-            <input
-              type="text"
-              value={getValue('content')}
-              onChange={(e) => handleInputChange('content', e.target.value)}
-            />
-          </div>
+        {getElementFields().map(({ field, label, type, options }) => 
+          renderField(field, label, type, options)
         )}
       </div>
     </div>

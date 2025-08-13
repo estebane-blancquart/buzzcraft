@@ -18,15 +18,41 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
         const Tag = component.tag || 'h2';
         return React.createElement(Tag, {
           key: path,
-          className,
+          className: `${className} ${component.classname || ''}`,
           onClick: handleClick
         }, component.content || 'Heading');
 
       case 'paragraph':
         return (
-          <p key={path} className={className} onClick={handleClick}>
+          <p 
+            key={path} 
+            className={`${className} ${component.classname || ''}`} 
+            onClick={handleClick}
+          >
             {component.content || 'Paragraph text'}
           </p>
+        );
+
+      case 'button':
+        return (
+          <button 
+            key={path} 
+            className={`${className} ${component.classname || ''}`} 
+            onClick={handleClick}
+          >
+            {component.content || 'Button'}
+          </button>
+        );
+
+      case 'image':
+        return (
+          <img 
+            key={path} 
+            src={component.src || 'https://picsum.photos/400/300'} 
+            alt={component.alt || 'Image'} 
+            className={`${className} ${component.classname || ''}`} 
+            onClick={handleClick}
+          />
         );
 
       default:
@@ -36,6 +62,74 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
           </div>
         );
     }
+  };
+
+  const renderDiv = (div, path) => {
+    const isSelected = selectedElement?.path === path;
+    const className = `preview-div ${isSelected ? 'selected' : ''}`;
+
+    const handleClick = (e) => {
+      e.stopPropagation();
+      onElementSelect({ ...div, type: 'div' }, path);
+    };
+
+    return (
+      <div 
+        key={path} 
+        className={`${className} ${div.classname || ''}`} 
+        onClick={handleClick}
+      >
+        {div.components?.map((component, compIndex) => 
+          renderComponent(component, `${path}.components[${compIndex}]`)
+        )}
+        {(!div.components || div.components.length === 0) && (
+          <div className="empty-div">Cliquez pour ajouter un component</div>
+        )}
+      </div>
+    );
+  };
+
+  const renderSection = (section, path, pageIndex, sectionIndex) => {
+    const isSelected = selectedElement?.path === path;
+    const className = `preview-section ${isSelected ? 'selected' : ''}`;
+
+    const handleClick = (e) => {
+      e.stopPropagation();
+      onElementSelect({ ...section, type: 'section' }, path);
+    };
+
+    // Colonnes selon device
+    const getColumns = () => {
+      switch (device) {
+        case 'desktop': return section.desktop || 3;
+        case 'tablet': return section.tablet || 2;
+        case 'mobile': return section.mobile || 1;
+        default: return 3;
+      }
+    };
+
+    const columns = getColumns();
+    const gridStyle = {
+      display: 'grid',
+      gridTemplateColumns: `repeat(${columns}, 1fr)`,
+      gap: '16px'
+    };
+
+    return (
+      <section 
+        key={path} 
+        className={className} 
+        onClick={handleClick}
+        style={gridStyle}
+      >
+        {section.divs?.map((div, divIndex) => 
+          renderDiv(div, `${path}.divs[${divIndex}]`)
+        )}
+        {(!section.divs || section.divs.length === 0) && (
+          <div className="empty-section">Cliquez pour ajouter un div</div>
+        )}
+      </section>
+    );
   };
 
   const getDeviceClass = () => {
@@ -50,7 +144,12 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
   if (!project) {
     return (
       <div className="project-preview">
-        <div className="loading">Chargement preview...</div>
+        <div className="preview-header">
+          <h3>Preview</h3>
+        </div>
+        <div className="preview-content">
+          <div className="loading">Chargement preview...</div>
+        </div>
       </div>
     );
   }
@@ -66,29 +165,18 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
         <div className={`preview-viewport ${getDeviceClass()}`}>
           {project.pages?.map((page, pageIndex) => (
             <div key={pageIndex} className="preview-page">
-              <div className="page-label">{page.name}</div>
+              {page.layout?.sections?.map((section, sectionIndex) => 
+                renderSection(section, `project.pages[${pageIndex}].layout.sections[${sectionIndex}]`, pageIndex, sectionIndex)
+              )}
               
-              {page.layout?.sections?.map((section, sectionIndex) => (
-                <section key={sectionIndex} className="preview-section">
-                  <div className="section-label">{section.id}</div>
-                  
-                  {section.divs?.map((div, divIndex) => (
-                    <div key={divIndex} className="preview-container">
-                      <div className="container-label">{div.name || div.id}</div>
-                      {div.components?.map((component, compIndex) => 
-                        renderComponent(component, `project.pages[${pageIndex}].layout.sections[${sectionIndex}].divs[${divIndex}].components[${compIndex}]`)
-                      )}
-                    </div>
-                  ))}
-                </section>
-              ))}
+              {(!page.layout?.sections || page.layout.sections.length === 0) && (
+                <div className="empty-page">Ajoutez une section</div>
+              )}
             </div>
           ))}
           
           {(!project.pages || project.pages.length === 0) && (
-            <div className="preview-empty">
-              <p>Aucune page à afficher</p>
-            </div>
+            <div className="empty-project">Ajoutez une page</div>
           )}
         </div>
       </div>

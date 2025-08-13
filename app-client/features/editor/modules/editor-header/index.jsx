@@ -9,9 +9,9 @@ export default function EditorHeader({
   onBackToDashboard
 }) {
   const devices = [
-    { id: 'mobile', label: 'MOBILE', icon: '📱' },
+    { id: 'desktop', label: 'DESKTOP', icon: '💻' },
     { id: 'tablet', label: 'TABLET', icon: '📱' },
-    { id: 'desktop', label: 'DESKTOP', icon: '💻' }
+    { id: 'mobile', label: 'MOBILE', icon: '📱' }
   ];
 
   if (!project) return null;
@@ -51,7 +51,7 @@ export default function EditorHeader({
           onClick={onBackToDashboard} 
           className="btn-secondary"
         >
-          Dashboard
+          DASHBOARD
         </button>
       </div>
     </header>

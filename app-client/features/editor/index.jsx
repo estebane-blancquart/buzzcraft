@@ -19,7 +19,13 @@ export default function Editor() {
     handleElementUpdate,
     handleDeviceChange,
     handleBackToDashboard,
-    clearError
+    clearError,
+    // CRUD Operations
+    handleAddPage,
+    handleAddSection,
+    handleAddDiv,
+    handleAddComponent,
+    handleDeleteElement
   } = useProjectEditor();
 
   if (loading) {
@@ -63,7 +69,11 @@ export default function Editor() {
           project={project}
           selectedElement={selectedElement}
           onElementSelect={handleElementSelect}
-          onProjectUpdate={updateProject}
+          onAddPage={handleAddPage}
+          onAddSection={handleAddSection}
+          onAddDiv={handleAddDiv}
+          onAddComponent={handleAddComponent}
+          onDeleteElement={handleDeleteElement}
         />
 
         <ProjectPreview

@@ -1,0 +1,80 @@
+@use '../../../theme/variables' as *;
+
+.editor-header {
+  background: $bg-secondary;
+  padding: $spacing-lg $spacing-xl;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid lighten($bg-secondary, 8%);
+  
+  .editor-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    
+    h1 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+    
+    .project-id {
+      color: $text-secondary;
+      font-size: 0.75rem;
+    }
+    
+    .dirty-indicator {
+      color: $orange;
+      font-weight: 600;
+    }
+  }
+  
+  .editor-controls {
+    .device-selector {
+      display: flex;
+      gap: 2px;
+      background: $bg-primary;
+      border-radius: $radius;
+      overflow: hidden;
+    }
+    
+    .device-btn {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-sm $spacing-md;
+      background: transparent;
+      border: none;
+      color: $text-secondary;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all $transition;
+      
+      &.active {
+        background: $blue;
+        color: white;
+      }
+      
+      &:hover:not(.active) {
+        background: lighten($bg-primary, 5%);
+        color: $text-primary;
+      }
+      
+      .device-icon {
+        font-size: 0.875rem;
+      }
+    }
+  }
+  
+  .editor-actions {
+    display: flex;
+    gap: $spacing-md;
+    
+    .disabled {
+      opacity: 0.5;
+    }
+  }
+}

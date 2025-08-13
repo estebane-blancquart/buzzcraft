@@ -1,0 +1,91 @@
+@use '../../../theme/variables' as *;
+
+.project-properties {
+  background: $bg-secondary;
+  overflow-y: auto;
+  
+  .properties-header {
+    padding: $spacing-lg;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid lighten($bg-secondary, 8%);
+    
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+    
+    .element-type {
+      font-size: 0.75rem;
+      color: $text-secondary;
+      background: lighten($bg-secondary, 5%);
+      padding: 4px 8px;
+      border-radius: $radius;
+    }
+  }
+  
+  .properties-device-indicator {
+    padding: $spacing-md;
+    text-align: center;
+    border-bottom: 1px solid lighten($bg-secondary, 8%);
+    
+    .device-label {
+      font-size: 0.75rem;
+      color: $text-secondary;
+      background: lighten($bg-secondary, 5%);
+      padding: 4px 12px;
+      border-radius: $radius;
+    }
+  }
+  
+  .properties-content {
+    padding: $spacing-lg;
+  }
+  
+  .properties-empty {
+    padding: $spacing-xl;
+    text-align: center;
+    color: $text-secondary;
+    font-style: italic;
+  }
+  
+  .property-field {
+    margin-bottom: $spacing-lg;
+    
+    label {
+      display: block;
+      margin-bottom: $spacing-sm;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: $text-primary;
+    }
+    
+    input,
+    select {
+      width: 100%;
+      background: lighten($bg-secondary, 5%);
+      border: 1px solid lighten($bg-secondary, 15%);
+      border-radius: $radius;
+      padding: $spacing-sm;
+      color: $text-primary;
+      font-size: 0.875rem;
+      transition: border-color $transition;
+      
+      &:focus {
+        outline: none;
+        border-color: $blue;
+      }
+      
+      &::placeholder {
+        color: $text-secondary;
+      }
+    }
+    
+    select {
+      cursor: pointer;
+    }
+  }
+}
