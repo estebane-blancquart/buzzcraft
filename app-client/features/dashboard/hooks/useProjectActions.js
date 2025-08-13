@@ -10,7 +10,9 @@ export function useProjectActions() {
   const [consoleMessages, setConsoleMessages] = useState([]);
   const [actionLoading, setActionLoading] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filterState, setFilterState] = useState(null); // null = tous, 'DRAFT' = seulement DRAFT, etc.
+  const [filterState, setFilterState] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
 
   // Charger les projets au montage
   useEffect(() => {
@@ -23,7 +25,7 @@ export function useProjectActions() {
   const addConsoleMessage = (type, text) => {
     console.log('📝 ADD MESSAGE:', type, text);
     const message = {
-      type, // 'error', 'success', 'info'
+      type,
       text,
       timestamp: new Date().toISOString()
     };
@@ -38,7 +40,6 @@ export function useProjectActions() {
     setConsoleMessages([]);
   };
 
-  // Fonction pour update optimistic d'un projet
   const updateProjectState = (projectId, newState) => {
     console.log('🔄 OPTIMISTIC UPDATE:', projectId, '→', newState);
     setProjects(prev => 
@@ -50,21 +51,17 @@ export function useProjectActions() {
     );
   };
 
-  // Fonction pour filtrer/trier les projets
   const getFilteredProjects = () => {
     let filtered = projects;
     
-    // Filtrage par état si sélectionné
     if (filterState) {
       filtered = projects.filter(project => project.state === filterState);
       console.log('🔍 FILTER BY STATE:', filterState, '→', filtered.length, 'projets');
     }
     
-    // Toujours trier par date de création (plus récent en premier)
     return filtered.sort((a, b) => new Date(b.created) - new Date(a.created));
   };
 
-  // Fonction pour changer le filtre d'état
   const handleStateFilter = (state) => {
     console.log('🔍 FILTER CHANGED:', filterState, '→', state);
     setFilterState(state);
@@ -91,22 +88,17 @@ export function useProjectActions() {
       
       if (data.success) {
         console.log('📂 PROJECTS LOADED:', data.projects.length);
-        // Tri par défaut : plus récent en premier (created desc)
         const sortedProjects = data.projects.sort((a, b) => new Date(b.created) - new Date(a.created));
         setProjects(sortedProjects);
         console.log(`${data.projects.length} projets chargés`);
-        // Messages différenciés : initial vs reload
         if (!silent) {
-          // Message pour chargement initial (depuis useEffect)
           addConsoleMessage('info', `Dashboard initialisé - ${data.projects.length} projets`);
         }
-        // Pas de message pour les reloads silencieux post-action
       } else {
         throw new Error(data.error || 'Erreur lors du chargement');
       }
     } catch (error) {
       console.error('Erreur loadProjects:', error);
-      // Erreurs toujours affichées même en mode silent
       addConsoleMessage('error', `Impossible de charger les projets: ${error.message}`);
     } finally {
       console.log('📂 LOAD PROJECTS END');
@@ -151,8 +143,7 @@ export function useProjectActions() {
       if (data.success) {
         console.log('Projet créé avec succès:', data.message);
         addConsoleMessage('success', `Projet "${formData.name}" créé avec succès`);
-        // Recharger la liste des projets
-        await loadProjects(true); // Silent reload
+        await loadProjects(true);
       } else {
         throw new Error(data.error || 'Erreur lors de la création');
       }
@@ -163,13 +154,62 @@ export function useProjectActions() {
     }
   };
 
+  const handleDeleteRequest = (projectId, projectName) => {
+    console.log('🗑️ DELETE REQUEST for:', projectId);
+    setProjectToDelete({ id: projectId, name: projectName });
+    setShowConfirmModal(true);
+  };
+
+  const handleCancelDelete = () => {
+    console.log('❌ DELETE CANCELLED');
+    setShowConfirmModal(false);
+    setProjectToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+    
+    console.log('💀 DELETE CONFIRMED for:', projectToDelete.id);
+    setShowConfirmModal(false);
+    
+    await handleProjectAction(projectToDelete.id, 'DELETE');
+    
+    setProjectToDelete(null);
+  };
+
+  const executeDeleteAction = async (projectId) => {
+    console.log('🗑️ EXECUTING DELETE for:', projectId);
+    
+    try {
+      const response = await fetch(`http://localhost:3000/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Suppression réussie:', data.message);
+        addConsoleMessage('success', `Projet ${projectId} supprimé`);
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+      } else {
+        throw new Error(data.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      console.error('Erreur DELETE:', error);
+      addConsoleMessage('error', `Suppression échouée: ${error.message}`);
+    }
+  };
+
   const handleProjectAction = async (projectId, action) => {
     console.log('🔄 START ACTION:', action, 'sur', projectId);
     
     const actionKey = `${projectId}-${action}`;
     console.log('⏳ SET LOADING TRUE pour:', actionKey);
     setActionLoading(prev => {
-      // Éviter nouvel objet si valeur identique
       if (prev[actionKey] === true) {
         console.log('⏳ SKIP SET LOADING - déjà true');
         return prev;
@@ -181,7 +221,6 @@ export function useProjectActions() {
     
     try {
       if (action === 'EDIT') {
-        // EDIT : navigation directe vers éditeur (seulement si DRAFT)
         console.log(`Navigation vers éditeur pour projet DRAFT: ${projectId}`);
         addConsoleMessage('info', `Ouverture éditeur pour projet ${projectId}`);
         navigate(`/editor/${projectId}`);
@@ -189,7 +228,6 @@ export function useProjectActions() {
       }
       
       if (action === 'REVERT') {
-        // REVERT : nettoie le code généré et passe en DRAFT, SANS redirection
         console.log(`Revert projet ${projectId}`);
         
         const response = await fetch(`http://localhost:3000/projects/${projectId}/revert`, {
@@ -208,9 +246,7 @@ export function useProjectActions() {
         if (data.success) {
           console.log('Revert réussi:', data.message);
           addConsoleMessage('success', `Projet ${projectId} remis en DRAFT`);
-          // Update optimistic : changement immédiat state
           updateProjectState(projectId, 'DRAFT');
-          // PAS de loadProjects - état déjà à jour
         } else {
           throw new Error(data.error || 'Erreur lors du revert');
         }
@@ -218,21 +254,16 @@ export function useProjectActions() {
       }
 
       if (action === 'UPDATE') {
-        // UPDATE : simulation blue-green deployment (mock data)
         console.log(`Simulation blue-green deployment pour projet ${projectId}`);
         addConsoleMessage('info', `Démarrage mise à jour blue-green pour ${projectId}`);
         
-        // Simuler temps de déploiement
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         console.log('Update blue-green simulé avec succès');
         addConsoleMessage('success', `Mise à jour blue-green terminée pour ${projectId}`);
-        // Pas de changement d'état pour UPDATE - reste identique
-        // PAS de loadProjects - état inchangé
       }
 
       if (action === 'DEPLOY') {
-        // DEPLOY : compile le projet BUILT vers OFFLINE
         const response = await fetch(`http://localhost:3000/projects/${projectId}/deploy`, {
           method: 'POST',
           headers: {
@@ -249,7 +280,6 @@ export function useProjectActions() {
         if (data.success) {
           console.log('Deploy réussi:', data.message);
           addConsoleMessage('success', `Projet ${projectId} déployé avec succès`);
-          // Update optimistic : BUILT → OFFLINE
           updateProjectState(projectId, 'OFFLINE');
         } else {
           throw new Error(data.error || 'Erreur lors du deploy');
@@ -257,7 +287,6 @@ export function useProjectActions() {
       }
 
       if (action === 'START') {
-        // START : démarre les services OFFLINE vers ONLINE
         const response = await fetch(`http://localhost:3000/projects/${projectId}/start`, {
           method: 'POST',
           headers: {
@@ -274,7 +303,6 @@ export function useProjectActions() {
         if (data.success) {
           console.log('Start réussi:', data.message);
           addConsoleMessage('success', `Services ${projectId} démarrés`);
-          // Update optimistic : OFFLINE → ONLINE
           updateProjectState(projectId, 'ONLINE');
         } else {
           throw new Error(data.error || 'Erreur lors du start');
@@ -282,7 +310,6 @@ export function useProjectActions() {
       }
 
       if (action === 'STOP') {
-        // STOP : arrête les services ONLINE vers OFFLINE
         const response = await fetch(`http://localhost:3000/projects/${projectId}/stop`, {
           method: 'POST',
           headers: {
@@ -299,7 +326,6 @@ export function useProjectActions() {
         if (data.success) {
           console.log('Stop réussi:', data.message);
           addConsoleMessage('success', `Services ${projectId} arrêtés`);
-          // Update optimistic : ONLINE → OFFLINE
           updateProjectState(projectId, 'OFFLINE');
         } else {
           throw new Error(data.error || 'Erreur lors du stop');
@@ -307,7 +333,6 @@ export function useProjectActions() {
       }
       
       if (action === 'BUILD') {
-        // BUILD : compile le projet DRAFT vers BUILT
         const response = await fetch(`http://localhost:3000/projects/${projectId}/build`, {
           method: 'POST',
           headers: {
@@ -324,7 +349,6 @@ export function useProjectActions() {
         if (data.success) {
           console.log('Build réussi:', data.message);
           addConsoleMessage('success', `Projet ${projectId} compilé avec succès`);
-          // Update optimistic : DRAFT → BUILT
           updateProjectState(projectId, 'BUILT');
         } else {
           throw new Error(data.error || 'Erreur lors du build');
@@ -332,25 +356,8 @@ export function useProjectActions() {
       }
       
       if (action === 'DELETE') {
-        // DELETE : supprime complètement le projet
-        const response = await fetch(`http://localhost:3000/projects/${projectId}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.success) {
-          console.log('Suppression réussie:', data.message);
-          addConsoleMessage('success', `Projet ${projectId} supprimé`);
-          // Update optimistic : Remove projet de la liste
-          setProjects(prev => prev.filter(p => p.id !== projectId));
-        } else {
-          throw new Error(data.error || 'Erreur lors de la suppression');
-        }
+        await executeDeleteAction(projectId);
+        return;
       }
       
     } catch (error) {
@@ -359,7 +366,6 @@ export function useProjectActions() {
     } finally {
       console.log('✅ SET LOADING FALSE pour:', actionKey);
       setActionLoading(prev => {
-        // Éviter nouvel objet si valeur identique
         if (prev[actionKey] === false) {
           console.log('✅ SKIP SET LOADING - déjà false');
           return prev;
@@ -373,18 +379,23 @@ export function useProjectActions() {
   };
 
   return {
-    projects: getFilteredProjects(), // Projets filtrés et triés
-    allProjects: projects, // Tous les projets pour stats
+    projects: getFilteredProjects(),
+    allProjects: projects,
     loading,
     consoleMessages,
     actionLoading,
     showCreateModal,
     filterState,
+    showConfirmModal,
+    projectToDelete,
     handleNewProject,
     handleCloseModal,
     handleCreateProject,
     handleProjectAction,
     handleStateFilter,
+    handleDeleteRequest,
+    handleCancelDelete,
+    handleConfirmDelete,
     clearConsole,
     loadProjects
   };

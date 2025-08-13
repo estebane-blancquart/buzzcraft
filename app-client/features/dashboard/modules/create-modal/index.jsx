@@ -140,14 +140,6 @@ export default function CreateModal({ isOpen, onClose, onSubmit }) {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Créer un nouveau projet</h2>
-          <button 
-            className="modal-close"
-            onClick={handleClose}
-            disabled={loading}
-            aria-label="Fermer"
-          >
-            ×
-          </button>
         </div>
 
         {errors.submit && (

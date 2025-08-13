@@ -14,12 +14,19 @@ function formatDate(dateString) {
       minute: '2-digit'
     });
   } catch (error) {
-    return dateString; // Fallback si parsing échoue
+    return dateString;
   }
 }
 
 export default function ProjectList({ hookData }) {
-  const { projects, loading, actionLoading, handleNewProject, handleProjectAction } = hookData;
+  const { 
+    projects, 
+    loading, 
+    actionLoading, 
+    handleNewProject, 
+    handleProjectAction,
+    handleDeleteRequest
+  } = hookData;
 
   if (loading) {
     return <div className="loading">Chargement...</div>;
@@ -122,9 +129,9 @@ export default function ProjectList({ hookData }) {
                 </button>
               )}
 
-              {/* DELETE : toujours disponible */}
+              {/* DELETE : toujours disponible - AVEC CONFIRMATION */}
               <button 
-                onClick={() => handleProjectAction(project.id, 'DELETE')}
+                onClick={() => handleDeleteRequest(project.id, project.name)}
                 disabled={actionLoading[`${project.id}-DELETE`]}
               >
                 {actionLoading[`${project.id}-DELETE`] ? '...' : 'DELETE'}

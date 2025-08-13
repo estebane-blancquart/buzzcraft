@@ -22,3 +22,20 @@ $spacing-xl: 2rem;     // 32px
 // === DESIGN SYSTEM ===
 $radius: 6px;
 $transition: 0.15s ease;
+
+// === BREAKPOINTS RESPONSIVE ===
+$mobile-max: 767px;
+$tablet-max: 1023px;
+
+// === MIXINS RESPONSIVE ===
+@mixin mobile {
+  @media (max-width: $mobile-max) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: $tablet-max) {
+    @content;
+  }
+}
