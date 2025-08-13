@@ -1,4 +1,5 @@
 import React from 'react';
+import { PROJECT_STATES, PROJECT_ACTIONS } from '@config/constants.js';
 
 // Fonction pour formatter les dates en français
 function formatDate(dateString) {
@@ -60,81 +61,81 @@ export default function ProjectList({ hookData }) {
             </div>
             <div className="project-actions">
               {/* EDIT : seulement si DRAFT */}
-              {project.state === 'DRAFT' && (
+              {project.state === PROJECT_STATES.DRAFT && (
                 <button 
-                  onClick={() => handleProjectAction(project.id, 'EDIT')}
-                  disabled={actionLoading[`${project.id}-EDIT`]}
+                  onClick={() => handleProjectAction(project.id, PROJECT_ACTIONS.EDIT)}
+                  disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.EDIT}`]}
                 >
-                  {actionLoading[`${project.id}-EDIT`] ? '...' : 'EDIT'}
+                  {actionLoading[`${project.id}-${PROJECT_ACTIONS.EDIT}`] ? '...' : 'EDIT'}
                 </button>
               )}
 
               {/* REVERT : seulement si BUILT */}
-              {project.state === 'BUILT' && (
+              {project.state === PROJECT_STATES.BUILT && (
                 <button 
-                  onClick={() => handleProjectAction(project.id, 'REVERT')}
-                  disabled={actionLoading[`${project.id}-REVERT`]}
+                  onClick={() => handleProjectAction(project.id, PROJECT_ACTIONS.REVERT)}
+                  disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.REVERT}`]}
                 >
-                  {actionLoading[`${project.id}-REVERT`] ? '...' : 'REVERT'}
+                  {actionLoading[`${project.id}-${PROJECT_ACTIONS.REVERT}`] ? '...' : 'REVERT'}
                 </button>
               )}
 
               {/* UPDATE : seulement si OFFLINE/ONLINE */}
-              {['OFFLINE', 'ONLINE'].includes(project.state) && (
+              {[PROJECT_STATES.OFFLINE, PROJECT_STATES.ONLINE].includes(project.state) && (
                 <button 
-                  onClick={() => handleProjectAction(project.id, 'UPDATE')}
-                  disabled={actionLoading[`${project.id}-UPDATE`]}
+                  onClick={() => handleProjectAction(project.id, PROJECT_ACTIONS.UPDATE)}
+                  disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.UPDATE}`]}
                 >
-                  {actionLoading[`${project.id}-UPDATE`] ? '...' : 'UPDATE'}
+                  {actionLoading[`${project.id}-${PROJECT_ACTIONS.UPDATE}`] ? '...' : 'UPDATE'}
                 </button>
               )}
 
               {/* BUILD : seulement si DRAFT */}
-              {project.state === 'DRAFT' && (
+              {project.state === PROJECT_STATES.DRAFT && (
                 <button 
-                  onClick={() => handleProjectAction(project.id, 'BUILD')}
-                  disabled={actionLoading[`${project.id}-BUILD`]}
+                  onClick={() => handleProjectAction(project.id, PROJECT_ACTIONS.BUILD)}
+                  disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.BUILD}`]}
                 >
-                  {actionLoading[`${project.id}-BUILD`] ? '...' : 'BUILD'}
+                  {actionLoading[`${project.id}-${PROJECT_ACTIONS.BUILD}`] ? '...' : 'BUILD'}
                 </button>
               )}
 
               {/* DEPLOY : seulement si BUILT */}
-              {project.state === 'BUILT' && (
+              {project.state === PROJECT_STATES.BUILT && (
                 <button 
-                  onClick={() => handleProjectAction(project.id, 'DEPLOY')}
-                  disabled={actionLoading[`${project.id}-DEPLOY`]}
+                  onClick={() => handleProjectAction(project.id, PROJECT_ACTIONS.DEPLOY)}
+                  disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.DEPLOY}`]}
                 >
-                  {actionLoading[`${project.id}-DEPLOY`] ? '...' : 'DEPLOY'}
+                  {actionLoading[`${project.id}-${PROJECT_ACTIONS.DEPLOY}`] ? '...' : 'DEPLOY'}
                 </button>
               )}
 
               {/* START : seulement si OFFLINE */}
-              {project.state === 'OFFLINE' && (
+              {project.state === PROJECT_STATES.OFFLINE && (
                 <button 
-                  onClick={() => handleProjectAction(project.id, 'START')}
-                  disabled={actionLoading[`${project.id}-START`]}
+                  onClick={() => handleProjectAction(project.id, PROJECT_ACTIONS.START)}
+                  disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.START}`]}
                 >
-                  {actionLoading[`${project.id}-START`] ? '...' : 'START'}
+                  {actionLoading[`${project.id}-${PROJECT_ACTIONS.START}`] ? '...' : 'START'}
                 </button>
               )}
 
               {/* STOP : seulement si ONLINE */}
-              {project.state === 'ONLINE' && (
+              {project.state === PROJECT_STATES.ONLINE && (
                 <button 
-                  onClick={() => handleProjectAction(project.id, 'STOP')}
-                  disabled={actionLoading[`${project.id}-STOP`]}
+                  onClick={() => handleProjectAction(project.id, PROJECT_ACTIONS.STOP)}
+                  disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.STOP}`]}
                 >
-                  {actionLoading[`${project.id}-STOP`] ? '...' : 'STOP'}
+                  {actionLoading[`${project.id}-${PROJECT_ACTIONS.STOP}`] ? '...' : 'STOP'}
                 </button>
               )}
 
               {/* DELETE : toujours disponible - AVEC CONFIRMATION */}
               <button 
                 onClick={() => handleDeleteRequest(project.id, project.name)}
-                disabled={actionLoading[`${project.id}-DELETE`]}
+                disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`]}
               >
-                {actionLoading[`${project.id}-DELETE`] ? '...' : 'DELETE'}
+                {actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`] ? '...' : 'DELETE'}
               </button>
             </div>
           </div>

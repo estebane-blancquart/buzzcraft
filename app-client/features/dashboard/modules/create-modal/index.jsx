@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '@config/api.js';
 
 export default function CreateModal({ isOpen, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -25,7 +26,7 @@ export default function CreateModal({ isOpen, onClose, onSubmit }) {
     
     try {
       console.log('Chargement des templates...');
-      const response = await fetch('http://localhost:3000/projects/meta/templates');
+      const response = await fetch(apiUrl('projects/meta/templates'));
       
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);

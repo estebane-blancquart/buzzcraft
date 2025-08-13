@@ -1,14 +1,15 @@
 import React from 'react';
+import { PROJECT_STATES } from '@config/constants.js';
 
 export default function ProjectStats({ hookData }) {
   const { allProjects, filterState, handleStateFilter } = hookData;
 
   const stats = {
     TOTAL: allProjects.length,
-    DRAFT: allProjects.filter(p => p.state === 'DRAFT').length,
-    BUILT: allProjects.filter(p => p.state === 'BUILT').length,
-    OFFLINE: allProjects.filter(p => p.state === 'OFFLINE').length,
-    ONLINE: allProjects.filter(p => p.state === 'ONLINE').length
+    [PROJECT_STATES.DRAFT]: allProjects.filter(p => p.state === PROJECT_STATES.DRAFT).length,
+    [PROJECT_STATES.BUILT]: allProjects.filter(p => p.state === PROJECT_STATES.BUILT).length,
+    [PROJECT_STATES.OFFLINE]: allProjects.filter(p => p.state === PROJECT_STATES.OFFLINE).length,
+    [PROJECT_STATES.ONLINE]: allProjects.filter(p => p.state === PROJECT_STATES.ONLINE).length
   };
 
   const handleCardClick = (state) => {
@@ -27,31 +28,31 @@ export default function ProjectStats({ hookData }) {
         <div className="stat-label">TOTAL</div>
       </div>
       <div 
-        className={`stat-card ${filterState === 'DRAFT' ? 'active' : ''}`}
-        onClick={() => handleCardClick('DRAFT')}
+        className={`stat-card ${filterState === PROJECT_STATES.DRAFT ? 'active' : ''}`}
+        onClick={() => handleCardClick(PROJECT_STATES.DRAFT)}
       >
-        <div className="stat-number">{stats.DRAFT}</div>
+        <div className="stat-number">{stats[PROJECT_STATES.DRAFT]}</div>
         <div className="stat-label">DRAFT</div>
       </div>
       <div 
-        className={`stat-card ${filterState === 'BUILT' ? 'active' : ''}`}
-        onClick={() => handleCardClick('BUILT')}
+        className={`stat-card ${filterState === PROJECT_STATES.BUILT ? 'active' : ''}`}
+        onClick={() => handleCardClick(PROJECT_STATES.BUILT)}
       >
-        <div className="stat-number">{stats.BUILT}</div>
+        <div className="stat-number">{stats[PROJECT_STATES.BUILT]}</div>
         <div className="stat-label">BUILT</div>
       </div>
       <div 
-        className={`stat-card ${filterState === 'OFFLINE' ? 'active' : ''}`}
-        onClick={() => handleCardClick('OFFLINE')}
+        className={`stat-card ${filterState === PROJECT_STATES.OFFLINE ? 'active' : ''}`}
+        onClick={() => handleCardClick(PROJECT_STATES.OFFLINE)}
       >
-        <div className="stat-number">{stats.OFFLINE}</div>
+        <div className="stat-number">{stats[PROJECT_STATES.OFFLINE]}</div>
         <div className="stat-label">OFFLINE</div>
       </div>
       <div 
-        className={`stat-card ${filterState === 'ONLINE' ? 'active' : ''}`}
-        onClick={() => handleCardClick('ONLINE')}
+        className={`stat-card ${filterState === PROJECT_STATES.ONLINE ? 'active' : ''}`}
+        onClick={() => handleCardClick(PROJECT_STATES.ONLINE)}
       >
-        <div className="stat-number">{stats.ONLINE}</div>
+        <div className="stat-number">{stats[PROJECT_STATES.ONLINE]}</div>
         <div className="stat-label">ONLINE</div>
       </div>
     </div>

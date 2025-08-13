@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ELEMENT_TYPES, RESPONSIVE_COLUMNS, UI_MESSAGES } from '@config/constants.js';
 
 export default function ProjectProperties({ selectedElement, device, onElementUpdate }) {
   const [localValues, setLocalValues] = useState({});
@@ -10,7 +11,7 @@ export default function ProjectProperties({ selectedElement, device, onElementUp
           <h3>Propriétés</h3>
         </div>
         <div className="properties-empty">
-          <p>Sélectionnez un élément</p>
+          <p>{UI_MESSAGES.SELECT_ELEMENT}</p>
         </div>
       </div>
     );
@@ -68,29 +69,26 @@ export default function ProjectProperties({ selectedElement, device, onElementUp
     ];
 
     const typeFields = {
-      page: [
+      [ELEMENT_TYPES.PAGE]: [
         { field: 'name', label: 'Nom de la page' }
       ],
-      section: [
+      [ELEMENT_TYPES.SECTION]: [
         { field: 'name', label: 'Nom de la section' },
-        { field: 'desktop', label: 'Colonnes Desktop', type: 'select', options: [
-          { value: 1, label: '1 colonne' },
-          { value: 2, label: '2 colonnes' },
-          { value: 3, label: '3 colonnes' }
-        ]},
-        { field: 'tablet', label: 'Colonnes Tablet', type: 'select', options: [
-          { value: 1, label: '1 colonne' },
-          { value: 2, label: '2 colonnes' }
-        ]},
-        { field: 'mobile', label: 'Colonnes Mobile', type: 'select', options: [
-          { value: 1, label: '1 colonne' }
-        ]}
+        { field: 'desktop', label: 'Colonnes Desktop', type: 'select', options: 
+          RESPONSIVE_COLUMNS.DESKTOP.map(num => ({ value: num, label: `${num} colonne${num > 1 ? 's' : ''}` }))
+        },
+        { field: 'tablet', label: 'Colonnes Tablet', type: 'select', options: 
+          RESPONSIVE_COLUMNS.TABLET.map(num => ({ value: num, label: `${num} colonne${num > 1 ? 's' : ''}` }))
+        },
+        { field: 'mobile', label: 'Colonnes Mobile', type: 'select', options: 
+          RESPONSIVE_COLUMNS.MOBILE.map(num => ({ value: num, label: `${num} colonne` }))
+        }
       ],
-      div: [
+      [ELEMENT_TYPES.DIV]: [
         { field: 'name', label: 'Nom du div' },
         { field: 'classname', label: 'Classes CSS' }
       ],
-      heading: [
+      [ELEMENT_TYPES.HEADING]: [
         { field: 'tag', label: 'Balise', type: 'select', options: [
           { value: 'h1', label: 'h1' },
           { value: 'h2', label: 'h2' },
@@ -102,23 +100,23 @@ export default function ProjectProperties({ selectedElement, device, onElementUp
         { field: 'content', label: 'Contenu' },
         { field: 'classname', label: 'Classes CSS' }
       ],
-      paragraph: [
+      [ELEMENT_TYPES.PARAGRAPH]: [
         { field: 'content', label: 'Contenu' },
         { field: 'classname', label: 'Classes CSS' }
       ],
-      button: [
+      [ELEMENT_TYPES.BUTTON]: [
         { field: 'content', label: 'Texte du bouton' },
         { field: 'href', label: 'Lien (optionnel)' },
         { field: 'classname', label: 'Classes CSS' }
       ],
-      image: [
+      [ELEMENT_TYPES.IMAGE]: [
         { field: 'src', label: 'URL de l\'image' },
         { field: 'alt', label: 'Texte alternatif' },
         { field: 'classname', label: 'Classes CSS' }
       ]
     };
 
-    const elementType = element.type || 'div';
+    const elementType = element.type || ELEMENT_TYPES.DIV;
     const fields = typeFields[elementType] || commonFields;
     
     return fields;

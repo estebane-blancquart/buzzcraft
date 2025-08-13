@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiUrl } from '@config/api.js';
+import { PROJECT_STATES, PROJECT_ACTIONS, MESSAGE_TYPES } from '@config/constants.js';
 
 export function useProjectActions() {
   const navigate = useNavigate();
@@ -66,9 +68,9 @@ export function useProjectActions() {
     console.log('🔍 FILTER CHANGED:', filterState, '→', state);
     setFilterState(state);
     if (state) {
-      addConsoleMessage('info', `Filtrage par état: ${state}`);
+      addConsoleMessage(MESSAGE_TYPES.INFO, `Filtrage par état: ${state}`);
     } else {
-      addConsoleMessage('info', 'Affichage de tous les projets');
+      addConsoleMessage(MESSAGE_TYPES.INFO, 'Affichage de tous les projets');
     }
   };
 
@@ -78,7 +80,7 @@ export function useProjectActions() {
     
     try {
       console.log('Chargement des projets...');
-      const response = await fetch('http://localhost:3000/projects');
+      const response = await fetch(apiUrl('projects'));
       
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);
@@ -92,14 +94,14 @@ export function useProjectActions() {
         setProjects(sortedProjects);
         console.log(`${data.projects.length} projets chargés`);
         if (!silent) {
-          addConsoleMessage('info', `Dashboard initialisé - ${data.projects.length} projets`);
+          addConsoleMessage(MESSAGE_TYPES.INFO, `Dashboard initialisé - ${data.projects.length} projets`);
         }
       } else {
         throw new Error(data.error || 'Erreur lors du chargement');
       }
     } catch (error) {
       console.error('Erreur loadProjects:', error);
-      addConsoleMessage('error', `Impossible de charger les projets: ${error.message}`);
+      addConsoleMessage(MESSAGE_TYPES.ERROR, `Impossible de charger les projets: ${error.message}`);
     } finally {
       console.log('📂 LOAD PROJECTS END');
       setLoading(false);
@@ -120,7 +122,7 @@ export function useProjectActions() {
     console.log('Création projet via API:', formData);
     
     try {
-      const response = await fetch('http://localhost:3000/projects', {
+      const response = await fetch(apiUrl('projects'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,14 +144,14 @@ export function useProjectActions() {
       
       if (data.success) {
         console.log('Projet créé avec succès:', data.message);
-        addConsoleMessage('success', `Projet "${formData.name}" créé avec succès`);
+        addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Projet "${formData.name}" créé avec succès`);
         await loadProjects(true);
       } else {
         throw new Error(data.error || 'Erreur lors de la création');
       }
     } catch (error) {
       console.error('Erreur création:', error);
-      addConsoleMessage('error', `Création échouée: ${error.message}`);
+      addConsoleMessage(MESSAGE_TYPES.ERROR, `Création échouée: ${error.message}`);
       throw new Error(`Création échouée: ${error.message}`);
     }
   };
@@ -172,7 +174,7 @@ export function useProjectActions() {
     console.log('💀 DELETE CONFIRMED for:', projectToDelete.id);
     setShowConfirmModal(false);
     
-    await handleProjectAction(projectToDelete.id, 'DELETE');
+    await handleProjectAction(projectToDelete.id, PROJECT_ACTIONS.DELETE);
     
     setProjectToDelete(null);
   };
@@ -181,7 +183,7 @@ export function useProjectActions() {
     console.log('🗑️ EXECUTING DELETE for:', projectId);
     
     try {
-      const response = await fetch(`http://localhost:3000/projects/${projectId}`, {
+      const response = await fetch(apiUrl(`projects/${projectId}`), {
         method: 'DELETE',
       });
 
@@ -193,14 +195,14 @@ export function useProjectActions() {
       
       if (data.success) {
         console.log('Suppression réussie:', data.message);
-        addConsoleMessage('success', `Projet ${projectId} supprimé`);
+        addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Projet ${projectId} supprimé`);
         setProjects(prev => prev.filter(p => p.id !== projectId));
       } else {
         throw new Error(data.error || 'Erreur lors de la suppression');
       }
     } catch (error) {
       console.error('Erreur DELETE:', error);
-      addConsoleMessage('error', `Suppression échouée: ${error.message}`);
+      addConsoleMessage(MESSAGE_TYPES.ERROR, `Suppression échouée: ${error.message}`);
     }
   };
 
@@ -220,17 +222,17 @@ export function useProjectActions() {
     });
     
     try {
-      if (action === 'EDIT') {
+      if (action === PROJECT_ACTIONS.EDIT) {
         console.log(`Navigation vers éditeur pour projet DRAFT: ${projectId}`);
-        addConsoleMessage('info', `Ouverture éditeur pour projet ${projectId}`);
+        addConsoleMessage(MESSAGE_TYPES.INFO, `Ouverture éditeur pour projet ${projectId}`);
         navigate(`/editor/${projectId}`);
         return;
       }
       
-      if (action === 'REVERT') {
+      if (action === PROJECT_ACTIONS.REVERT) {
         console.log(`Revert projet ${projectId}`);
         
-        const response = await fetch(`http://localhost:3000/projects/${projectId}/revert`, {
+        const response = await fetch(apiUrl(`projects/${projectId}/revert`), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -245,26 +247,26 @@ export function useProjectActions() {
         
         if (data.success) {
           console.log('Revert réussi:', data.message);
-          addConsoleMessage('success', `Projet ${projectId} remis en DRAFT`);
-          updateProjectState(projectId, 'DRAFT');
+          addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Projet ${projectId} remis en DRAFT`);
+          updateProjectState(projectId, PROJECT_STATES.DRAFT);
         } else {
           throw new Error(data.error || 'Erreur lors du revert');
         }
         return;
       }
 
-      if (action === 'UPDATE') {
+      if (action === PROJECT_ACTIONS.UPDATE) {
         console.log(`Simulation blue-green deployment pour projet ${projectId}`);
-        addConsoleMessage('info', `Démarrage mise à jour blue-green pour ${projectId}`);
+        addConsoleMessage(MESSAGE_TYPES.INFO, `Démarrage mise à jour blue-green pour ${projectId}`);
         
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         console.log('Update blue-green simulé avec succès');
-        addConsoleMessage('success', `Mise à jour blue-green terminée pour ${projectId}`);
+        addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Mise à jour blue-green terminée pour ${projectId}`);
       }
 
-      if (action === 'DEPLOY') {
-        const response = await fetch(`http://localhost:3000/projects/${projectId}/deploy`, {
+      if (action === PROJECT_ACTIONS.DEPLOY) {
+        const response = await fetch(apiUrl(`projects/${projectId}/deploy`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -279,15 +281,15 @@ export function useProjectActions() {
         
         if (data.success) {
           console.log('Deploy réussi:', data.message);
-          addConsoleMessage('success', `Projet ${projectId} déployé avec succès`);
-          updateProjectState(projectId, 'OFFLINE');
+          addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Projet ${projectId} déployé avec succès`);
+          updateProjectState(projectId, PROJECT_STATES.OFFLINE);
         } else {
           throw new Error(data.error || 'Erreur lors du deploy');
         }
       }
 
-      if (action === 'START') {
-        const response = await fetch(`http://localhost:3000/projects/${projectId}/start`, {
+      if (action === PROJECT_ACTIONS.START) {
+        const response = await fetch(apiUrl(`projects/${projectId}/start`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -302,15 +304,15 @@ export function useProjectActions() {
         
         if (data.success) {
           console.log('Start réussi:', data.message);
-          addConsoleMessage('success', `Services ${projectId} démarrés`);
-          updateProjectState(projectId, 'ONLINE');
+          addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Services ${projectId} démarrés`);
+          updateProjectState(projectId, PROJECT_STATES.ONLINE);
         } else {
           throw new Error(data.error || 'Erreur lors du start');
         }
       }
 
-      if (action === 'STOP') {
-        const response = await fetch(`http://localhost:3000/projects/${projectId}/stop`, {
+      if (action === PROJECT_ACTIONS.STOP) {
+        const response = await fetch(apiUrl(`projects/${projectId}/stop`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -325,15 +327,15 @@ export function useProjectActions() {
         
         if (data.success) {
           console.log('Stop réussi:', data.message);
-          addConsoleMessage('success', `Services ${projectId} arrêtés`);
-          updateProjectState(projectId, 'OFFLINE');
+          addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Services ${projectId} arrêtés`);
+          updateProjectState(projectId, PROJECT_STATES.OFFLINE);
         } else {
           throw new Error(data.error || 'Erreur lors du stop');
         }
       }
       
-      if (action === 'BUILD') {
-        const response = await fetch(`http://localhost:3000/projects/${projectId}/build`, {
+      if (action === PROJECT_ACTIONS.BUILD) {
+        const response = await fetch(apiUrl(`projects/${projectId}/build`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -348,21 +350,21 @@ export function useProjectActions() {
         
         if (data.success) {
           console.log('Build réussi:', data.message);
-          addConsoleMessage('success', `Projet ${projectId} compilé avec succès`);
-          updateProjectState(projectId, 'BUILT');
+          addConsoleMessage(MESSAGE_TYPES.SUCCESS, `Projet ${projectId} compilé avec succès`);
+          updateProjectState(projectId, PROJECT_STATES.BUILT);
         } else {
           throw new Error(data.error || 'Erreur lors du build');
         }
       }
       
-      if (action === 'DELETE') {
+      if (action === PROJECT_ACTIONS.DELETE) {
         await executeDeleteAction(projectId);
         return;
       }
       
     } catch (error) {
       console.error(`Erreur action ${action}:`, error);
-      addConsoleMessage('error', `${action} échoué: ${error.message}`);
+      addConsoleMessage(MESSAGE_TYPES.ERROR, `${action} échoué: ${error.message}`);
     } finally {
       console.log('✅ SET LOADING FALSE pour:', actionKey);
       setActionLoading(prev => {

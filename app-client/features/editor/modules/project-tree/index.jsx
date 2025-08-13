@@ -1,4 +1,5 @@
 import React from 'react';
+import { ELEMENT_TYPES, UI_MESSAGES } from '@config/constants.js';
 
 export default function ProjectTree({ 
   project, 
@@ -17,7 +18,7 @@ export default function ProjectTree({
           <h3>Structure</h3>
         </div>
         <div className="tree-content">
-          <div className="loading">Chargement projet...</div>
+          <div className="loading">{UI_MESSAGES.LOADING}</div>
         </div>
       </div>
     );
@@ -54,22 +55,20 @@ export default function ProjectTree({
             </span>
             <button 
               className={`tree-add ${
-                isSelected && (element.type === 'page' || element.type === 'section' || element.type === 'div') 
+                isSelected && (element.type === ELEMENT_TYPES.PAGE || element.type === ELEMENT_TYPES.SECTION || element.type === ELEMENT_TYPES.DIV) 
                   ? 'visible' : 'hidden'
               }`}
               onClick={(e) => {
                 e.stopPropagation();
-                if (element.type === 'page') onAddSection(path);
-                if (element.type === 'section') onAddDiv(path);
-                if (element.type === 'div') onAddComponent(path);
+                if (element.type === ELEMENT_TYPES.PAGE) onAddSection(path);
+                if (element.type === ELEMENT_TYPES.SECTION) onAddDiv(path);
+                if (element.type === ELEMENT_TYPES.DIV) onAddComponent(path);
               }}
             >
               +
             </button>
           </div>
         </div>
-        
-        {/* Actions supprimées - maintenant intégrées dans tree-node */}
       </div>
     );
   };
@@ -84,15 +83,15 @@ export default function ProjectTree({
       <div className="tree-content">
         {project.pages?.map((page, pageIndex) => (
           <div key={pageIndex}>
-            {renderElement({ ...page, type: 'page' }, `project.pages[${pageIndex}]`, 1)}
+            {renderElement({ ...page, type: ELEMENT_TYPES.PAGE }, `project.pages[${pageIndex}]`, 1)}
             
             {page.layout?.sections?.map((section, sectionIndex) => (
               <div key={sectionIndex}>
-                {renderElement({ ...section, type: 'section' }, `project.pages[${pageIndex}].layout.sections[${sectionIndex}]`, 2)}
+                {renderElement({ ...section, type: ELEMENT_TYPES.SECTION }, `project.pages[${pageIndex}].layout.sections[${sectionIndex}]`, 2)}
                 
                 {section.divs?.map((div, divIndex) => (
                   <div key={divIndex}>
-                    {renderElement({ ...div, type: 'div' }, `project.pages[${pageIndex}].layout.sections[${sectionIndex}].divs[${divIndex}]`, 3)}
+                    {renderElement({ ...div, type: ELEMENT_TYPES.DIV }, `project.pages[${pageIndex}].layout.sections[${sectionIndex}].divs[${divIndex}]`, 3)}
                     
                     {div.components?.map((component, compIndex) => 
                       renderElement(component, `project.pages[${pageIndex}].layout.sections[${sectionIndex}].divs[${divIndex}].components[${compIndex}]`, 4)

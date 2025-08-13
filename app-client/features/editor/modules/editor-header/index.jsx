@@ -1,4 +1,5 @@
 import React from 'react';
+import { DEVICES } from '@config/constants.js';
 
 export default function EditorHeader({
   project,
@@ -9,9 +10,9 @@ export default function EditorHeader({
   onBackToDashboard
 }) {
   const devices = [
-    { id: 'desktop', label: 'DESKTOP', icon: '💻' },
-    { id: 'tablet', label: 'TABLET', icon: '📱' },
-    { id: 'mobile', label: 'MOBILE', icon: '📱' }
+    { id: DEVICES.DESKTOP, label: 'DESKTOP', icon: '💻' },
+    { id: DEVICES.TABLET, label: 'TABLET', icon: '📱' },
+    { id: DEVICES.MOBILE, label: 'MOBILE', icon: '📱' }
   ];
 
   if (!project) return null;

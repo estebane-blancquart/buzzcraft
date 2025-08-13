@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { apiUrl } from '@config/api.js';
+import { DEVICES, ELEMENT_TYPES, UI_MESSAGES } from '@config/constants.js';
 
 export function useProjectEditor() {
   const { projectId } = useParams();
@@ -8,7 +10,7 @@ export function useProjectEditor() {
   // États principaux
   const [project, setProject] = useState(null);
   const [selectedElement, setSelectedElement] = useState(null);
-  const [selectedDevice, setSelectedDevice] = useState('desktop');
+  const [selectedDevice, setSelectedDevice] = useState(DEVICES.DESKTOP);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -26,7 +28,7 @@ export function useProjectEditor() {
     
     try {
       console.log(`📂 EDITOR: Loading project ${id}...`);
-      const response = await fetch(`http://localhost:3000/projects/${id}`);
+      const response = await fetch(apiUrl(`projects/${id}`));
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -61,7 +63,7 @@ export function useProjectEditor() {
     
     try {
       console.log('💾 EDITOR: Saving project...');
-      const response = await fetch(`http://localhost:3000/projects/${projectId}`, {
+      const response = await fetch(apiUrl(`projects/${projectId}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +160,7 @@ export function useProjectEditor() {
 
   const handleBackToDashboard = () => {
     if (isDirty) {
-      const confirmLeave = window.confirm('Vous avez des modifications non sauvegardées. Quitter quand même ?');
+      const confirmLeave = window.confirm(UI_MESSAGES.UNSAVED_CHANGES);
       if (!confirmLeave) return;
     }
     
@@ -255,7 +257,7 @@ export function useProjectEditor() {
     
     const newComponent = {
       id: `component-${Date.now()}`,
-      type: 'paragraph',
+      type: ELEMENT_TYPES.PARAGRAPH,
       content: 'Nouveau contenu',
       classname: ''
     };

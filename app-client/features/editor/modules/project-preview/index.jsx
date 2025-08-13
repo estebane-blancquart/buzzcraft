@@ -1,4 +1,5 @@
 import React from 'react';
+import { DEVICES, ELEMENT_TYPES, UI_MESSAGES } from '@config/constants.js';
 
 export default function ProjectPreview({ project, device, selectedElement, onElementSelect }) {
   
@@ -14,7 +15,7 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
     };
 
     switch (component.type) {
-      case 'heading':
+      case ELEMENT_TYPES.HEADING:
         const Tag = component.tag || 'h2';
         return React.createElement(Tag, {
           key: path,
@@ -22,7 +23,7 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
           onClick: handleClick
         }, component.content || 'Heading');
 
-      case 'paragraph':
+      case ELEMENT_TYPES.PARAGRAPH:
         return (
           <p 
             key={path} 
@@ -33,7 +34,7 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
           </p>
         );
 
-      case 'button':
+      case ELEMENT_TYPES.BUTTON:
         return (
           <button 
             key={path} 
@@ -44,7 +45,7 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
           </button>
         );
 
-      case 'image':
+      case ELEMENT_TYPES.IMAGE:
         return (
           <img 
             key={path} 
@@ -70,7 +71,7 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
 
     const handleClick = (e) => {
       e.stopPropagation();
-      onElementSelect({ ...div, type: 'div' }, path);
+      onElementSelect({ ...div, type: ELEMENT_TYPES.DIV }, path);
     };
 
     return (
@@ -95,15 +96,15 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
 
     const handleClick = (e) => {
       e.stopPropagation();
-      onElementSelect({ ...section, type: 'section' }, path);
+      onElementSelect({ ...section, type: ELEMENT_TYPES.SECTION }, path);
     };
 
     // Colonnes selon device
     const getColumns = () => {
       switch (device) {
-        case 'desktop': return section.desktop || 3;
-        case 'tablet': return section.tablet || 2;
-        case 'mobile': return section.mobile || 1;
+        case DEVICES.DESKTOP: return section.desktop || 3;
+        case DEVICES.TABLET: return section.tablet || 2;
+        case DEVICES.MOBILE: return section.mobile || 1;
         default: return 3;
       }
     };
@@ -134,9 +135,9 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
 
   const getDeviceClass = () => {
     switch (device) {
-      case 'mobile': return 'device-mobile';
-      case 'tablet': return 'device-tablet'; 
-      case 'desktop': return 'device-desktop';
+      case DEVICES.MOBILE: return 'device-mobile';
+      case DEVICES.TABLET: return 'device-tablet'; 
+      case DEVICES.DESKTOP: return 'device-desktop';
       default: return 'device-desktop';
     }
   };
@@ -148,7 +149,7 @@ export default function ProjectPreview({ project, device, selectedElement, onEle
           <h3>Preview</h3>
         </div>
         <div className="preview-content">
-          <div className="loading">Chargement preview...</div>
+          <div className="loading">{UI_MESSAGES.LOADING}</div>
         </div>
       </div>
     );
