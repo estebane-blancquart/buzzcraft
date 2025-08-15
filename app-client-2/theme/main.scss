@@ -1,7 +1,7 @@
 // === BASE ===
-@import 'variables';
-@import 'base';
+@use 'variables';
+@use 'base';
 
 // === FEATURES ===
-@import 'dashboard';
-@import 'editor';
+@use 'dashboard';
+@use 'editor';

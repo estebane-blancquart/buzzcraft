@@ -613,3 +613,353 @@
     }
   }
 }
+
+// === TREE ACTIONS FIXES ===
+.tree-delete-absolute {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+  z-index: 1;
+  
+  &.hidden {
+    visibility: hidden;
+  }
+  
+  &.visible {
+    visibility: visible;
+  }
+  
+  &:hover {
+    background: var(--color-danger);
+    color: white;
+  }
+}
+
+.tree-add {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+  
+  &.hidden {
+    visibility: hidden;
+  }
+  
+  &.visible {
+    visibility: visible;
+  }
+  
+  &:hover {
+    background: var(--color-success);
+    color: white;
+  }
+}
+
+.tree-node {
+  padding-left: 32px; // Espace pour × absolute
+}
+
+// === PREVIEW STYLES ===
+.preview-component {
+  margin: 8px;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+  cursor: pointer;
+  
+  &.selected {
+    border-color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  }
+  
+  &:hover:not(.selected) {
+    border-color: #999;
+  }
+}
+
+.preview-div {
+  padding: 12px;
+  border: 2px dashed transparent;
+  border-radius: 6px;
+  transition: border-color 0.15s ease;
+  min-height: 50px;
+  
+  &.selected {
+    border-color: var(--color-success);
+    background: color-mix(in srgb, var(--color-success) 5%, transparent);
+  }
+  
+  &:hover:not(.selected) {
+    border-color: #ccc;
+  }
+}
+
+.preview-section {
+  padding: 16px;
+  border: 2px dashed transparent;
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+  margin-bottom: 16px;
+  min-height: 80px;
+  
+  &.selected {
+    border-color: #3b82f6;
+    background: color-mix(in srgb, #3b82f6 5%, transparent);
+  }
+  
+  &:hover:not(.selected) {
+    border-color: #ddd;
+  }
+}
+
+.empty-project,
+.empty-page,
+.empty-section,
+.empty-div {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  margin: 1rem;
+  background: color-mix(in srgb, var(--color-bg-secondary) 3%, transparent);
+}
+
+.property-field {
+  margin-bottom: 1.5rem;
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+}
+
+// === ERROR BANNER ===
+.error-banner {
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--color-danger);
+  
+  button {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    
+    &:hover {
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+// === TREE ACTIONS FIXES ===
+.tree-delete-absolute {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+  z-index: 1;
+  
+  &.hidden {
+    visibility: hidden;
+  }
+  
+  &.visible {
+    visibility: visible;
+  }
+  
+  &:hover {
+    background: var(--color-danger);
+    color: white;
+  }
+}
+
+.tree-add {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+  
+  &.hidden {
+    visibility: hidden;
+  }
+  
+  &.visible {
+    visibility: visible;
+  }
+  
+  &:hover {
+    background: var(--color-success);
+    color: white;
+  }
+}
+
+.tree-node {
+  padding-left: 32px; // Espace pour × absolute
+}
+
+// === PREVIEW STYLES ===
+.preview-component {
+  margin: 8px;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+  cursor: pointer;
+  
+  &.selected {
+    border-color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  }
+  
+  &:hover:not(.selected) {
+    border-color: #999;
+  }
+}
+
+.preview-div {
+  padding: 12px;
+  border: 2px dashed transparent;
+  border-radius: 6px;
+  transition: border-color 0.15s ease;
+  min-height: 50px;
+  
+  &.selected {
+    border-color: var(--color-success);
+    background: color-mix(in srgb, var(--color-success) 5%, transparent);
+  }
+  
+  &:hover:not(.selected) {
+    border-color: #ccc;
+  }
+}
+
+.preview-section {
+  padding: 16px;
+  border: 2px dashed transparent;
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+  margin-bottom: 16px;
+  min-height: 80px;
+  
+  &.selected {
+    border-color: #3b82f6;
+    background: color-mix(in srgb, #3b82f6 5%, transparent);
+  }
+  
+  &:hover:not(.selected) {
+    border-color: #ddd;
+  }
+}
+
+.empty-project,
+.empty-page,
+.empty-section,
+.empty-div {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  margin: 1rem;
+  background: color-mix(in srgb, var(--color-bg-secondary) 3%, transparent);
+}
+
+.property-field {
+  margin-bottom: 1.5rem;
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+}
+
+// === ERROR BANNER ===
+.error-banner {
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--color-danger);
+  
+  button {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    
+    &:hover {
+      color: var(--color-text-primary);
+    }
+  }
+}
