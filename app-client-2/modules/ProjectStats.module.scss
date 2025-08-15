@@ -1,0 +1,94 @@
+.stats {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+  margin-bottom: var(--space-8);
+}
+
+.card {
+  background: var(--color-bg-secondary);
+  border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-6);
+  text-align: center;
+  flex: 1;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+
+  &:first-child {
+    margin-right: var(--space-8);
+    box-shadow: var(--shadow-sm);
+    
+    .label {
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--color-bg-secondary) 82%, white 18%);
+    }
+  }
+
+  &.draft {
+    border-color: var(--color-primary);
+    &:hover { border-color: color-mix(in srgb, var(--color-primary) 80%, white 20%); }
+  }
+
+  &.built {
+    border-color: #3b82f6;
+    &:hover { border-color: color-mix(in srgb, #3b82f6 80%, white 20%); }
+  }
+
+  &.offline {
+    border-color: var(--color-warning);
+    &:hover { border-color: color-mix(in srgb, var(--color-warning) 80%, white 20%); }
+  }
+
+  &.online {
+    border-color: var(--color-success);
+    &:hover { border-color: color-mix(in srgb, var(--color-success) 80%, white 20%); }
+  }
+
+  &.active {
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-secondary));
+    border-color: var(--color-primary);
+    
+    &.draft { 
+      background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-secondary));
+      border-color: var(--color-primary);
+    }
+    &.built { 
+      background: color-mix(in srgb, #3b82f6 10%, var(--color-bg-secondary));
+      border-color: #3b82f6;
+    }
+    &.offline { 
+      background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-secondary));
+      border-color: var(--color-warning);
+    }
+    &.online { 
+      background: color-mix(in srgb, var(--color-success) 10%, var(--color-bg-secondary));
+      border-color: var(--color-success);
+    }
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.number {
+  font-size: var(--size-2xl);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  line-height: 1;
+  color: var(--color-text-primary);
+}
+
+.label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text-secondary) 95%, white 5%);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}

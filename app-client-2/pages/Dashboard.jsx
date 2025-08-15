@@ -1,52 +1,101 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useProjects } from '@hooks/useProjects.js';
+import ProjectStats from '@modules/ProjectStats.jsx';
 import ProjectCard from '@modules/ProjectCard.jsx';
+import Console from '@modules/Console.jsx';
+import CreateModal from '@modules/CreateModal.jsx';
+import ConfirmModal from '@modules/ConfirmModal.jsx';
 import Button from '@components/Button.jsx';
 
 function Dashboard() {
   const { 
-    projects, 
-    loading, 
+    projects,
+    allProjects,
+    loading,
+    consoleMessages,
+    filterState,
     handleNewProject, 
     handleProjectAction,
     handleDeleteRequest,
-    actionLoading
+    handleCloseModal,
+    handleCreateProject,
+    handleCancelDelete,
+    handleConfirmDelete,
+    handleStateFilter,
+    clearConsole,
+    actionLoading,
+    showCreateModal,
+    showConfirmModal,
+    projectToDelete
   } = useProjects();
 
+  const memoizedMessages = useMemo(() => consoleMessages, [consoleMessages.length]);
+
   if (loading) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>Chargement...</div>;
+    return <div className="loading">Chargement...</div>;
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
-      <h1 style={{ marginBottom: '2rem' }}>BuzzCraft Dashboard v2</h1>
+    <div className="dashboard">
+      <ProjectStats 
+        projects={allProjects}
+        filterState={filterState}
+        onStateFilter={handleStateFilter}
+      />
       
-      <Button 
-        variant="primary" 
-        size="lg" 
-        onClick={handleNewProject}
-        style={{ width: '100%', marginBottom: '2rem' }}
-      >
-        NEW PROJECT
-      </Button>
-      
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {projects.map(project => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            onAction={handleProjectAction}
-            onDeleteRequest={handleDeleteRequest}
-            actionLoading={actionLoading}
-          />
-        ))}
-      </div>
-      
-      {projects.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
-          Aucun projet. Créez-en un !
+      <div className="project-list">
+        <button 
+          className="btn-primary"
+          onClick={handleNewProject}
+        >
+          NEW PROJECT
+        </button>
+
+        <div className="projects-grid">
+          {projects.map(project => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onAction={handleProjectAction}
+              onDeleteRequest={handleDeleteRequest}
+              actionLoading={actionLoading}
+            />
+          ))}
+          
+          {projects.length === 0 && (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '3rem',
+              color: 'var(--color-text-secondary)',
+              fontStyle: 'italic'
+            }}>
+              {filterState ? `Aucun projet ${filterState}` : 'Aucun projet. Créez-en un !'}
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      <Console 
+        messages={memoizedMessages}
+        onClear={clearConsole}
+      />
+
+      <CreateModal 
+        isOpen={showCreateModal}
+        onClose={handleCloseModal}
+        onSubmit={handleCreateProject}
+      />
+      
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer le projet"
+        message={`Êtes-vous sûr de vouloir supprimer "${projectToDelete?.name}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        loading={actionLoading[`${projectToDelete?.id}-DELETE`]}
+      />
     </div>
   );
 }

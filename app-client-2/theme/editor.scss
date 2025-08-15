@@ -1,0 +1,615 @@
+.editor {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+}
+
+.editor-header {
+  background: var(--color-bg-secondary);
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+  
+  .editor-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    
+    h1 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      cursor: pointer;
+    }
+    
+    .project-id {
+      color: var(--color-text-secondary);
+      font-size: 0.75rem;
+    }
+    
+    .dirty-indicator {
+      color: var(--color-warning);
+      font-weight: 600;
+    }
+  }
+  
+  .editor-controls {
+    .device-selector {
+      display: flex;
+      gap: 2px;
+      background: var(--color-bg-primary);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    
+    .device-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--color-text-secondary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      
+      &.active {
+        background: #3b82f6;
+        color: white;
+      }
+      
+      &:hover:not(.active) {
+        background: color-mix(in srgb, var(--color-bg-primary) 95%, white 5%);
+        color: var(--color-text-primary);
+      }
+      
+      .device-icon {
+        font-size: 0.875rem;
+      }
+    }
+  }
+  
+  .editor-actions {
+    display: flex;
+    gap: 1rem;
+    
+    button {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid;
+    }
+    
+    .btn-primary {
+      background: var(--color-primary);
+      color: var(--color-bg-primary);
+      border-color: var(--color-primary);
+      
+      &:hover:not(.disabled) {
+        background: color-mix(in srgb, var(--color-primary) 95%, white 5%);
+      }
+      
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+    
+    .btn-secondary {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-primary);
+      border-color: color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
+      
+      &:hover {
+        background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+        border-color: color-mix(in srgb, var(--color-bg-secondary) 80%, white 20%);
+      }
+    }
+  }
+}
+
+.editor-workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 300px 1fr 350px;
+  gap: 1px;
+  background: color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+}
+
+// === PROJECT TREE ===
+.project-tree {
+  background: var(--color-bg-secondary);
+  overflow-y: auto;
+  
+  .tree-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    
+    button {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      background: var(--color-primary);
+      color: var(--color-bg-primary);
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      
+      &:hover {
+        opacity: 0.9;
+      }
+    }
+  }
+  
+  .tree-content {
+    padding: 0.5rem;
+  }
+  
+  .tree-item {
+    margin-bottom: 2px;
+    position: relative;
+  }
+  
+  .tree-node {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    
+    &:hover {
+      background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+    }
+    
+    &.selected {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .tree-node-left {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .tree-node-right {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex-shrink: 0;
+    }
+    
+    .tree-label {
+      font-size: 0.875rem;
+      color: var(--color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .tree-type {
+      font-size: 0.75rem;
+      background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: var(--color-text-secondary);
+      min-width: 60px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    
+    &.selected {
+      .tree-label, .tree-type {
+        color: white;
+      }
+      
+      .tree-type {
+        background: rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+}
+
+// === PROJECT PREVIEW ===
+.project-preview {
+  background: var(--color-bg-primary);
+  overflow-y: auto;
+  
+  .preview-header {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+    
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    
+    .device-indicator {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+  }
+  
+  .preview-content {
+    padding: 1.5rem;
+  }
+  
+  .preview-viewport {
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    color: black;
+    min-height: 400px;
+    
+    &.device-mobile {
+      width: 375px;
+      margin: 0 auto;
+    }
+    
+    &.device-tablet {
+      width: 768px;
+      margin: 0 auto;
+    }
+    
+    &.device-desktop {
+      width: 100%;
+    }
+  }
+  
+  .preview-page {
+    min-height: 100%;
+    padding: 2rem;
+  }
+  
+  .empty-project {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    color: #666;
+    font-style: italic;
+  }
+}
+
+// === PROJECT PROPERTIES ===
+.project-properties {
+  background: var(--color-bg-secondary);
+  overflow-y: auto;
+  
+  .properties-header {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+    
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    
+    .element-type {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+  }
+  
+  .properties-device-indicator {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+    
+    .device-label {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+      padding: 4px 12px;
+      border-radius: 6px;
+    }
+  }
+  
+  .properties-content {
+    padding: 1.5rem;
+  }
+  
+  .properties-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
+  
+  .property-field {
+    margin-bottom: 1.5rem;
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+    
+    .property-value {
+      background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+      border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
+      border-radius: 6px;
+      padding: 0.5rem;
+      color: var(--color-text-primary);
+      font-size: 0.875rem;
+    }
+    
+    small {
+      display: block;
+      margin-top: 0.25rem;
+      color: var(--color-text-secondary);
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+  }
+}
+
+// === INLINE EDITING ===
+.inline-edit-input, .tree-edit-input {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.tree-edit-input {
+  font-size: 0.75rem;
+  padding: 0.25rem;
+  width: 120px;
+}
+
+.tree-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.25rem;
+  
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+// === NOUVEAUX STYLES TREE ACTIONS ===
+.tree-item {
+  position: relative;
+  margin-bottom: 2px;
+  
+  &.nested {
+    .tree-node {
+      margin-left: 1rem;
+    }
+  }
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  
+  &:hover {
+    background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+  }
+  
+  &.selected {
+    background: #3b82f6;
+    color: white;
+    
+    .tree-label, .tree-type, .tree-icon {
+      color: white;
+    }
+    
+    .tree-type {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tree-icon {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.tree-label {
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.tree-type {
+  font-size: 0.625rem;
+  background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.tree-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.tree-action-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  
+  &.add {
+    background: var(--color-success);
+    color: white;
+    
+    &:hover {
+      background: color-mix(in srgb, var(--color-success) 90%, black 10%);
+      transform: scale(1.1);
+    }
+  }
+  
+  &.remove {
+    background: var(--color-danger);
+    color: white;
+    
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 90%, black 10%);
+      transform: scale(1.1);
+    }
+  }
+  
+  &.edit {
+    background: var(--color-warning);
+    color: white;
+    
+    &:hover {
+      background: color-mix(in srgb, var(--color-warning) 90%, black 10%);
+      transform: scale(1.1);
+    }
+  }
+  
+  &.confirm {
+    background: var(--color-success);
+    color: white;
+    
+    &:hover {
+      background: color-mix(in srgb, var(--color-success) 90%, black 10%);
+    }
+  }
+  
+  &.cancel {
+    background: var(--color-danger);
+    color: white;
+    
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 90%, black 10%);
+    }
+  }
+}
+
+.tree-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.tree-edit-input {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 3px;
+  padding: 0.25rem 0.5rem;
+  color: var(--color-text-primary);
+  font-size: 0.75rem;
+  flex: 1;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+}
+
+.tree-add-first {
+  width: 100%;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+  border: 2px dashed color-mix(in srgb, var(--color-text-secondary) 70%, transparent);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  
+  &:hover {
+    background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+    border-color: var(--color-text-secondary);
+    color: var(--color-text-primary);
+    
+    .tree-action-btn {
+      transform: scale(1.1);
+    }
+  }
+}

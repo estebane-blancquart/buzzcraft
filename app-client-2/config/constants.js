@@ -9,13 +9,15 @@ export const PROJECT_STATES = {
 };
 
 export const PROJECT_ACTIONS = {
-  CREATE: 'CREATE',
-  SAVE: 'SAVE',
-  BUILD: 'BUILD',
-  DEPLOY: 'DEPLOY',
-  START: 'START',
-  STOP: 'STOP',
-  DELETE: 'DELETE'
+  CREATE: "CREATE",
+  EDIT: "EDIT",
+  BUILD: "BUILD",
+  REVERT: "REVERT",
+  DEPLOY: "DEPLOY",
+  START: "START",
+  STOP: "STOP",
+  UPDATE: "UPDATE",
+  DELETE: "DELETE"
 };
 
 export const DEVICES = {

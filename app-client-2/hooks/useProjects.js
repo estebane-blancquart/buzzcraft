@@ -390,6 +390,7 @@ export function useProjects() {
     filterState,
     showConfirmModal,
     projectToDelete,
+    // FONCTIONS MANQUANTES AJOUTÉES
     handleNewProject,
     handleCloseModal,
     handleCreateProject,

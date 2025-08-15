@@ -1,6 +1,7 @@
-// í¾¨ POINT D'ENTRÃ‰E STYLES - Import tout
+// === BASE ===
 @import 'variables';
 @import 'base';
 
-// Import automatique styles components + modules
-// Note: Les .module.scss sont importÃ©s directement par les composants
+// === FEATURES ===
+@import 'dashboard';
+@import 'editor';

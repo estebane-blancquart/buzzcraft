@@ -1,5 +1,4 @@
 import React from 'react';
-import styles from './ProjectCard.module.scss';
 import { PROJECT_STATES, PROJECT_ACTIONS } from '@config/constants.js';
 
 function formatDate(dateString) {
@@ -10,17 +9,18 @@ function formatDate(dateString) {
 
 function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
   return (
-    <div className={styles.card}>
-      <div className={styles.info}>
-        <div className={styles.header}>
-          <h3 className={styles.name}>{project.name}</h3>
-          <p className={styles.meta}>Créé le {formatDate(project.created)}</p>
+    <div className="project-card">
+      <div className="project-info">
+        <div className="project-header">
+          <h3>{project.name}</h3>
+          <p className="project-meta">Créé le {formatDate(project.created)}</p>
         </div>
-        <span className={`${styles.state} ${styles[project.state.toLowerCase()]}`}>
+        <span className="project-state" data-state={project.state}>
           {project.state}
         </span>
       </div>
-      <div className={styles.actions}>
+      <div className="project-actions">
+        {/* DRAFT: EDIT + BUILD */}
         {project.state === PROJECT_STATES.DRAFT && (
           <>
             <button onClick={() => onAction(project.id, PROJECT_ACTIONS.EDIT)} 
@@ -33,6 +33,8 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
             </button>
           </>
         )}
+        
+        {/* BUILT: REVERT + DEPLOY */}
         {project.state === PROJECT_STATES.BUILT && (
           <>
             <button onClick={() => onAction(project.id, PROJECT_ACTIONS.REVERT)}
@@ -45,6 +47,8 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
             </button>
           </>
         )}
+        
+        {/* OFFLINE: START + UPDATE */}
         {project.state === PROJECT_STATES.OFFLINE && (
           <>
             <button onClick={() => onAction(project.id, PROJECT_ACTIONS.START)}
@@ -57,6 +61,8 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
             </button>
           </>
         )}
+        
+        {/* ONLINE: STOP + UPDATE */}
         {project.state === PROJECT_STATES.ONLINE && (
           <>
             <button onClick={() => onAction(project.id, PROJECT_ACTIONS.STOP)}
@@ -69,8 +75,10 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
             </button>
           </>
         )}
+        
+        {/* DELETE: toujours disponible */}
         <button onClick={() => onDeleteRequest(project.id, project.name)}
-          disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`]} className={styles.deleteBtn}>
+          disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`]}>
           {actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`] ? '...' : 'DELETE'}
         </button>
       </div>
