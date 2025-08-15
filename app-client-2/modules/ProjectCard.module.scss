@@ -1,0 +1,124 @@
+.card {
+  background: var(--color-bg-secondary);
+  border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
+  }
+}
+
+.info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header {
+  flex: 1;
+}
+
+.name {
+  font-size: var(--size-md);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+  margin: 0 0 2px 0;
+}
+
+.meta {
+  font-size: var(--size-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+  min-width: 65px;
+  border: 1px solid;
+  margin-right: var(--space-8);
+
+  &.draft {
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  &.built {
+    background: color-mix(in srgb, #3b82f6 8%, transparent);
+    color: #3b82f6;
+    border-color: #3b82f6;
+  }
+
+  &.offline {
+    background: color-mix(in srgb, #f59e0b 8%, transparent);
+    color: #f59e0b;
+    border-color: #f59e0b;
+  }
+
+  &.online {
+    background: color-mix(in srgb, #10b981 8%, transparent);
+    color: #10b981;
+    border-color: #10b981;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+
+  button {
+    padding: 4px 10px;
+    border-radius: var(--radius-md);
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background-color 0.15s ease;
+    min-width: 60px;
+    height: 26px;
+    border: 1px solid;
+    cursor: pointer;
+    background: color-mix(in srgb, var(--color-bg-secondary) 97%, white 3%);
+    color: color-mix(in srgb, var(--color-text-secondary) 90%, white 10%);
+    border-color: color-mix(in srgb, var(--color-bg-secondary) 88%, white 12%);
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+      color: var(--color-text-primary);
+      border-color: color-mix(in srgb, var(--color-bg-secondary) 82%, white 18%);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .deleteBtn {
+    background: color-mix(in srgb, #ef4444 25%, var(--color-bg-primary));
+    color: color-mix(in srgb, #ef4444 85%, white 15%);
+    border-color: color-mix(in srgb, #ef4444 90%, var(--color-bg-primary) 10%);
+    margin-left: 8px;
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, #ef4444 85%, var(--color-bg-primary) 15%);
+      color: white;
+    }
+  }
+}
