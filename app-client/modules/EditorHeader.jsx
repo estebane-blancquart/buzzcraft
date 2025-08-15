@@ -11,9 +11,9 @@ function EditorHeader({
   onBackToDashboard
 }) {
   const devices = [
-    { id: DEVICES.DESKTOP, label: 'DESKTOP', icon: 'í²»' },
-    { id: DEVICES.TABLET, label: 'TABLET', icon: 'í³±' },
-    { id: DEVICES.MOBILE, label: 'MOBILE', icon: 'í³±' }
+    { id: DEVICES.DESKTOP, label: 'DESKTOP', icon: 'ðŸ’»' },
+    { id: DEVICES.TABLET, label: 'TABLET', icon: 'ðŸ“±' },
+    { id: DEVICES.MOBILE, label: 'MOBILE', icon: 'ðŸ“±' }
   ];
 
   if (!project) return null;
@@ -46,12 +46,14 @@ function EditorHeader({
           onClick={onSave}
           variant="primary"
           disabled={!isDirty}
+          size="sm"
         >
           SAVE
         </Button>
         <Button 
           onClick={onBackToDashboard} 
           variant="secondary"
+          size="sm"
         >
           DASHBOARD
         </Button>

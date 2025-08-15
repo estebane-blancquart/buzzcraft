@@ -1,13 +1,7 @@
 // === BASE ===
-@use 'variables' as *;
+@use 'variables';
 @use 'base';
-@use 'buttons';
 
 // === FEATURES ===
-@use '../features/dashboard/styles/dashboard';
-@use '../features/dashboard/styles/project-stats';
-@use '../features/dashboard/styles/project-list'; 
-@use '../features/dashboard/styles/create-modal'; 
-@use '../features/dashboard/styles/confirm-modal'; 
-
-@use '../features/editor/styles/editor';
+@use 'dashboard';
+@use 'editor';

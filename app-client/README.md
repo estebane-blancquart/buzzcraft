@@ -1,8 +1,8 @@
-# ��� BuzzCraft v2 - Architecture Finale
+# ��� BuzzCraft - Architecture Finale
 
 ## Structure
 ```
-app-client-2/
+app-client/
 ├── components/     # UI pur (Button, Modal, Input)
 ├── modules/        # Métier (ProjectCard, ProjectList) 
 ├── pages/          # Pages (Dashboard, Editor, Settings)

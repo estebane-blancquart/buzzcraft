@@ -27,7 +27,7 @@ export function useProjectEditor() {
     setError(null);
     
     try {
-      console.log(`Ì≥Ç EDITOR: Loading project ${id}...`);
+      console.log(`üìÇ EDITOR: Loading project ${id}...`);
       const response = await fetch(apiUrl(`projects/${id}`));
       
       if (!response.ok) {
@@ -40,7 +40,7 @@ export function useProjectEditor() {
       const data = await response.json();
       
       if (data.success) {
-        console.log(`Ì≥Ç EDITOR: Project ${id} loaded successfully`);
+        console.log(`üìÇ EDITOR: Project ${id} loaded successfully`);
         setProject(data.project);
         
         // Log validation warnings si pr√©sentes
@@ -62,7 +62,7 @@ export function useProjectEditor() {
     if (!project || !isDirty) return;
     
     try {
-      console.log('Ì≤æ EDITOR: Saving project...');
+      console.log('üíæ EDITOR: Saving project...');
       const response = await fetch(apiUrl(`projects/${projectId}`), {
         method: 'PATCH',
         headers: {
@@ -93,13 +93,13 @@ export function useProjectEditor() {
   };
 
   const updateProject = (newProject) => {
-    console.log('Ì¥Ñ EDITOR: Updating project state');
+    console.log('üîÑ EDITOR: Updating project state');
     setProject(newProject);
     setIsDirty(true);
   };
 
   const handleElementSelect = (element, path) => {
-    console.log('ÌæØ EDITOR: Selected element:', element?.id || element?.type, path);
+    console.log('üéØ EDITOR: Selected element:', element?.id || element?.type, path);
     setSelectedElement({ element, path });
   };
 
@@ -154,7 +154,7 @@ export function useProjectEditor() {
   };
 
   const handleDeviceChange = (device) => {
-    console.log('Ì≥± EDITOR: Device changed to:', device);
+    console.log('üì± EDITOR: Device changed to:', device);
     setSelectedDevice(device);
   };
 
@@ -164,7 +164,7 @@ export function useProjectEditor() {
       if (!confirmLeave) return;
     }
     
-    console.log('Ìø† EDITOR: Returning to dashboard');
+    console.log('üè† EDITOR: Returning to dashboard');
     navigate('/');
   };
 
@@ -175,7 +175,7 @@ export function useProjectEditor() {
   // === CRUD OPERATIONS ===
   
   const handleAddPage = () => {
-    console.log('Ì≥Ñ EDITOR: Adding new page');
+    console.log('üìÑ EDITOR: Adding new page');
     
     const newPage = {
       id: `page-${Date.now()}`,
@@ -195,7 +195,7 @@ export function useProjectEditor() {
   };
 
   const handleAddSection = (pagePath) => {
-    console.log('Ì≥ê EDITOR: Adding section to:', pagePath);
+    console.log('üìê EDITOR: Adding section to:', pagePath);
     
     const newSection = {
       id: `section-${Date.now()}`,
@@ -210,7 +210,7 @@ export function useProjectEditor() {
     
     // Parse le path: "project.pages[0]"
     const pathParts = pagePath.split('.');
-    console.log('Path parts:', pathParts); // Debug
+    console.log('Path parts:', pathParts);
     
     if (pathParts.length >= 2 && pathParts[1].includes('[')) {
       const pageIndexStr = pathParts[1].match(/\[(\d+)\]/);
@@ -234,7 +234,7 @@ export function useProjectEditor() {
   };
 
   const handleAddDiv = (sectionPath) => {
-    console.log('Ì≥¶ EDITOR: Adding div to:', sectionPath);
+    console.log('üì¶ EDITOR: Adding div to:', sectionPath);
     
     const newDiv = {
       id: `div-${Date.now()}`,
@@ -253,7 +253,7 @@ export function useProjectEditor() {
   };
 
   const handleAddComponent = (divPath) => {
-    console.log('Ì∑© EDITOR: Adding component to:', divPath);
+    console.log('üß© EDITOR: Adding component to:', divPath);
     
     const newComponent = {
       id: `component-${Date.now()}`,
@@ -272,7 +272,7 @@ export function useProjectEditor() {
   };
 
   const handleDeleteElement = (path) => {
-    console.log('Ì∑ëÔ∏è EDITOR: Deleting element at:', path);
+    console.log('üóëÔ∏è EDITOR: Deleting element at:', path);
     
     const pathParts = path.split('.');
     console.log('Path parts:', pathParts);
@@ -338,11 +338,6 @@ export function useProjectEditor() {
       console.log('‚úÖ Element deleted, updating project state');
       setProject(updatedProject);
       setIsDirty(true);
-      
-      // Clear selection if deleted element was selected
-      if (selectedElement?.path === path) {
-        setSelectedElement(null);
-      }
       
     } catch (error) {
       console.error('‚ùå Delete error:', error);
