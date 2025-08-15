@@ -9,7 +9,7 @@
     "app-server"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w app-api\" \"npm run dev -w app-client\"",
+    "start": "concurrently \"npm run dev -w app-api\" \"npm run dev -w app-client\"",
     "build": "npm run build -w app-client",
     "check": "eslint . --ext .js,.jsx && stylelint \"app-client/**/*.scss\" && prettier --check .",
     "fix": "eslint . --ext .js,.jsx --fix && prettier --write .",
