@@ -1,0 +1,31 @@
+{
+    "$id": "component-div",
+    "type": "object",
+    "title": "Div Container",
+    
+    "properties": {
+        "id": {
+            "type": "string",
+            "default": "div-id"
+        },
+        "name": {
+            "type": "string",
+            "default": "Div Container"
+        },
+        "classname": {
+            "type": "string",
+            "default": ""
+        },
+        "components": {
+            "type": "array",
+            "items": {
+                "anyOf": [
+                    {
+                        "$ref": "component-a"
+                    }
+                ]
+            }
+        }    
+    },
+    "required": ["components"]
+}
