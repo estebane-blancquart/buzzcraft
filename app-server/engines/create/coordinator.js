@@ -3,11 +3,12 @@ import { loadTemplate } from '../../transitions/create/loader.js';
 import { generateProject } from '../../transitions/create/generator.js';
 import { writePath } from '../../systems/writer.js';
 
-/*
- * FAIT QUOI : Orchestre workflow CREATE (VOID → DRAFT) - VERSION PROPRE
- * REÇOIT : projectId: string, config: object
- * RETOURNE : { success: boolean, data: object }
- * ERREURS : ValidationError si paramètres manquants
+/**
+ * Orchestrates CREATE workflow (VOID → DRAFT) - CLEAN VERSION
+ * @param {string} projectId - The project identifier
+ * @param {object} config - Configuration object
+ * @returns {{ success: boolean, data: object }} Response object with success status and data
+ * @throws {ValidationError} When required parameters are missing
  */
 
 export async function createWorkflow(projectId, config = {}) {
@@ -38,7 +39,7 @@ export async function createWorkflow(projectId, config = {}) {
   
   console.log(`[CLEAN] Generating project data...`);
   const generation = await generateProject(projectId, config, { template: templateLoad.data });
-  console.log(`[CLEAN] Generation result:`, generation.generated);
+  // console.log(`[CLEAN] Generation result:`, generation.generated);
   
   console.log(`[CLEAN] About to write to: ${projectPath}/project.json`);
   const writeResult = await writePath(`${projectPath}/project.json`, generation.output);

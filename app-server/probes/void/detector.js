@@ -1,10 +1,10 @@
 import { readPath } from '../../systems/reader.js';
 
-/*
- * FAIT QUOI : Détecte si un projet est en état VOID (inexistant)
- * REÇOIT : projectPath: string
- * RETOURNE : { success: boolean, data: object }
- * ERREURS : ValidationError si projectPath manquant
+/**
+ * Detects if a project is in VOID state (non-existent)
+ * @param {string} projectPath - The project path to check
+ * @returns {{ success: boolean, data: object }} Response object with success status and data
+ * @throws {ValidationError} When projectPath is missing
  */
 
 export async function detectVoidState(projectPath) {

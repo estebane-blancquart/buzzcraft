@@ -1,0 +1,54 @@
+{
+  "$id": "component-a",
+  "type": "object",
+  
+  "title": "'A' Component Schema",
+  "description": "Schema for the 'A' component with configurable properties",
+  "properties": {
+
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the component"
+    },
+
+    "type": {
+      "type": "string",
+      "description": "The type of component"
+    },
+
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for the component"
+    },
+
+    "schema": {
+      "type": "object",
+      "description": "Component property definitions",
+      "properties": {
+
+        "content": {
+          "type": "string",
+          "default": "Link text"
+        },
+
+        "href": {
+          "type": "string",
+          "default": "#"
+        },
+
+        "target": {
+          "type": "string",
+          "enum": ["_self", "_blank", "_parent", "_top"],
+          "default": "_self"
+        },
+
+        "classname": {
+          "type": "string",
+          "default": ""
+        }
+      }
+    }
+  },
+  "required": ["id", "type", "name", "schema"],
+  "additionalProperties": false
+}

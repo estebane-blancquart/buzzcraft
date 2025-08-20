@@ -10,5 +10,14 @@
   "files.exclude": {
     "**/node_modules": true,
     "**/package-lock.json": true
-  }
+  },
+
+  "json.schemas": [
+    {
+        "fileMatch": [
+            "a.json"
+        ],
+        "url": "./app-server/inputs/validations/a.schema.json"
+    }
+]
 }

@@ -67,7 +67,7 @@ export async function buildWorkflow(projectId, config = {}) {
   
   console.log(`[BUILD] Generating services...`);
   const generation = await generateServices(projectData, templatesLoad.data);
-  console.log(`[BUILD] Services generated:`, generation.generated);
+  // console.log(`[BUILD] Services generated:`, generation.generated);
   
   // ROLLBACK SYSTEM - tracker fichiers écrits pour nettoyage si erreur
   const writtenFiles = [];
