@@ -15,6 +15,12 @@ export function useProjectEditor() {
   const [error, setError] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
 
+  // √âtats pour les selectors
+  const [showComponentSelector, setShowComponentSelector] = useState(false);
+  const [pendingComponentPath, setPendingComponentPath] = useState(null);
+  const [showContainerSelector, setShowContainerSelector] = useState(false);
+  const [pendingContainerPath, setPendingContainerPath] = useState(null);
+
   // Charger le projet au montage
   useEffect(() => {
     if (projectId) {
@@ -27,7 +33,7 @@ export function useProjectEditor() {
     setError(null);
     
     try {
-      console.log(`üìÇ EDITOR: Loading project ${id}...`);
+      console.log(`Ì≥Ç EDITOR: Loading project ${id}...`);
       const response = await fetch(apiUrl(`projects/${id}`));
       
       if (!response.ok) {
@@ -40,10 +46,9 @@ export function useProjectEditor() {
       const data = await response.json();
       
       if (data.success) {
-        console.log(`üìÇ EDITOR: Project ${id} loaded successfully`);
+        console.log(`Ì≥Ç EDITOR: Project ${id} loaded successfully`);
         setProject(data.project);
         
-        // Log validation warnings si pr√©sentes
         if (data.validation && data.validation.warnings?.length > 0) {
           console.warn('‚ö†Ô∏è Project schema warnings:', data.validation.warnings);
         }
@@ -62,7 +67,7 @@ export function useProjectEditor() {
     if (!project || !isDirty) return;
     
     try {
-      console.log('üíæ EDITOR: Saving project...');
+      console.log('Ì≤æ EDITOR: Saving project...');
       const response = await fetch(apiUrl(`projects/${projectId}`), {
         method: 'PATCH',
         headers: {
@@ -80,8 +85,6 @@ export function useProjectEditor() {
       if (data.success) {
         console.log('‚úÖ EDITOR: Project saved successfully');
         setIsDirty(false);
-        
-        // Mettre √† jour le projet avec les donn√©es retourn√©es (lastModified, etc.)
         setProject(data.project);
       } else {
         throw new Error(data.error || 'Erreur lors de la sauvegarde');
@@ -93,13 +96,13 @@ export function useProjectEditor() {
   };
 
   const updateProject = (newProject) => {
-    console.log('üîÑ EDITOR: Updating project state');
+    console.log('Ì¥Ñ EDITOR: Updating project state');
     setProject(newProject);
     setIsDirty(true);
   };
 
   const handleElementSelect = (element, path) => {
-    console.log('üéØ EDITOR: Selected element:', element?.id || element?.type, path);
+    console.log('ÌæØ EDITOR: Selected element:', element?.id || element?.type, path);
     setSelectedElement({ element, path });
   };
 
@@ -108,18 +111,14 @@ export function useProjectEditor() {
     
     if (!project || !path) return;
     
-    // Helper pour naviguer et mettre √† jour l'objet nested
     const updateNestedObject = (obj, pathString, newElement) => {
-      // Parse le path: "project.pages[0].layout.sections[0].divs[0].components[0]"
       const pathParts = pathString.split('.');
       let current = obj;
       
-      // Naviguer jusqu'au parent de l'√©l√©ment √† modifier
       for (let i = 1; i < pathParts.length - 1; i++) {
         const part = pathParts[i];
         
         if (part.includes('[')) {
-          // Handle array access: "pages[0]" ‚Üí key="pages", index=0
           const [key, indexStr] = part.split('[');
           const index = parseInt(indexStr.replace(']', ''));
           current = current[key][index];
@@ -128,7 +127,6 @@ export function useProjectEditor() {
         }
       }
       
-      // Mettre √† jour l'√©l√©ment final
       const lastPart = pathParts[pathParts.length - 1];
       if (lastPart.includes('[')) {
         const [key, indexStr] = lastPart.split('[');
@@ -141,7 +139,6 @@ export function useProjectEditor() {
       return obj;
     };
     
-    // Cloner le projet et appliquer la mise √† jour
     const updatedProject = { ...project };
     updateNestedObject(updatedProject, path, updatedElement);
     
@@ -149,12 +146,11 @@ export function useProjectEditor() {
     setProject(updatedProject);
     setIsDirty(true);
     
-    // Mettre √† jour l'√©l√©ment s√©lectionn√© pour sync Properties
     setSelectedElement({ element: updatedElement, path });
   };
 
   const handleDeviceChange = (device) => {
-    console.log('üì± EDITOR: Device changed to:', device);
+    console.log('Ì≥± EDITOR: Device changed to:', device);
     setSelectedDevice(device);
   };
 
@@ -164,7 +160,7 @@ export function useProjectEditor() {
       if (!confirmLeave) return;
     }
     
-    console.log('üè† EDITOR: Returning to dashboard');
+    console.log('Ìø† EDITOR: Returning to dashboard');
     navigate('/');
   };
 
@@ -172,10 +168,40 @@ export function useProjectEditor() {
     setError(null);
   };
 
+  // Helper pour mise √† jour nested
+  const updateNestedElement = (obj, pathString, updateFn) => {
+    const pathParts = pathString.split('.');
+    const updatedObj = { ...obj };
+    let current = updatedObj;
+    
+    for (let i = 1; i < pathParts.length - 1; i++) {
+      const part = pathParts[i];
+      
+      if (part.includes('[')) {
+        const [key, indexStr] = part.split('[');
+        const index = parseInt(indexStr.replace(']', ''));
+        current = current[key][index];
+      } else {
+        current = current[part];
+      }
+    }
+    
+    const lastPart = pathParts[pathParts.length - 1];
+    if (lastPart.includes('[')) {
+      const [key, indexStr] = lastPart.split('[');
+      const index = parseInt(indexStr.replace(']', ''));
+      current[key][index] = updateFn(current[key][index]);
+    } else {
+      current[lastPart] = updateFn(current[lastPart]);
+    }
+    
+    return updatedObj;
+  };
+
   // === CRUD OPERATIONS ===
   
   const handleAddPage = () => {
-    console.log('üìÑ EDITOR: Adding new page');
+    console.log('Ì≥Ñ EDITOR: Adding new page');
     
     const newPage = {
       id: `page-${Date.now()}`,
@@ -195,7 +221,7 @@ export function useProjectEditor() {
   };
 
   const handleAddSection = (pagePath) => {
-    console.log('üìê EDITOR: Adding section to:', pagePath);
+    console.log('Ì≥ê EDITOR: Adding section to:', pagePath);
     
     const newSection = {
       id: `section-${Date.now()}`,
@@ -208,7 +234,6 @@ export function useProjectEditor() {
     
     const updatedProject = { ...project };
     
-    // Parse le path: "project.pages[0]"
     const pathParts = pagePath.split('.');
     console.log('Path parts:', pathParts);
     
@@ -234,54 +259,85 @@ export function useProjectEditor() {
   };
 
   const handleAddDiv = (sectionPath) => {
-    console.log('üì¶ EDITOR: Adding div to:', sectionPath);
+    console.log('Ì≥¶ EDITOR: Opening container selector for:', sectionPath);
+    setPendingContainerPath(sectionPath);
+    setShowContainerSelector(true);
+  };
+
+  const handleContainerSelect = (selectedContainer) => {
+    console.log('‚úÖ EDITOR: Container selected:', selectedContainer.type);
     
-    const newDiv = {
-      id: `div-${Date.now()}`,
-      name: 'Nouveau Div',
-      classname: '',
-      components: []
-    };
+    if (!pendingContainerPath) return;
     
-    const updatedProject = updateNestedElement(project, sectionPath, (section) => ({
-      ...section,
-      divs: [...(section.divs || []), newDiv]
-    }));
+    const updatedProject = updateNestedElement(project, pendingContainerPath, (section) => {
+      if (selectedContainer.type === 'div') {
+        return {
+          ...section,
+          divs: [...(section.divs || []), selectedContainer]
+        };
+      } else if (selectedContainer.type === 'form') {
+        return {
+          ...section,
+          forms: [...(section.forms || []), selectedContainer]
+        };
+      } else if (selectedContainer.type === 'list') {
+        return {
+          ...section,
+          lists: [...(section.lists || []), selectedContainer]
+        };
+      }
+      return section;
+    });
     
     setProject(updatedProject);
     setIsDirty(true);
+    
+    setPendingContainerPath(null);
+    setShowContainerSelector(false);
+  };
+
+  const handleCloseContainerSelector = () => {
+    setPendingContainerPath(null);
+    setShowContainerSelector(false);
   };
 
   const handleAddComponent = (divPath) => {
-    console.log('üß© EDITOR: Adding component to:', divPath);
+    console.log('Ì∑© EDITOR: Opening component selector for:', divPath);
+    setPendingComponentPath(divPath);
+    setShowComponentSelector(true);
+  };
+
+  const handleComponentSelect = (selectedComponent) => {
+    console.log('‚úÖ EDITOR: Component selected:', selectedComponent.type);
     
-    const newComponent = {
-      id: `component-${Date.now()}`,
-      type: ELEMENT_TYPES.PARAGRAPH,
-      content: 'Nouveau contenu',
-      classname: ''
-    };
+    if (!pendingComponentPath) return;
     
-    const updatedProject = updateNestedElement(project, divPath, (div) => ({
+    const updatedProject = updateNestedElement(project, pendingComponentPath, (div) => ({
       ...div,
-      components: [...(div.components || []), newComponent]
+      components: [...(div.components || []), selectedComponent]
     }));
     
     setProject(updatedProject);
     setIsDirty(true);
+    
+    setPendingComponentPath(null);
+    setShowComponentSelector(false);
+  };
+
+  const handleCloseComponentSelector = () => {
+    setPendingComponentPath(null);
+    setShowComponentSelector(false);
   };
 
   const handleDeleteElement = (path) => {
-    console.log('üóëÔ∏è EDITOR: Deleting element at:', path);
+    console.log('Ì∑ëÔ∏è EDITOR: Deleting element at:', path);
     
     const pathParts = path.split('.');
     console.log('Path parts:', pathParts);
     const updatedProject = { ...project };
     
     try {
-      // project.pages[0] = 2 parties
       if (pathParts.length === 2 && pathParts[0] === 'project' && pathParts[1].startsWith('pages[')) {
-        // Delete page: project.pages[0]
         const pageIndexMatch = pathParts[1].match(/pages\[(\d+)\]/);
         if (pageIndexMatch) {
           const pageIndex = parseInt(pageIndexMatch[1]);
@@ -289,9 +345,7 @@ export function useProjectEditor() {
           updatedProject.pages.splice(pageIndex, 1);
         }
       } 
-      // project.pages[0].layout.sections[0] = 4 parties
       else if (pathParts.length === 4 && pathParts[2] === 'layout' && pathParts[3].startsWith('sections[')) {
-        // Delete section
         const pageIndexMatch = pathParts[1].match(/pages\[(\d+)\]/);
         const sectionIndexMatch = pathParts[3].match(/sections\[(\d+)\]/);
         if (pageIndexMatch && sectionIndexMatch) {
@@ -301,9 +355,7 @@ export function useProjectEditor() {
           updatedProject.pages[pageIndex].layout.sections.splice(sectionIndex, 1);
         }
       }
-      // project.pages[0].layout.sections[0].divs[0] = 5 parties  
       else if (pathParts.length === 5 && pathParts[4].startsWith('divs[')) {
-        // Delete div
         const pageIndexMatch = pathParts[1].match(/pages\[(\d+)\]/);
         const sectionIndexMatch = pathParts[3].match(/sections\[(\d+)\]/);
         const divIndexMatch = pathParts[4].match(/divs\[(\d+)\]/);
@@ -315,9 +367,7 @@ export function useProjectEditor() {
           updatedProject.pages[pageIndex].layout.sections[sectionIndex].divs.splice(divIndex, 1);
         }
       }
-      // project.pages[0].layout.sections[0].divs[0].components[0] = 6 parties
       else if (pathParts.length === 6 && pathParts[5].startsWith('components[')) {
-        // Delete component
         const pageIndexMatch = pathParts[1].match(/pages\[(\d+)\]/);
         const sectionIndexMatch = pathParts[3].match(/sections\[(\d+)\]/);
         const divIndexMatch = pathParts[4].match(/divs\[(\d+)\]/);
@@ -344,38 +394,6 @@ export function useProjectEditor() {
     }
   };
 
-  // Helper pour mise √† jour nested
-  const updateNestedElement = (obj, pathString, updateFn) => {
-    const pathParts = pathString.split('.');
-    const updatedObj = { ...obj };
-    let current = updatedObj;
-    
-    // Naviguer jusqu'au parent
-    for (let i = 1; i < pathParts.length - 1; i++) {
-      const part = pathParts[i];
-      
-      if (part.includes('[')) {
-        const [key, indexStr] = part.split('[');
-        const index = parseInt(indexStr.replace(']', ''));
-        current = current[key][index];
-      } else {
-        current = current[part];
-      }
-    }
-    
-    // Appliquer la mise √† jour
-    const lastPart = pathParts[pathParts.length - 1];
-    if (lastPart.includes('[')) {
-      const [key, indexStr] = lastPart.split('[');
-      const index = parseInt(indexStr.replace(']', ''));
-      current[key][index] = updateFn(current[key][index]);
-    } else {
-      current[lastPart] = updateFn(current[lastPart]);
-    }
-    
-    return updatedObj;
-  };
-
   return {
     project,
     selectedElement,
@@ -395,6 +413,14 @@ export function useProjectEditor() {
     handleAddSection,
     handleAddDiv,
     handleAddComponent,
-    handleDeleteElement
+    handleDeleteElement,
+    // Component Selector
+    showComponentSelector,
+    handleComponentSelect,
+    handleCloseComponentSelector,
+    // Container Selector
+    showContainerSelector,
+    handleContainerSelect,
+    handleCloseContainerSelector
   };
 }

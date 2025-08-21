@@ -1,89 +1,103 @@
 export default function Form({ id, action, method, classname, inputs, buttons }) {
-  return (
-    <form 
-      id="{{id}}"
-      action="{{action}}"
-      method="{{method}}"
-      className="{{classname}}"
-    >
-      {{#each inputs}}
-      <div className="form-field">
-        {{#if (eq type "textarea")}}
-        <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
-        <textarea
-          id="{{id}}"
-          name="{{name}}"
-          placeholder="{{placeholder}}"
-          {{#if required}}required{{/if}}
-          className="{{classname}}"
-        ></textarea>
-        {{else if (eq type "select")}}
-        <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
-        <select
-          id="{{id}}"
-          name="{{name}}"
-          {{#if required}}required{{/if}}
-          className="{{classname}}"
-        >
-          <option value="">{{placeholder}}</option>
-          {{#each options}}
-          <option value="{{value}}">{{label}}</option>
-          {{/each}}
-        </select>
-        {{else if (eq type "checkbox")}}
-        <div className="checkbox-field">
-          <input
-            type="checkbox"
-            id="{{id}}"
-            name="{{name}}"
-            value="{{value}}"
-            {{#if required}}required{{/if}}
-            className="{{classname}}"
-          />
-          <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
-        </div>
-        {{else if (eq type "radio")}}
-        <fieldset className="radio-group">
-          <legend>{{label}}{{#if required}} *{{/if}}</legend>
-          {{#each options}}
-          <div className="radio-field">
-            <input
-              type="radio"
-              id="{{../id}}-{{@index}}"
-              name="{{../name}}"
-              value="{{value}}"
-              {{#if ../required}}required{{/if}}
-              className="{{../classname}}"
-            />
-            <label htmlFor="{{../id}}-{{@index}}">{{label}}</label>
-          </div>
-          {{/each}}
-        </fieldset>
-        {{else}}
-        <label htmlFor="{{id}}">{{label}}{{#if required}} *{{/if}}</label>
-        <input
-          type="{{type}}"
-          id="{{id}}"
-          name="{{name}}"
-          placeholder="{{placeholder}}"
-          {{#if required}}required{{/if}}
-          className="{{classname}}"
-        />
-        {{/if}}
-      </div>
-      {{/each}}
+ return (
+   <form 
+     id="{{id}}"
+     action="{{action}}"
+     method="{{method}}"
+     className="{{classname}}"
+   >
+     {{#each inputs}}
+     <div className="form-field mb-4">
+       {{#if (eq type "textarea")}}
+       <label htmlFor="{{id}}" className="block text-sm font-medium mb-2">
+         {{label}}{{#if required}} <span className="text-red-500">*</span>{{/if}}
+       </label>
+       <textarea
+         id="{{id}}"
+         name="{{name}}"
+         placeholder="{{placeholder}}"
+         {{#if required}}required{{/if}}
+         className="{{classname}} w-full"
+         rows="4"
+       ></textarea>
+       
+       {{else if (eq type "select")}}
+       <label htmlFor="{{id}}" className="block text-sm font-medium mb-2">
+         {{label}}{{#if required}} <span className="text-red-500">*</span>{{/if}}
+       </label>
+       <select
+         id="{{id}}"
+         name="{{name}}"
+         {{#if required}}required{{/if}}
+         className="{{classname}} w-full"
+       >
+         <option value="">{{placeholder}}</option>
+         {{#each options}}
+         <option value="{{value}}">{{label}}</option>
+         {{/each}}
+       </select>
+       
+       {{else if (eq type "checkbox")}}
+       <div className="flex items-center">
+         <input
+           type="checkbox"
+           id="{{id}}"
+           name="{{name}}"
+           value="{{value}}"
+           {{#if required}}required{{/if}}
+           className="{{classname}} mr-2"
+         />
+         <label htmlFor="{{id}}" className="text-sm">
+           {{label}}{{#if required}} <span className="text-red-500">*</span>{{/if}}
+         </label>
+       </div>
+       
+       {{else if (eq type "radio")}}
+       <fieldset className="radio-group">
+         <legend className="block text-sm font-medium mb-2">
+           {{label}}{{#if required}} <span className="text-red-500">*</span>{{/if}}
+         </legend>
+         {{#each options}}
+         <div className="flex items-center mb-2">
+           <input
+             type="radio"
+             id="{{../id}}-{{@index}}"
+             name="{{../name}}"
+             value="{{value}}"
+             {{#if ../required}}required{{/if}}
+             className="{{../classname}} mr-2"
+           />
+           <label htmlFor="{{../id}}-{{@index}}" className="text-sm">{{label}}</label>
+         </div>
+         {{/each}}
+       </fieldset>
+       
+       {{else}}
+       <label htmlFor="{{id}}" className="block text-sm font-medium mb-2">
+         {{label}}{{#if required}} <span className="text-red-500">*</span>{{/if}}
+       </label>
+       <input
+         type="{{type}}"
+         id="{{id}}"
+         name="{{name}}"
+         placeholder="{{placeholder}}"
+         {{#if required}}required{{/if}}
+         className="{{classname}} w-full"
+       />
+       {{/if}}
+     </div>
+     {{/each}}
 
-      <div className="form-actions">
-        {{#each buttons}}
-        <button
-          type="{{type}}"
-          className="{{classname}}"
-          {{#if onclick}}onClick={{{onclick}}}{{/if}}
-        >
-          {{content}}
-        </button>
-        {{/each}}
-      </div>
-    </form>
-  );
+     <div className="form-actions flex gap-4 mt-6">
+       {{#each buttons}}
+       <button
+         type="{{type}}"
+         className="{{classname}}"
+       >
+         {{content}}
+       </button>
+       {{/each}}
+     </div>
+   </form>
+ );
 }

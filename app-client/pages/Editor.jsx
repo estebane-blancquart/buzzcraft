@@ -4,6 +4,8 @@ import EditorHeader from '@modules/EditorHeader.jsx';
 import ProjectTree from '@modules/ProjectTree.jsx';
 import ProjectPreview from '@modules/ProjectPreview.jsx';
 import ProjectProperties from '@modules/ProjectProperties.jsx';
+import ComponentSelectorModal from '@modules/ComponentSelectorModal.jsx';
+import ContainerSelectorModal from '@modules/ContainerSelectorModal.jsx';
 
 function Editor() {
   const {
@@ -25,7 +27,15 @@ function Editor() {
     handleAddSection,
     handleAddDiv,
     handleAddComponent,
-    handleDeleteElement
+    handleDeleteElement,
+    // Component Selector
+    showComponentSelector,
+    handleComponentSelect,
+    handleCloseComponentSelector,
+    // Container Selector
+    showContainerSelector,
+    handleContainerSelect,
+    handleCloseContainerSelector
   } = useProjectEditor();
 
   if (loading) {
@@ -89,6 +99,18 @@ function Editor() {
           onElementUpdate={handleElementUpdate}
         />
       </div>
+
+      <ComponentSelectorModal
+        isOpen={showComponentSelector}
+        onClose={handleCloseComponentSelector}
+        onSelectComponent={handleComponentSelect}
+      />
+
+      <ContainerSelectorModal
+        isOpen={showContainerSelector}
+        onClose={handleCloseContainerSelector}
+        onSelectContainer={handleContainerSelect}
+      />
     </div>
   );
 }

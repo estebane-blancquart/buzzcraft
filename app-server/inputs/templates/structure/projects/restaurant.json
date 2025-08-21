@@ -1,0 +1,166 @@
+{
+ "project": {
+   "id": "restaurant",
+   "name": "Template Restaurant",
+   "description": "Site vitrine pour restaurant avec menu et contact",
+   "version": "1.0.0",
+   "pages": [
+     {
+       "id": "home",
+       "name": "Accueil",
+       "layout": {
+         "sections": [
+           {
+             "id": "hero-section",
+             "name": "Section Hero",
+             "desktop": 1,
+             "tablet": 1,
+             "mobile": 1,
+             "divs": [
+               {
+                 "id": "hero-container",
+                 "name": "Hero Container",
+                 "classname": "text-center py-20 bg-gradient-to-r from-red-600 to-red-800 text-white",
+                 "components": [
+                   {
+                     "id": "restaurant-title",
+                     "type": "heading",
+                     "tag": "h1",
+                     "content": "Chez Mario",
+                     "classname": "text-5xl font-bold mb-4"
+                   },
+                   {
+                     "id": "restaurant-subtitle",
+                     "type": "paragraph",
+                     "content": "Cuisine italienne authentique depuis 1985",
+                     "classname": "text-xl mb-8"
+                   },
+                   {
+                     "id": "reservation-btn",
+                     "type": "button",
+                     "content": "Réserver une table",
+                     "href": "#contact",
+                     "classname": "bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100"
+                   }
+                 ]
+               }
+             ]
+           },
+           {
+             "id": "menu-section",
+             "name": "Section Menu",
+             "desktop": 2,
+             "tablet": 1,
+             "mobile": 1,
+             "divs": [
+               {
+                 "id": "menu-text",
+                 "name": "Menu Description",
+                 "classname": "p-8",
+                 "components": [
+                   {
+                     "id": "menu-title",
+                     "type": "heading",
+                     "tag": "h2",
+                     "content": "Notre Menu",
+                     "classname": "text-3xl font-bold mb-6"
+                   },
+                   {
+                     "id": "menu-description",
+                     "type": "paragraph",
+                     "content": "Découvrez nos spécialités italiennes préparées avec des ingrédients frais importés directement d'Italie.",
+                     "classname": "text-lg text-gray-700 mb-6"
+                   }
+                 ]
+               },
+               {
+                 "id": "menu-image",
+                 "name": "Menu Image",
+                 "classname": "p-8",
+                 "components": [
+                   {
+                     "id": "pasta-image",
+                     "type": "image",
+                     "src": "https://picsum.photos/500/400?random=pasta",
+                     "alt": "Délicieuses pâtes italiennes",
+                     "classname": "w-full rounded-lg shadow-lg"
+                   }
+                 ]
+               }
+             ]
+           },
+           {
+             "id": "contact-section",
+             "name": "Section Contact",
+             "desktop": 1,
+             "tablet": 1,
+             "mobile": 1,
+             "forms": [
+               {
+                 "id": "reservation-form",
+                 "type": "form",
+                 "name": "Formulaire de Réservation",
+                 "action": "/api/reservations",
+                 "method": "POST",
+                 "classname": "max-w-lg mx-auto p-8 bg-gray-50 rounded-lg",
+                 "inputs": [
+                   {
+                     "id": "name",
+                     "type": "text",
+                     "name": "name",
+                     "label": "Nom complet",
+                     "placeholder": "Votre nom",
+                     "required": true,
+                     "classname": "border border-gray-300 rounded px-3 py-2"
+                   },
+                   {
+                     "id": "email",
+                     "type": "email",
+                     "name": "email",
+                     "label": "Email",
+                     "placeholder": "votre@email.com",
+                     "required": true,
+                     "classname": "border border-gray-300 rounded px-3 py-2"
+                   },
+                   {
+                     "id": "guests",
+                     "type": "select",
+                     "name": "guests",
+                     "label": "Nombre de personnes",
+                     "placeholder": "Choisissez",
+                     "required": true,
+                     "classname": "border border-gray-300 rounded px-3 py-2",
+                     "options": [
+                       { "value": "1", "label": "1 personne" },
+                       { "value": "2", "label": "2 personnes" },
+                       { "value": "3", "label": "3 personnes" },
+                       { "value": "4", "label": "4 personnes" },
+                       { "value": "5+", "label": "5+ personnes" }
+                     ]
+                   },
+                   {
+                     "id": "message",
+                     "type": "textarea",
+                     "name": "message",
+                     "label": "Message (optionnel)",
+                     "placeholder": "Demandes spéciales, allergies...",
+                     "required": false,
+                     "classname": "border border-gray-300 rounded px-3 py-2"
+                   }
+                 ],
+                 "buttons": [
+                   {
+                     "type": "submit",
+                     "content": "Réserver",
+                     "classname": "bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded"
+                   }
+                 ]
+               }
+             ]
+           }
+         ]
+       }
+     }
+   ]
+ }
+}

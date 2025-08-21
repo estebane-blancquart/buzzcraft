@@ -1,0 +1,19 @@
+export default function Div({ id, classname, components }) {
+ return (
+   <div 
+     id="{{id}}"
+     className="{{classname}}"
+   >
+     {{#each components}}
+     {/* Component: {{type}} - {{id}} */}
+     <ComponentRenderer component={this} />
+     {{/each}}
+     
+     {{#unless components}}
+     <div className="empty-container p-4 border-2 border-dashed border-gray-300 text-center text-gray-500">
+       Aucun composant dans ce conteneur
+     </div>
+     {{/unless}}
+   </div>
+ );
+}

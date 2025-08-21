@@ -1,19 +1,27 @@
 export default function List({ id, tag, classname, items }) {
-  const Tag = "{{tag}}";
-  
-  return (
-    <Tag 
-      id="{{id}}"
-      className="{{classname}}"
-    >
-      {{#each items}}
-      <li 
-        id="{{id}}"
-        className="{{classname}}"
-      >
-        {{content}}
-      </li>
-      {{/each}}
-    </Tag>
-  );
+ const Tag = "{{tag}}";
+ 
+ return (
+   <Tag 
+     id="{{id}}"
+     className="{{classname}}"
+   >
+     {{#each items}}
+     <li 
+       id="{{id}}"
+       className="{{classname}}"
+     >
+       {{#if content}}
+       {{content}}
+       {{else}}
+       • Item {{@index}}
+       {{/if}}
+     </li>
+     {{/each}}
+     
+     {{#unless items}}
+     <li className="text-gray-500 italic">Aucun élément dans cette liste</li>
+     {{/unless}}
+   </Tag>
+ );
 }
