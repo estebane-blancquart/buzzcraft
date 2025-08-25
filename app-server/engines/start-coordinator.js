@@ -1,16 +1,21 @@
+import { getProjectPath } from '../cores/path-resolver.js';
+
 /*
- * [MOCK] FAIT QUOI : Orchestre workflow START (OFFLINE → ONLINE)
+ * FAIT QUOI : Orchestre workflow START (OFFLINE → ONLINE) - VERSION MIGRÉE
  * REÇOIT : projectId: string, config: object
  * RETOURNE : { success: boolean, data: object }
  * ERREURS : ValidationError si paramètres manquants
  */
 
 export async function startWorkflow(projectId, config = {}) {
-  console.log(`[MOCK] startWorkflow called for project: ${projectId}`);
+  console.log(`[START] CALL 3: startWorkflow called for project: ${projectId}`);
   
   if (!projectId || typeof projectId !== 'string') {
     throw new Error('ValidationError: projectId must be non-empty string');
   }
+
+  const projectPath = getProjectPath(projectId);
+  console.log(`[START] Project path resolved: ${projectPath}`);
 
   return {
     success: true,

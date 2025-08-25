@@ -1,4 +1,5 @@
 import { readPath } from '../cores/reader.js';
+import { join } from 'path';
 
 /**
  * Detects if a project is in VOID state (non-existent)
@@ -16,11 +17,11 @@ export async function detectVoidState(projectPath) {
   
   try {
     // Vérifier que project.json n'existe pas
-    const projectFile = `${projectPath}/project.json`;
+    const projectFile = join(projectPath, 'project.json'); // ✅ Cross-platform
     console.log(`[VOID-DETECTOR] Checking file: ${projectFile}`);
     
     const fileCheck = await readPath(projectFile);
-    console.log(`[VOID-DETECTOR] File check result:`, fileCheck);
+    console.log(`[VOID-DETECTOR] File check result: exists=${fileCheck.data?.exists || false}`);
     
     if (!fileCheck.success) {
       console.log(`[VOID-DETECTOR] File check failed: ${fileCheck.error}`);
@@ -42,6 +43,7 @@ export async function detectVoidState(projectPath) {
         console.log(`[VOID-DETECTOR] Project actual state: ${actualState}`);
       } catch (parseError) {
         console.log(`[VOID-DETECTOR] Cannot parse project.json: ${parseError.message}`);
+        actualState = 'CORRUPT';
       }
       
       return {
