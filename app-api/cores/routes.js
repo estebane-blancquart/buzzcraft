@@ -1,10 +1,10 @@
 import express from 'express';
-import { readdir, readFile, writeFile, rm, stat } from 'fs/promises';
 import { join } from 'path';
-import { request } from '../request/parser.js';
-import { process as processRequest } from '../request/processor.js';
-import { response } from '../response/parser.js';
-import { process as processResponse } from '../response/processor.js';
+import { request } from '../requests/parser.js';
+import { process as processRequest } from '../requests/processor.js';
+import { response } from '../responses/parser.js';
+import { process as processResponse } from '../responses/processor.js';
+import { readdir, readFile, writeFile, rm, stat } from 'fs/promises';
 import { createWorkflow } from '../../app-server/engines/create-coordinator.js';
 import { buildWorkflow } from '../../app-server/engines/build-coordinator.js';
 import { validateProjectSchema } from '../../app-server/cores/validator.js';

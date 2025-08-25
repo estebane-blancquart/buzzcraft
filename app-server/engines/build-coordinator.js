@@ -4,6 +4,7 @@ import { loadCodeTemplates } from '../cores/compiler.js';
 import { generateServices } from '../cores/compiler.js';
 import { readPath } from '../cores/reader.js';
 import { writePath } from '../cores/writer.js';
+import { rm } from 'fs/promises';
 
 /*
  * FAIT QUOI : Orchestre workflow BUILD (DRAFT → BUILT) - VERSION PERFECTIONNISTE

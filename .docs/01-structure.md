@@ -78,7 +78,7 @@ buzzcraft/
     │       └── Editor.jsx
     ├── themes/
     │   ├── base.scss
-    │   ├── theme.scss
+    │   ├── variables.scss
     │   └── main.scss
     ├── hooks/
     │   ├── useDashboard.js
