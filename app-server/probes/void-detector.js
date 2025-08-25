@@ -1,4 +1,4 @@
-import { readPath } from '../../systems/reader.js';
+import { readPath } from '../cores/reader.js';
 
 /**
  * Detects if a project is in VOID state (non-existent)

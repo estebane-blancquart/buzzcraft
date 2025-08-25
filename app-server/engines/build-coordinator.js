@@ -1,11 +1,9 @@
-import { detectDraftState } from '../../probes/draft/detector.js';
-import { detectBuiltState } from '../../probes/built/detector.js';
-import { loadCodeTemplates } from '../../transitions/build/loader.js';
-import { generateServices } from '../../transitions/build/generator.js';
-import { readPath } from '../../systems/reader.js';
-import { writePath } from '../../systems/writer.js';
-import { validateProjectSchema } from '../../systems/schema-validator.js';
-import { rm } from 'fs/promises';
+import { detectDraftState } from '../probes/draft-detector.js';
+import { detectBuiltState } from '../probes/built-detector.js';
+import { loadCodeTemplates } from '../cores/compiler.js';
+import { generateServices } from '../cores/compiler.js';
+import { readPath } from '../cores/reader.js';
+import { writePath } from '../cores/writer.js';
 
 /*
  * FAIT QUOI : Orchestre workflow BUILD (DRAFT → BUILT) - VERSION PERFECTIONNISTE
@@ -21,8 +19,8 @@ export async function buildWorkflow(projectId, config = {}) {
     throw new Error('ValidationError: projectId must be non-empty string');
   }
 
-  const projectPath = `../app-server/outputs/projects/${projectId}`;
-  const startTime = Date.now();
+const projectPath = `../app-server/data/outputs/${projectId}`;
+ const startTime = Date.now();
   
   console.log(`[BUILD] Checking if project is DRAFT...`);
   const stateDetection = await detectDraftState(projectPath);

@@ -18,7 +18,7 @@ export async function process(requestData) {
   const processedData = {
     action,
     projectId,
-    projectPath: `./app-server/outputs/projects/${projectId}`,
+    projectPath: `./app-server/data/outputs/${projectId}`,
   };
   
   // Action-specific processing

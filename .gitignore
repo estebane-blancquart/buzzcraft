@@ -4,7 +4,6 @@ package-lock.json
 
 # Generated outputs
 outputs/
-test-project/
 
 # Environment
 .env

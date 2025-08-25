@@ -1,4 +1,4 @@
-import { readPath } from '../../systems/reader.js';
+import { readPath } from '../cores/reader.js';
 
 /*
  * FAIT QUOI : Détecte si un projet est en état DRAFT (project.json existe, pas de build)

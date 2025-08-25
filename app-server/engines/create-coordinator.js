@@ -1,10 +1,9 @@
-import { detectVoidState } from '../../probes/void/detector.js';
-import { detectDraftState } from '../../probes/draft/detector.js';
-import { loadTemplate } from '../../transitions/create/loader.js';
-import { generateProject } from '../../transitions/create/generator.js';
-import { writePath } from '../../systems/writer.js';
-import { readPath } from '../../systems/reader.js';
-
+import { detectVoidState } from '../probes/void-detector.js';
+import { detectDraftState } from '../probes/draft-detector.js';
+import { loadTemplate } from '../cores/compiler.js';
+import { generateProject } from '../cores/compiler.js';
+import { writePath } from '../cores/writer.js';
+import { readPath } from '../cores/reader.js';
 /*
 * FAIT QUOI : Orchestre workflow CREATE (VOID → DRAFT) - PATTERN 12 CALLS COMPLET
 * REÇOIT : projectId: string, config: object
@@ -19,7 +18,7 @@ export async function createWorkflow(projectId, config = {}) {
    throw new Error('ValidationError: projectId must be non-empty string');
  }
 
- const projectPath = `../app-server/outputs/projects/${projectId}`;
+const projectPath = `../app-server/data/outputs/${projectId}`;
  const startTime = Date.now();
  
  // CALL 4: Detect current state

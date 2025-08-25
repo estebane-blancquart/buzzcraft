@@ -5,9 +5,9 @@ import { request } from '../request/parser.js';
 import { process as processRequest } from '../request/processor.js';
 import { response } from '../response/parser.js';
 import { process as processResponse } from '../response/processor.js';
-import { createWorkflow } from '../../app-server/engines/create/coordinator.js';
-import { buildWorkflow } from '../../app-server/engines/build/coordinator.js';
-import { validateProjectSchema } from '../../app-server/systems/schema-validator.js';
+import { createWorkflow } from '../../app-server/engines/create-coordinator.js';
+import { buildWorkflow } from '../../app-server/engines/build-coordinator.js';
+import { validateProjectSchema } from '../../app-server/cores/validator.js';
 
 /*
  * FAIT QUOI : Routes HTTP pour gestion des projets
@@ -93,7 +93,7 @@ async function handleRequest(req, res) {
 // GET /projects - Lister tous les projets
 router.get('/', async (req, res) => {
   try {
-    const projectsDir = '../app-server/outputs/projects';
+    const projectsDir = '../app-server/data/outputs';
     const projects = [];
     
     const folders = await readdir(projectsDir);
@@ -133,7 +133,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const projectId = req.params.id;
-    const projectPath = `../app-server/outputs/projects/${projectId}`;
+    const projectPath = `../app-server/data/outputs/${projectId}`;
     const projectFile = join(projectPath, 'project.json');
     
     try {
@@ -176,7 +176,7 @@ router.post('/', handleRequest);
 router.patch('/:id', async (req, res) => {
   try {
     const projectId = req.params.id;
-    const projectPath = `../app-server/outputs/projects/${projectId}`;
+    const projectPath = `../app-server/data/outputs/${projectId}`;
     const projectFile = join(projectPath, 'project.json');
     const updates = req.body;
     
@@ -260,7 +260,7 @@ router.patch('/:id', async (req, res) => {
 router.put('/:id/revert', async (req, res) => {
   try {
     const projectId = req.params.id;
-    const projectPath = `../app-server/outputs/projects/${projectId}`;
+    const projectPath = `../app-server/data/outputs/${projectId}`;
     const projectFile = join(projectPath, 'project.json');
     
     console.log(`[REVERT] Starting revert for project: ${projectId}`);
@@ -359,7 +359,7 @@ router.put('/:id/revert', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const projectId = req.params.id;
-    const projectPath = `../app-server/outputs/projects/${projectId}`;
+    const projectPath = `../app-server/data/outputs/${projectId}`;
     
     try {
       const projectFile = join(projectPath, 'project.json');
@@ -403,7 +403,7 @@ router.post('/:id/build', handleRequest);
 // GET /projects/meta/templates - Lister les templates disponibles
 router.get('/meta/templates', async (req, res) => {
   try {
-    const { discoverAvailableTemplates } = await import('../../app-server/transitions/build/loader.js');
+    const { discoverAvailableTemplates } = await import('../../app-server/cores/compiler.js');
     const discovery = await discoverAvailableTemplates();
     
     if (!discovery.loaded) {
