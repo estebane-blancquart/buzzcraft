@@ -1,0 +1,186 @@
+.project-tree {
+  background: var(--color-bg-secondary);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
+  flex-shrink: 0;
+
+  h3 {
+    font-size: var(--size-md);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  button {
+    background: var(--color-primary);
+    color: var(--color-bg-primary);
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    font-size: var(--size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
+    }
+  }
+}
+
+.tree-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%);
+    border-radius: 3px;
+  }
+}
+
+.tree-item {
+  margin-bottom: var(--space-2);
+
+  &.nested {
+    margin-left: var(--space-6);
+  }
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+  }
+
+  &.selected {
+    background: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg-secondary));
+    color: var(--color-primary);
+  }
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.tree-icon {
+  font-size: var(--size-sm);
+}
+
+.tree-label {
+  font-size: var(--size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.tree-type {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+}
+
+.tree-actions {
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .tree-node:hover & {
+    opacity: 1;
+  }
+}
+
+.tree-action-btn {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-text-secondary) 30%, transparent);
+  color: var(--color-text-secondary);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    border-color: var(--color-text-primary);
+    color: var(--color-text-primary);
+  }
+
+  &.add {
+    &:hover {
+      border-color: var(--color-success);
+      color: var(--color-success);
+    }
+  }
+
+  &.remove {
+    &:hover {
+      border-color: var(--color-danger);
+      color: var(--color-danger);
+    }
+  }
+}
+
+.tree-empty {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: var(--space-6);
+}
+
+.tree-add-first {
+  text-align: center;
+  padding: var(--space-6);
+
+  .tree-action-btn {
+    width: auto;
+    height: auto;
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--size-sm);
+    background: var(--color-primary);
+    color: var(--color-bg-primary);
+    border-color: var(--color-primary);
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
+    }
+  }
+}

@@ -42,3 +42,450 @@ p {
   white-space: nowrap;
   border: 0;
 }
+
+// === MODAL STYLES GLOBAUX ===
+// À ajouter dans themes/base.scss ou créer themes/modals.scss
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  min-width: 400px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
+  flex-shrink: 0;
+
+  h2 {
+    font-size: var(--size-lg);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: var(--size-xl);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+
+    &:hover {
+      color: var(--color-text-primary);
+      background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.modal-body {
+  flex: 1;
+  padding: var(--space-6);
+  overflow-y: auto;
+
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%);
+    border-radius: 3px;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  padding: var(--space-6);
+  border-top: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
+  flex-shrink: 0;
+
+  button {
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--size-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s ease;
+    border: 1px solid;
+    cursor: pointer;
+    min-width: 80px;
+
+    &[type="submit"], &.btn-primary {
+      background: var(--color-primary);
+      color: var(--color-bg-primary);
+      border-color: var(--color-primary);
+
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    &[type="button"], &.btn-secondary {
+      background: transparent;
+      color: var(--color-text-secondary);
+      border-color: color-mix(in srgb, var(--color-text-secondary) 30%, transparent);
+
+      &:hover:not(:disabled) {
+        color: var(--color-text-primary);
+        border-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    &.btn-danger {
+      background: var(--color-danger);
+      color: white;
+      border-color: var(--color-danger);
+
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-danger) 80%, black 20%);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// === FORM STYLES DANS MODALS ===
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+
+  label {
+    font-size: var(--size-sm);
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  input,
+  select,
+  textarea {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 80%, white 20%);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-size: var(--size-sm);
+    transition: all 0.15s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    }
+
+    &:hover:not(:focus) {
+      border-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
+    }
+  }
+
+  select {
+    cursor: pointer;
+  }
+
+  .error {
+    color: var(--color-danger);
+    font-size: var(--size-xs);
+    margin-top: var(--space-1);
+  }
+}
+
+.error-banner {
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+  color: var(--color-danger);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  font-size: var(--size-sm);
+}
+
+.loading-templates {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  padding: var(--space-3);
+  text-align: center;
+}
+
+// === SELECTOR GRID (pour component/container selectors) ===
+
+.selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.selector-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  background: color-mix(in srgb, var(--color-bg-secondary) 97%, white 3%);
+  border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
+    border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .selector-icon {
+    font-size: var(--size-xl);
+  }
+
+  .selector-name {
+    font-size: var(--size-xs);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    text-align: center;
+  }
+}
+
+// === BUTTON STYLES GLOBAUX ===
+// À ajouter dans themes/base.scss
+
+// Base button styles
+button {
+  font-family: inherit;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Button variants
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-bg-primary);
+  border: 1px solid var(--color-primary);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--size-sm);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
+    border-color: color-mix(in srgb, var(--color-primary) 80%, black 20%);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid color-mix(in srgb, var(--color-text-secondary) 30%, transparent);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--size-sm);
+
+  &:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    border-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+    background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+  border: 1px solid var(--color-danger);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--size-sm);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 80%, black 20%);
+    border-color: color-mix(in srgb, var(--color-danger) 80%, black 20%);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.btn-success {
+  background: var(--color-success);
+  color: white;
+  border: 1px solid var(--color-success);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--size-sm);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-success) 80%, black 20%);
+    border-color: color-mix(in srgb, var(--color-success) 80%, black 20%);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  color: var(--color-bg-primary);
+  border: 1px solid var(--color-warning);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--size-sm);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-warning) 80%, black 20%);
+    border-color: color-mix(in srgb, var(--color-warning) 80%, black 20%);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+// Button sizes
+.btn-sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.625rem;
+}
+
+.btn-lg {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--size-md);
+}
+
+// Special states
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Utility classes
+.btn-block {
+  width: 100%;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+// Project list specific buttons (compatibility)
+.project-list {
+  .btn-primary {
+    margin-bottom: var(--space-6);
+    box-shadow: var(--shadow-sm);
+
+    &:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.projects-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.empty-projects {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  font-size: var(--size-lg);
+}

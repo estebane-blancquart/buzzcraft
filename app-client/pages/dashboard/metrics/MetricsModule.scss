@@ -1,11 +1,11 @@
-.stats {
+.project-stats {
   display: flex;
   gap: var(--space-6);
   align-items: center;
   margin-bottom: var(--space-8);
 }
 
-.card {
+.stat-card {
   background: var(--color-bg-secondary);
   border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
   border-radius: var(--radius-md);
@@ -20,7 +20,7 @@
     margin-right: var(--space-8);
     box-shadow: var(--shadow-sm);
     
-    .label {
+    .stat-label {
       font-weight: 600;
       color: var(--color-text-primary);
     }
@@ -77,7 +77,7 @@
   }
 }
 
-.number {
+.stat-number {
   font-size: var(--size-2xl);
   font-weight: 600;
   margin-bottom: var(--space-2);
@@ -85,7 +85,7 @@
   color: var(--color-text-primary);
 }
 
-.label {
+.stat-label {
   font-size: 0.625rem;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-text-secondary) 95%, white 5%);
