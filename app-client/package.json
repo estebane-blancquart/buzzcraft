@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --config ../.configs/vite.config.js cores/index.html",
-        "build": "vite build --config ../.configs/vite.config.js",
+    "dev": "vite --config ../.configs/vite.config.js",
+    "build": "vite build --config ../.configs/vite.config.js",
     "preview": "vite preview --config ../.configs/vite.config.js"
   },
   "dependencies": {
