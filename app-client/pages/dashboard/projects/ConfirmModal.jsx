@@ -11,7 +11,7 @@ function ConfirmModal({
   loading = false
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+    <div isOpen={isOpen} onClose={onClose} title={title}>
       <p style={{ 
         margin: '0 0 var(--space-6) 0', 
         color: 'var(--color-text-primary)', 
@@ -21,19 +21,19 @@ function ConfirmModal({
       </p>
       
       <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
-        <Button variant="secondary" onClick={onClose} disabled={loading}>
+        <button variant="secondary" onClick={onClose} disabled={loading}>
           {cancelText}
-        </Button>
-        <Button 
+        </button>
+        <button 
           variant="primary" 
           onClick={onConfirm} 
           loading={loading}
           style={{ background: 'var(--color-danger)' }}
         >
           {confirmText}
-        </Button>
+        </button>
       </div>
-    </Modal>
+    </div>
   );
 }
 

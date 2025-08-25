@@ -105,7 +105,7 @@ function CreateModal({ isOpen, onClose, onSubmit }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Créer un nouveau projet">
+    <div isOpen={isOpen} onClose={handleClose} title="Créer un nouveau projet">
       {errors.submit && (
         <div style={{ 
           background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)', 
@@ -120,7 +120,7 @@ function CreateModal({ isOpen, onClose, onSubmit }) {
       )}
 
       <form onSubmit={handleSubmit}>
-        <Input
+        <input
           label="ID Projet"
           value={formData.projectId}
           onChange={(e) => handleInputChange('projectId', e.target.value)}
@@ -131,7 +131,7 @@ function CreateModal({ isOpen, onClose, onSubmit }) {
           maxLength={50}
         />
 
-        <Input
+        <input
           label="Nom du projet"
           value={formData.name}
           onChange={(e) => handleInputChange('name', e.target.value)}
@@ -186,20 +186,20 @@ function CreateModal({ isOpen, onClose, onSubmit }) {
         </div>
 
         <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-8)' }}>
-          <Button variant="secondary" onClick={handleClose} disabled={loading}>
+          <button variant="secondary" onClick={handleClose} disabled={loading}>
             Annuler
-          </Button>
-          <Button 
+          </button>
+          <button 
             type="submit" 
             variant="primary" 
             loading={loading}
             disabled={templatesLoading || templates.length === 0}
           >
             Créer Projet
-          </Button>
+          </button>
         </div>
       </form>
-    </Modal>
+    </div>
   );
 }
 

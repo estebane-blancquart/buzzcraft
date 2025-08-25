@@ -1,15 +1,13 @@
 import React from 'react';
-import Modal from '@components/Modal.jsx';
-import Button from '@components/Button.jsx';
 
 function ComponentSelectorModal({ isOpen, onClose, onSelectComponent }) {
   const componentTypes = [
-    { id: 'heading', name: 'Heading', icon: 'í´¤' },
-    { id: 'paragraph', name: 'Paragraph', icon: 'í³' },
-    { id: 'button', name: 'Button', icon: 'í´˜' },
-    { id: 'image', name: 'Image', icon: 'í¶¼ï¸' },
-    { id: 'video', name: 'Video', icon: 'í³¹' },
-    { id: 'link', name: 'Link', icon: 'í´—' }
+    { id: 'heading', name: 'Heading', icon: 'ï¿½ï¿½ï¿½' },
+    { id: 'paragraph', name: 'Paragraph', icon: 'ï¿½ï¿½ï¿½' },
+    { id: 'button', name: 'Button', icon: 'ï¿½ï¿½ï¿½' },
+    { id: 'image', name: 'Image', icon: 'ï¿½ï¿½ï¿½ï¸' },
+    { id: 'video', name: 'Video', icon: 'ï¿½ï¿½ï¿½' },
+    { id: 'link', name: 'Link', icon: 'ï¿½ï¿½ï¿½' }
   ];
 
   return (

@@ -41,21 +41,21 @@ function EditorHeader({
       </div>
 
       <div className="editor-actions">
-        <Button
+        <button
           onClick={onSave}
           variant="primary"
           disabled={!isDirty}
           size="sm"
         >
           SAVE
-        </Button>
-        <Button 
+        </button>
+        <button 
           onClick={onBackToDashboard} 
           variant="secondary"
           size="sm"
         >
           DASHBOARD
-        </Button>
+        </button>
       </div>
     </header>
   );

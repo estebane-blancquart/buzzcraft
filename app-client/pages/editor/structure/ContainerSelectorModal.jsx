@@ -1,12 +1,10 @@
 import React from 'react';
-import Modal from '@components/Modal.jsx';
-import Button from '@components/Button.jsx';
 
 function ContainerSelectorModal({ isOpen, onClose, onSelectContainer }) {
   const containerTypes = [
-    { id: 'div', name: 'Div Container', icon: 'í³¦' },
-    { id: 'list', name: 'List Container', icon: 'í³‹' },
-    { id: 'form', name: 'Form Container', icon: 'í³„' }
+    { id: 'div', name: 'Div Container', icon: 'ï¿½ï¿½ï¿½' },
+    { id: 'list', name: 'List Container', icon: 'ï¿½ï¿½ï¿½' },
+    { id: 'form', name: 'Form Container', icon: 'ï¿½ï¿½ï¿½' }
   ];
 
   return (
