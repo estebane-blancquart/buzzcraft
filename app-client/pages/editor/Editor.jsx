@@ -1,44 +1,33 @@
 import React from 'react';
-import { useProjectEditor } from '@hooks/useProjectEditor.js';
-import EditorHeader from '@pages/editor/toolbar/EditorHeader.jsx';
-import ProjectTree from '@pages/editor/structure/ProjectTree.jsx';
-import ProjectPreview from '@pages/editor/preview/ProjectPreview.jsx';
-import ProjectProperties from '@pages/editor/properties/ProjectProperties.jsx';
-import ComponentSelectorModal from '@pages/editor/structure/ComponentSelectorModal.jsx';
-import ContainerSelectorModal from '@pages/editor/structure/ContainerSelectorModal.jsx';
+import { useEditor } from '@hooks/useEditor.js';
+import { useWorkflows } from '@hooks/useWorkflows.js';
+import ToolbarModule from '@pages/editor/toolbar/ToolbarModule.jsx';
+import StructureModule from '@pages/editor/structure/StructureModule.jsx';
+import PreviewModule from '@pages/editor/preview/PreviewModule.jsx';
+import PropertiesModule from '@pages/editor/properties/PropertiesModule.jsx';
 
 function Editor() {
-  const {
-    project,
-    selectedElement,
-    selectedDevice,
-    loading,
-    error,
-    isDirty,
-    saveProject,
-    updateProject,
-    handleElementSelect,
-    handleElementUpdate,
-    handleDeviceChange,
-    handleBackToDashboard,
-    clearError,
-    // CRUD Operations
-    handleAddPage,
-    handleAddSection,
-    handleAddDiv,
-    handleAddComponent,
-    handleDeleteElement,
-    // Component Selector
-    showComponentSelector,
-    handleComponentSelect,
-    handleCloseComponentSelector,
-    // Container Selector
-    showContainerSelector,
-    handleContainerSelect,
-    handleCloseContainerSelector
-  } = useProjectEditor();
+  // Hooks métier
+  const editor = useEditor();
+  const workflows = useWorkflows();
 
-  if (loading) {
+  // Handler sauvegarde intégré
+  const handleSave = async () => {
+    try {
+      await editor.saveProject();
+      workflows.addConsoleMessage('success', 'Project saved successfully');
+    } catch (error) {
+      workflows.addConsoleMessage('error', `Save failed: ${error.message}`);
+    }
+  };
+
+  // Handler mise à jour élément intégré
+  const handleElementUpdate = (elementId, updates) => {
+    editor.handleElementUpdate(elementId, updates);
+    workflows.addConsoleMessage('info', `Element ${elementId} updated`);
+  };
+
+  if (editor.loading) {
     return (
       <div className="editor">
         <div className="loading">Chargement de l'éditeur...</div>
@@ -46,18 +35,16 @@ function Editor() {
     );
   }
 
-  if (error) {
+  if (editor.error) {
     return (
       <div className="editor">
-        <div className="editor-header">
-          <h1>Erreur</h1>
-          <button onClick={handleBackToDashboard} className="btn-secondary">
-            Retour Dashboard
-          </button>
-        </div>
+        <ToolbarModule
+          project={null}
+          onBackToDashboard={editor.handleBackToDashboard}
+        />
         <div className="error-banner">
-          <span>⚠️ {error}</span>
-          <button onClick={clearError}>×</button>
+          <span>⚠️ {editor.error}</span>
+          <button onClick={editor.clearError}>×</button>
         </div>
       </div>
     );
@@ -65,52 +52,40 @@ function Editor() {
 
   return (
     <div className="editor">
-      <EditorHeader
-        project={project}
-        selectedDevice={selectedDevice}
-        isDirty={isDirty}
-        onDeviceChange={handleDeviceChange}
-        onSave={saveProject}
-        onBackToDashboard={handleBackToDashboard}
+      <ToolbarModule
+        project={editor.project}
+        selectedDevice={editor.selectedDevice}
+        isDirty={editor.isDirty}
+        onDeviceChange={editor.handleDeviceChange}
+        onSave={handleSave}
+        onBackToDashboard={editor.handleBackToDashboard}
       />
 
       <div className="editor-workspace">
-        <ProjectTree
-          project={project}
-          selectedElement={selectedElement}
-          onElementSelect={handleElementSelect}
-          onAddPage={handleAddPage}
-          onAddSection={handleAddSection}
-          onAddDiv={handleAddDiv}
-          onAddComponent={handleAddComponent}
-          onDeleteElement={handleDeleteElement}
+        <StructureModule
+          project={editor.project}
+          selectedElement={editor.selectedElement}
+          onElementSelect={editor.handleElementSelect}
+          onAddPage={editor.handleAddPage}
+          onAddSection={editor.handleAddSection}
+          onAddDiv={editor.handleAddDiv}
+          onAddComponent={editor.handleAddComponent}
+          onDeleteElement={editor.handleDeleteElement}
         />
 
-        <ProjectPreview
-          project={project}
-          device={selectedDevice}
-          selectedElement={selectedElement}
-          onElementSelect={handleElementSelect}
+        <PreviewModule
+          project={editor.project}
+          device={editor.selectedDevice}
+          selectedElement={editor.selectedElement}
+          onElementSelect={editor.handleElementSelect}
         />
 
-        <ProjectProperties
-          selectedElement={selectedElement}
-          device={selectedDevice}
+        <PropertiesModule
+          selectedElement={editor.selectedElement}
+          device={editor.selectedDevice}
           onElementUpdate={handleElementUpdate}
         />
       </div>
-
-      <ComponentSelectorModal
-        isOpen={showComponentSelector}
-        onClose={handleCloseComponentSelector}
-        onSelectComponent={handleComponentSelect}
-      />
-
-      <ContainerSelectorModal
-        isOpen={showContainerSelector}
-        onClose={handleCloseContainerSelector}
-        onSelectContainer={handleContainerSelect}
-      />
     </div>
   );
 }

@@ -4,25 +4,13 @@ Interface React avec hooks métier et composants spécialisés.
 
 ## 📋 Organisation
 
-- **pages/** : Pages principales (Dashboard, Editor)
-- **modules/** : Composants métier réutilisables (ProjectCard, Console, CreateModal)
-- **components/** : UI pur réutilisable (Button, Modal, Input)
-- **hooks/** : Logique métier (useProjects, useDashboard, useEditor, useWorkflows)
-- **configs/** : Configuration (api.js, constants.js)
-- **themes/** : Styles (variables, base, dashboard, editor)
+- **pages/** : Pages principales avec composants spécialisés par domaine
+- **hooks/** : Logique métier pure (useDashboard, useEditor, useWorkflows)
+- **configs/** : Configuration centralisée (api.js, constants.js)
+- **themes/** : Theme global + variables partagées (variables, base, theme, main)
 ```
-pages/
-├── dashboard/
-│   ├── metrics/      # MetricCard, MetricsModule
-│   ├── projects/     # ProjectCard, NewProjectButton, NewProjectModal, ProjectActions, ProjectsModule
-│   ├── terminal/     # LogMessage, ConsoleOutput, TerminalModule
-│   └── dashboard.jsx
-└── editor/
-    ├── structure/    # ElementTree, StructureModule
-    ├── preview/      # CanvasFrame, PreviewModule
-    ├── properties/   # PropertyField, PropertiesModule
-    ├── toolbar/      # DeviceToggle, ToolbarModule
-    └── editor.jsx
+
+
 ```
 
 **Composants métier :**
@@ -57,7 +45,6 @@ pages/
 useDashboard()
 useEditor()  
 useWorkflows()
-useProjects()
 ```
 
 ## 🔧 Fonctionnement

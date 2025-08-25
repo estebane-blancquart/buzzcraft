@@ -24,10 +24,11 @@ buzzcraft/
 │   ├── probes/
 │   │   └── [STATE]/
 │   │       └── detector.js
-│   ├── inputs/
-│   │   ├── structure/
-│   │   └── code/
-│   ├── outputs/
+│   ├── data/
+│   │   ├── inputs/
+│   │   │   ├── structure/
+│   │   │   └── code/
+│   │   └── outputs/
 │   ├── cores/
 │   │   ├── reader.js
 │   │   ├── writer.js
@@ -39,16 +40,57 @@ buzzcraft/
     ├── pages/
     │   ├── dashboard/
     │   │   ├── metrics/
+    │   │   │   ├── MetricCard.jsx
+    │   │   │   ├── MetricsModule.scss
+    │   │   │   └── MetricsModule.jsx
     │   │   ├── projects/
-    │   │   └── terminal/
+    │   │   │   ├── NewProjectButton.jsx
+    │   │   │   ├── NewProjectModal.jsx
+    │   │   │   ├── ProjectCard.jsx
+    │   │   │   ├── ProjectActions.jsx
+    │   │   │   ├── ProjectsModule.scss
+    │   │   │   └── ProjectsModule.jsx
+    │   │   ├── terminal/
+    │   │   │   ├── LogMessage.jsx
+    │   │   │   ├── ConsoleOutput.jsx
+    │   │   │   ├── TerminalModule.scss
+    │   │   │   └── TerminalModule.jsx
+    │   │   ├── Dashboard.scss
+    │   │   └── Dashboard.jsx
     │   └── editor/
     │       ├── structure/
+    │       │   ├── ElementTree.jsx
+    │       │   ├── StructureModule.scss
+    │       │   └── StructureModule.jsx
     │       ├── preview/
+    │       │   ├── CanvasFrame.jsx
+    │       │   ├── PreviewModule.scss
+    │       │   └── PreviewModule.jsx
     │       ├── properties/
-    │       └── toolbar/
+    │       │   ├── PropertyField.jsx
+    │       │   ├── PropertiesModule.scss
+    │       │   └── PropertiesModule.jsx
+    │       ├── toolbar/
+    │       │   ├── DeviceToggle.jsx
+    │       │   ├── ToolbarModule.scss
+    │       │   └── ToolbarModule.jsx
+    │       ├── Editor.scss
+    │       └── Editor.jsx
+    ├── themes/
+    │   ├── base.scss
+    │   ├── theme.scss
+    │   └── main.scss
     ├── hooks/
+    │   ├── useDashboard.js
+    │   ├── useEditor.js
+    │   └── useWorkflows.js
     ├── configs/
+    │       ├── api.js
+    │       └── constants.js
     ├── cores/
+    │   ├── index.html
+    │   ├── Main.jsx
+    │   └── Router.jsx
     └── package.json
 ```
 

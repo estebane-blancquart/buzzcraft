@@ -1,99 +1,97 @@
 import React, { useMemo } from 'react';
-import { useProjects } from '@hooks/useProjects.js';
-import ProjectStats from '@pages/dashboard/metrics/ProjectStats.jsx';
-import ProjectCard from '@pages/dashboard/projects/ProjectCard.jsx';
-import Console from '@pages/dashboard/terminal/Console.jsx';
-import CreateModal from '@pages/dashboard/projects/CreateModal.jsx';
+import { useDashboard } from '@hooks/useDashboard.js';
+import { useWorkflows } from '@hooks/useWorkflows.js';
+import MetricsModule from '@pages/dashboard/metrics/MetricsModule.jsx';
+import ProjectsModule from '@pages/dashboard/projects/ProjectsModule.jsx';
+import TerminalModule from '@pages/dashboard/terminal/TerminalModule.jsx';
+import NewProjectModal from '@pages/dashboard/projects/NewProjectModal.jsx';
 import ConfirmModal from '@pages/dashboard/projects/ConfirmModal.jsx';
 
 function Dashboard() {
-  const { 
-    projects,
-    allProjects,
-    loading,
-    consoleMessages,
-    filterState,
-    handleNewProject, 
-    handleProjectAction,
-    handleDeleteRequest,
-    handleCloseModal,
-    handleCreateProject,
-    handleCancelDelete,
-    handleConfirmDelete,
-    handleStateFilter,
-    clearConsole,
-    actionLoading,
-    showCreateModal,
-    showConfirmModal,
-    projectToDelete
-  } = useProjects();
+  // Hooks métier
+  const dashboard = useDashboard();
+  const workflows = useWorkflows();
 
-  const memoizedMessages = useMemo(() => consoleMessages, [consoleMessages.length]);
+  // Projets filtrés selon l'état dashboard
+  const filteredProjects = useMemo(() => 
+    dashboard.getFilteredProjects(workflows.projects), 
+    [workflows.projects, dashboard.filterState]
+  );
 
-  if (loading) {
+  // Messages console mémorisés
+  const memoizedMessages = useMemo(() => 
+    workflows.consoleMessages, 
+    [workflows.consoleMessages.length]
+  );
+
+  // Handler création projet intégré
+  const handleCreateProject = async (formData) => {
+    try {
+      await workflows.createProject(formData);
+      dashboard.handleCloseModal();
+    } catch (error) {
+      // Erreur déjà gérée dans workflows
+    }
+  };
+
+  // Handler action projet intégré
+  const handleProjectAction = async (projectId, action) => {
+    // Action spéciale édition → logique dashboard
+    if (action === 'EDIT') {
+      dashboard.handleEditAction(projectId, workflows.addConsoleMessage);
+      return;
+    }
+    
+    // Autres actions → workflows
+    await workflows.executeProjectAction(projectId, action);
+  };
+
+  // Handler confirmation suppression intégré
+  const handleConfirmDelete = async () => {
+    dashboard.handleConfirmDelete(workflows.deleteProject);
+  };
+
+  if (workflows.loading) {
     return <div className="loading">Chargement...</div>;
   }
 
   return (
     <div className="dashboard">
-      <ProjectStats 
-        projects={allProjects}
-        filterState={filterState}
-        onStateFilter={handleStateFilter}
+      <MetricsModule 
+        projects={workflows.projects}
+        filterState={dashboard.filterState}
+        onStateFilter={(state) => dashboard.handleStateFilter(state, workflows.addConsoleMessage)}
       />
       
-      <div className="project-list">
-        <button 
-          className="btn-primary"
-          onClick={handleNewProject}
-        >
-          NEW PROJECT
-        </button>
-
-        <div className="projects-grid">
-          {projects.map(project => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              onAction={handleProjectAction}
-              onDeleteRequest={handleDeleteRequest}
-              actionLoading={actionLoading}
-            />
-          ))}
-          
-          {projects.length === 0 && (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '3rem',
-              color: 'var(--color-text-secondary)',
-              fontStyle: 'italic'
-            }}>
-              {filterState ? `Aucun projet ${filterState}` : 'Aucun projet. Créez-en un !'}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Console 
-        messages={memoizedMessages}
-        onClear={clearConsole}
+      <ProjectsModule
+        projects={filteredProjects}
+        onNewProject={dashboard.handleNewProject}
+        onAction={handleProjectAction}
+        onDeleteRequest={dashboard.handleDeleteRequest}
+        actionLoading={workflows.actionLoading}
+        filterState={dashboard.filterState}
       />
 
-      <CreateModal 
-        isOpen={showCreateModal}
-        onClose={handleCloseModal}
+      <TerminalModule 
+        messages={memoizedMessages}
+        onClear={workflows.clearConsole}
+      />
+
+      <NewProjectModal 
+        isOpen={dashboard.showCreateModal}
+        onClose={dashboard.handleCloseModal}
         onSubmit={handleCreateProject}
       />
       
       <ConfirmModal
-        isOpen={showConfirmModal}
-        onClose={handleCancelDelete}
+        isOpen={dashboard.showConfirmModal}
+        onClose={dashboard.handleCancelDelete}
         onConfirm={handleConfirmDelete}
         title="Supprimer le projet"
-        message={`Êtes-vous sûr de vouloir supprimer "${projectToDelete?.name}" ? Cette action est irréversible.`}
+        message={`Êtes-vous sûr de vouloir supprimer "${dashboard.projectToDelete?.name}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
-        loading={actionLoading[`${projectToDelete?.id}-DELETE`]}
+        loading={workflows.actionLoading[`${dashboard.projectToDelete?.id}-DELETE`]}
       />
     </div>
   );

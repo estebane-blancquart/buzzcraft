@@ -3,10 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiUrl } from '@config/api.js';
 import { DEVICES } from '@config/constants.js';
 
-export function useProjectEditor() {
+/*
+ * FAIT QUOI : Logique métier éditeur (sélection, device, CRUD éléments)
+ * REÇOIT : Rien (hook autonome avec params)
+ * RETOURNE : États éditeur et handlers
+ * ERREURS : Gérées avec states d'erreur
+ */
+
+export function useEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
   
+  // États éditeur
   const [project, setProject] = useState(null);
   const [selectedElement, setSelectedElement] = useState(null);
   const [selectedDevice, setSelectedDevice] = useState(DEVICES.DESKTOP);
@@ -16,7 +24,7 @@ export function useProjectEditor() {
   const [showComponentSelector, setShowComponentSelector] = useState(false);
   const [showContainerSelector, setShowContainerSelector] = useState(false);
 
-  // Load project on mount
+  // Chargement projet au montage
   useEffect(() => {
     if (id) {
       loadProject(id);
@@ -26,6 +34,7 @@ export function useProjectEditor() {
     }
   }, [id]);
 
+  // Chargement projet
   const loadProject = async (projectId) => {
     try {
       setLoading(true);
@@ -48,6 +57,7 @@ export function useProjectEditor() {
     }
   };
 
+  // Sauvegarde projet
   const saveProject = async () => {
     if (!isDirty || !project) {
       console.log('Nothing to save');
@@ -77,11 +87,13 @@ export function useProjectEditor() {
     }
   };
 
+  // Mise à jour projet
   const updateProject = (updates) => {
     setProject(prev => ({ ...prev, ...updates }));
     setIsDirty(true);
   };
 
+  // Handlers éditeur
   const handleElementSelect = (element) => {
     console.log('Element selected:', element);
     setSelectedElement(element);
@@ -112,7 +124,7 @@ export function useProjectEditor() {
     setError(null);
   };
 
-  // CRUD Operations (basic implementations)
+  // CRUD Operations (implementations basiques)
   const handleAddPage = () => {
     console.log('Add page clicked');
     setShowComponentSelector(false);
@@ -170,32 +182,38 @@ export function useProjectEditor() {
   };
 
   return {
+    // États
     project,
     selectedElement,
     selectedDevice,
     loading,
     error,
     isDirty,
+    showComponentSelector,
+    showContainerSelector,
+    
+    // Fonctions projet
     saveProject,
     updateProject,
+    clearError,
+    
+    // Handlers éditeur
     handleElementSelect,
     handleElementUpdate,
     handleDeviceChange,
     handleBackToDashboard,
-    clearError,
+    
     // CRUD Operations
     handleAddPage,
     handleAddSection,
     handleAddDiv,
     handleAddComponent,
     handleDeleteElement,
-    // Component Selector
-    showComponentSelector,
+    
+    // Component/Container Selector
     handleComponentSelect,
-    handleCloseComponentSelector,
-    // Container Selector
-    showContainerSelector,
     handleContainerSelect,
+    handleCloseComponentSelector,
     handleCloseContainerSelector
   };
 }
