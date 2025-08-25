@@ -1,12 +1,12 @@
 /*
- * FAIT QUOI : Validation stricte du schema JSON des projets
+ * FAIT QUOI : Validation stricte du schema JSON des projets + variables templates
  * REÇOIT : projectData: object, options: object
  * RETOURNE : { valid: boolean, errors: string[], warnings: string[] }
  * ERREURS : Aucune (validation defensive)
  */
 
 export function validateProjectSchema(projectData, options = {}) {
-  console.log(`[SCHEMA] Validating project schema`);
+  console.log(`[VALIDATOR] Validating project schema`);
   
   const errors = [];
   const warnings = [];
@@ -45,7 +45,7 @@ export function validateProjectSchema(projectData, options = {}) {
   
   const isValid = errors.length === 0;
   
-  console.log(`[SCHEMA] Validation complete: ${isValid ? 'VALID' : 'INVALID'} (${errors.length} errors, ${warnings.length} warnings)`);
+  console.log(`[VALIDATOR] Validation complete: ${isValid ? 'VALID' : 'INVALID'} (${errors.length} errors, ${warnings.length} warnings)`);
   
   return {
     valid: isValid,
@@ -55,11 +55,117 @@ export function validateProjectSchema(projectData, options = {}) {
 }
 
 /*
+ * FAIT QUOI : Validation variables Handlebars avant compilation
+ * REÇOIT : templateContent: string, variables: object
+ * RETOURNE : { valid: boolean, missingVars: string[], errors: string[] }
+ * ERREURS : Aucune (validation défensive)
+ */
+export function validateTemplateVariables(templateContent, variables) {
+  console.log(`[VALIDATOR] Validating template variables`);
+  
+  const errors = [];
+  const missingVars = [];
+  
+  if (!templateContent || typeof templateContent !== 'string') {
+    errors.push('Template content must be a non-empty string');
+    return { valid: false, missingVars, errors };
+  }
+  
+  if (!variables || typeof variables !== 'object') {
+    errors.push('Variables must be an object');
+    return { valid: false, missingVars, errors };
+  }
+  
+  // Regex pour trouver toutes les variables {{variable}}
+  const variablePattern = /\{\{([^}]+)\}\}/g;
+  const foundVariables = new Set();
+  let match;
+  
+  while ((match = variablePattern.exec(templateContent)) !== null) {
+    const varName = match[1].trim();
+    foundVariables.add(varName);
+  }
+  
+  console.log(`[VALIDATOR] Found ${foundVariables.size} unique variables in template`);
+  
+  // Vérifier que chaque variable a une valeur
+  for (const varName of foundVariables) {
+    const value = getNestedValue(variables, varName);
+    
+    if (value === undefined || value === null) {
+      missingVars.push(varName);
+    }
+  }
+  
+  if (missingVars.length > 0) {
+    errors.push(`Missing template variables: ${missingVars.join(', ')}`);
+  }
+  
+  const isValid = errors.length === 0;
+  
+  console.log(`[VALIDATOR] Validation ${isValid ? 'passed' : 'failed'}: ${missingVars.length} missing variables`);
+  
+  return {
+    valid: isValid,
+    missingVars,
+    errors,
+    totalVariables: foundVariables.size
+  };
+}
+
+/*
+ * FAIT QUOI : Génère variables par défaut pour templates
+ * REÇOIT : projectData: object, componentData: object
+ * RETOURNE : object (variables complètes pour Handlebars)
+ * ERREURS : Aucune (génération défensive)
+ */
+export function generateDefaultVariables(projectData, componentData = {}) {
+  console.log(`[VALIDATOR] Generating default variables`);
+  
+  const project = projectData.project || projectData;
+  
+  return {
+    // Variables projet de base
+    project: {
+      id: project.id || 'unknown-project',
+      name: project.name || 'Unknown Project',
+      template: project.template || 'basic',
+      version: project.version || '1.0.0'
+    },
+    
+    // Variables component si disponibles
+    ...componentData,
+    
+    // Variables par défaut pour éviter "undefined"
+    content: componentData.content || 'Default content',
+    classname: componentData.classname || '',
+    id: componentData.id || 'default-id',
+    type: componentData.type || 'default',
+    
+    // Style options calculées
+    styleOptions: {
+      bg: componentData.bg || 'white',
+      color: componentData.color || 'black',
+      size: componentData.size || 'md',
+      spacing: componentData.spacing || 'normal'
+    },
+    
+    // Metadata
+    metadata: {
+      generatedAt: new Date().toISOString(),
+      templateEngine: 'handlebars',
+      buzzcraft: true
+    }
+  };
+}
+
+// === FONCTIONS INTERNES ===
+
+/*
  * FAIT QUOI : Validation d'une page
  * REÇOIT : page: object, path: string, errors: array, warnings: array
  * RETOURNE : void (modifie errors/warnings par référence)
  */
-
 function validatePage(page, path, errors, warnings) {
   if (!page || typeof page !== 'object') {
     errors.push(`${path} must be an object`);
@@ -87,7 +193,6 @@ function validatePage(page, path, errors, warnings) {
  * REÇOIT : layout: object, path: string, errors: array, warnings: array
  * RETOURNE : void (modifie errors/warnings par référence)
  */
-
 function validateLayout(layout, path, errors, warnings) {
   if (!layout || typeof layout !== 'object') {
     errors.push(`${path} must be an object`);
@@ -111,7 +216,6 @@ function validateLayout(layout, path, errors, warnings) {
  * REÇOIT : section: object, path: string, errors: array, warnings: array
  * RETOURNE : void (modifie errors/warnings par référence)
  */
-
 function validateSection(section, path, errors, warnings) {
   if (!section || typeof section !== 'object') {
     errors.push(`${path} must be an object`);
@@ -142,7 +246,6 @@ function validateSection(section, path, errors, warnings) {
  * REÇOIT : container: object, path: string, errors: array, warnings: array
  * RETOURNE : void (modifie errors/warnings par référence)
  */
-
 function validateContainer(container, path, errors, warnings) {
   if (!container || typeof container !== 'object') {
     errors.push(`${path} must be an object`);
@@ -186,7 +289,6 @@ function validateContainer(container, path, errors, warnings) {
  * REÇOIT : component: object, path: string, errors: array, warnings: array
  * RETOURNE : void (modifie errors/warnings par référence)
  */
-
 function validateComponent(component, path, errors, warnings) {
   if (!component || typeof component !== 'object') {
     errors.push(`${path} must be an object`);
@@ -221,4 +323,26 @@ function validateComponent(component, path, errors, warnings) {
       warnings.push(`${path}.target "${component.target}" is not standard. Valid: ${validTargets.join(', ')}`);
     }
   }
+}
+
+/*
+ * FAIT QUOI : Récupère valeur nested dans objet (ex: project.name)
+ * REÇOIT : obj: object, path: string
+ * RETOURNE : any (valeur trouvée ou undefined)
+ * ERREURS : Aucune (retourne undefined si chemin invalide)
+ */
+function getNestedValue(obj, path) {
+  // Support des chemins comme "project.name" ou "styleOptions.bg"
+  const keys = path.split('.');
+  let current = obj;
+  
+  for (const key of keys) {
+    if (current && typeof current === 'object' && key in current) {
+      current = current[key];
+    } else {
+      return undefined;
+    }
+  }
+  
+  return current;
 }

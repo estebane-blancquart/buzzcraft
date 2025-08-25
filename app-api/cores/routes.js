@@ -1,13 +1,13 @@
 import express from 'express';
 import { readdir, readFile, writeFile, rm, stat } from 'fs/promises';
 import { join } from 'path';
-import { request } from './request/parser.js';
-import { process as processRequest } from './request/processor.js';
-import { response } from './response/parser.js';
-import { process as processResponse } from './response/processor.js';
-import { createWorkflow } from '../app-server/engines/create/coordinator.js';
-import { buildWorkflow } from '../app-server/engines/build/coordinator.js';
-import { validateProjectSchema } from '../app-server/systems/schema-validator.js';
+import { request } from '../request/parser.js';
+import { process as processRequest } from '../request/processor.js';
+import { response } from '../response/parser.js';
+import { process as processResponse } from '../response/processor.js';
+import { createWorkflow } from '../../app-server/engines/create/coordinator.js';
+import { buildWorkflow } from '../../app-server/engines/build/coordinator.js';
+import { validateProjectSchema } from '../../app-server/systems/schema-validator.js';
 
 /*
  * FAIT QUOI : Routes HTTP pour gestion des projets
@@ -403,7 +403,7 @@ router.post('/:id/build', handleRequest);
 // GET /projects/meta/templates - Lister les templates disponibles
 router.get('/meta/templates', async (req, res) => {
   try {
-    const { discoverAvailableTemplates } = await import('../app-server/transitions/build/loader.js');
+    const { discoverAvailableTemplates } = await import('../../app-server/transitions/build/loader.js');
     const discovery = await discoverAvailableTemplates();
     
     if (!discovery.loaded) {
