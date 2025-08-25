@@ -31,7 +31,7 @@ export async function loadTemplate(templateId, options = {}) {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, '../inputs/templates/structure/projects', `${templateId}.json`);
+    const templatePath = join(__dirname, '../data/inputs/templates/structure/projects', `${templateId}.json`);
     
     const templateFile = await readPath(templatePath);
     
@@ -88,7 +88,7 @@ export async function loadCodeTemplates(projectId, options = {}) {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatesBasePath = join(__dirname, '../inputs/templates/code');
+    const templatesBasePath = join(__dirname, '../data/inputs/templates/code');
     
     const templates = {};
     const dependencies = [];
@@ -154,7 +154,7 @@ export async function discoverAvailableTemplates(options = {}) {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const structureBasePath = join(__dirname, '../inputs/templates/structure/projects');
+    const structureBasePath = join(__dirname, '../data/inputs/templates/structure/projects');
     
     const availableTemplates = [];
     const items = await readdir(structureBasePath, { withFileTypes: true });

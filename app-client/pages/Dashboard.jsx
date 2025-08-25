@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { useProjects } from '@hooks/useProjects.js';
-import ProjectStats from '@modules/ProjectStats.jsx';
-import ProjectCard from '@modules/ProjectCard.jsx';
-import Console from '@modules/Console.jsx';
-import CreateModal from '@modules/CreateModal.jsx';
-import ConfirmModal from '@modules/ConfirmModal.jsx';
+import ProjectStats from '@pages/dashboard/metrics/ProjectStats.jsx';
+import ProjectCard from '@pages/dashboard/projects/ProjectCard.jsx';
+import Console from '@pages/dashboard/terminal/Console.jsx';
+import CreateModal from '@pages/dashboard/projects/CreateModal.jsx';
+import ConfirmModal from '@pages/dashboard/projects/ConfirmModal.jsx';
 import Button from '@components/Button.jsx';
 
 function Dashboard() {

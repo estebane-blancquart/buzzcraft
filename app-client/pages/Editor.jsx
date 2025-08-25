@@ -1,11 +1,11 @@
 import React from 'react';
 import { useProjectEditor } from '@hooks/useProjectEditor.js';
-import EditorHeader from '@modules/EditorHeader.jsx';
+import EditorHeader from '@pages/editor/toolbar/EditorHeader.jsx';
 import ProjectTree from '@modules/ProjectTree.jsx';
 import ProjectPreview from '@modules/ProjectPreview.jsx';
 import ProjectProperties from '@modules/ProjectProperties.jsx';
-import ComponentSelectorModal from '@modules/ComponentSelectorModal.jsx';
-import ContainerSelectorModal from '@modules/ContainerSelectorModal.jsx';
+import ComponentSelectorModal from '@pages/editor/structure/ComponentSelectorModal.jsx';
+import ContainerSelectorModal from '@pages/editor/structure/ContainerSelectorModal.jsx';
 
 function Editor() {
   const {
