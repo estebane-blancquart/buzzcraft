@@ -1,175 +1,45 @@
-import React, { useState } from 'react';
-import { ELEMENT_TYPES } from '@config/constants.js';
+import React from 'react';
 import Modal from '@components/Modal.jsx';
 import Button from '@components/Button.jsx';
 
-const COMPONENT_TYPES = [
-  {
-    type: ELEMENT_TYPES.HEADING,
-    name: 'Titre',
-    icon: 'Ì≥ù',
-    description: 'Titres H1 √† H6',
-    defaults: {
-      tag: 'h2',
-      content: 'Nouveau titre',
-      classname: 'text-2xl font-bold'
-    }
-  },
-  {
-    type: ELEMENT_TYPES.PARAGRAPH,
-    name: 'Paragraphe',
-    icon: 'Ì≥Ñ',
-    description: 'Texte simple',
-    defaults: {
-      content: 'Nouveau paragraphe de texte.',
-      classname: 'text-base'
-    }
-  },
-  {
-    type: ELEMENT_TYPES.BUTTON,
-    name: 'Bouton',
-    icon: 'Ì¥ò',
-    description: 'Bouton ou lien',
-    defaults: {
-      content: 'Nouveau bouton',
-      href: '',
-      classname: 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'
-    }
-  },
-  {
-    type: ELEMENT_TYPES.IMAGE,
-    name: 'Image',
-    icon: 'Ì∂ºÔ∏è',
-    description: 'Image avec src/alt',
-    defaults: {
-      src: 'https://picsum.photos/400/300',
-      alt: 'Description de l\'image',
-      classname: 'w-full rounded'
-    }
-  },
-  {
-    type: ELEMENT_TYPES.VIDEO,
-    name: 'Vid√©o',
-    icon: 'Ìæ•',
-    description: 'Lecteur vid√©o',
-    defaults: {
-      src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_640x360_1mb.mp4',
-      controls: true,
-      classname: 'w-full rounded'
-    }
-  },
-  {
-    type: ELEMENT_TYPES.LINK,
-    name: 'Lien',
-    icon: 'Ì¥ó',
-    description: 'Lien hypertexte',
-    defaults: {
-      content: 'Nouveau lien',
-      href: 'https://example.com',
-      target: '_blank',
-      classname: 'text-blue-600 hover:text-blue-800 underline'
-    }
-  }
-];
-
 function ComponentSelectorModal({ isOpen, onClose, onSelectComponent }) {
-  const [selectedType, setSelectedType] = useState(null);
-
-  const handleComponentClick = (componentType) => {
-    setSelectedType(componentType);
-  };
-
-  const handleConfirm = () => {
-    if (selectedType) {
-      const newComponent = {
-        id: `component-${Date.now()}`,
-        type: selectedType.type,
-        ...selectedType.defaults
-      };
-      
-      onSelectComponent(newComponent);
-      setSelectedType(null);
-      onClose();
-    }
-  };
-
-  const handleCancel = () => {
-    setSelectedType(null);
-    onClose();
-  };
+  const componentTypes = [
+    { id: 'heading', name: 'Heading', icon: 'Ì¥§' },
+    { id: 'paragraph', name: 'Paragraph', icon: 'Ì≥ù' },
+    { id: 'button', name: 'Button', icon: 'Ì¥ò' },
+    { id: 'image', name: 'Image', icon: 'Ì∂ºÔ∏è' },
+    { id: 'video', name: 'Video', icon: 'Ì≥π' },
+    { id: 'link', name: 'Link', icon: 'Ì¥ó' }
+  ];
 
   return (
-    <Modal isOpen={isOpen} onClose={handleCancel} title="Choisir un composant">
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--size-sm)' }}>
-          S√©lectionnez le type de composant √† ajouter
-        </p>
-      </div>
-
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-        gap: 'var(--space-4)',
-        marginBottom: 'var(--space-6)'
-      }}>
-        {COMPONENT_TYPES.map((componentType) => (
-          <div
-            key={componentType.type}
-            onClick={() => handleComponentClick(componentType)}
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Component">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+        {componentTypes.map(type => (
+          <button
+            key={type.id}
+            onClick={() => onSelectComponent(type.id)}
             style={{
-              padding: 'var(--space-4)',
-              border: selectedType?.type === componentType.type 
-                ? '2px solid var(--color-primary)' 
-                : '1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '1rem',
+              border: '1px solid var(--color-text-secondary)',
               borderRadius: 'var(--radius-md)',
-              background: selectedType?.type === componentType.type 
-                ? 'color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-secondary))'
-                : 'var(--color-bg-secondary)',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              textAlign: 'center'
+              background: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer'
             }}
           >
-            <div style={{ 
-              fontSize: '2rem', 
-              marginBottom: 'var(--space-2)'
-            }}>
-              {componentType.icon}
-            </div>
-            
-            <div style={{ 
-              fontWeight: 600, 
-              color: 'var(--color-text-primary)',
-              marginBottom: 'var(--space-1)'
-            }}>
-              {componentType.name}
-            </div>
-            
-            <div style={{ 
-              fontSize: 'var(--size-xs)', 
-              color: 'var(--color-text-secondary)'
-            }}>
-              {componentType.description}
-            </div>
-          </div>
+            <span style={{ fontSize: '1.5rem' }}>{type.icon}</span>
+            <span>{type.name}</span>
+          </button>
         ))}
       </div>
-
-      <div style={{ 
-        display: 'flex', 
-        gap: 'var(--space-4)', 
-        justifyContent: 'flex-end' 
-      }}>
-        <Button variant="secondary" onClick={handleCancel}>
-          Annuler
-        </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleConfirm}
-          disabled={!selectedType}
-        >
-          Ajouter {selectedType?.name || 'Composant'}
-        </Button>
+      
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
       </div>
     </Modal>
   );
