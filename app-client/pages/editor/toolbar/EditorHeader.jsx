@@ -1,6 +1,5 @@
 import React from 'react';
 import { DEVICES } from '@config/constants.js';
-import Button from '@components/Button.jsx';
 
 function EditorHeader({
   project,

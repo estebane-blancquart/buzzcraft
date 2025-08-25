@@ -1,9 +1,9 @@
 import React from 'react';
 import { useProjectEditor } from '@hooks/useProjectEditor.js';
 import EditorHeader from '@pages/editor/toolbar/EditorHeader.jsx';
-import ProjectTree from '@modules/ProjectTree.jsx';
-import ProjectPreview from '@modules/ProjectPreview.jsx';
-import ProjectProperties from '@modules/ProjectProperties.jsx';
+import ProjectTree from '@pages/editor/structure/ProjectTree.jsx';
+import ProjectPreview from '@pages/editor/preview/ProjectPreview.jsx';
+import ProjectProperties from '@pages/editor/properties/ProjectProperties.jsx';
 import ComponentSelectorModal from '@pages/editor/structure/ComponentSelectorModal.jsx';
 import ContainerSelectorModal from '@pages/editor/structure/ContainerSelectorModal.jsx';
 

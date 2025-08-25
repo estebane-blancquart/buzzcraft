@@ -5,7 +5,6 @@ import ProjectCard from '@pages/dashboard/projects/ProjectCard.jsx';
 import Console from '@pages/dashboard/terminal/Console.jsx';
 import CreateModal from '@pages/dashboard/projects/CreateModal.jsx';
 import ConfirmModal from '@pages/dashboard/projects/ConfirmModal.jsx';
-import Button from '@components/Button.jsx';
 
 function Dashboard() {
   const { 

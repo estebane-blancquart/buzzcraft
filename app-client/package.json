@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --config ../vite.config.js --root .",
-    "build": "vite build --config ../vite.config.js --root .",
-    "preview": "vite preview --config ../vite.config.js --root ."
+    "dev": "vite --config ../.configs/vite.config.js cores/index.html",
+    "build": "vite build --config ../.configs/vite.config.js",
+    "preview": "vite preview --config ../.configs/vite.config.js"
   },
   "dependencies": {
     "react": "^18.2.0",

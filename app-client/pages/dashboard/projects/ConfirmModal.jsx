@@ -1,6 +1,4 @@
 import React from 'react';
-import Modal from '@components/Modal.jsx';
-import Button from '@components/Button.jsx';
 
 function ConfirmModal({ 
   isOpen, 

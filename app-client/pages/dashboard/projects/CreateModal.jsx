@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Modal from '@components/Modal.jsx';
-import Input from '@components/Input.jsx';
-import Button from '@components/Button.jsx';
 import { apiUrl } from '@config/api.js';
 
 function CreateModal({ isOpen, onClose, onSubmit }) {
