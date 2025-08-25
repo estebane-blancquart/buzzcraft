@@ -12,10 +12,10 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
     <div className="project-card">
       <div className="project-info">
         <div className="project-header">
-          <h3>{project.name}</h3>
+          <h3 className="project-name">{project.name}</h3>
           <p className="project-meta">Créé le {formatDate(project.created)}</p>
         </div>
-        <span className="project-state" data-state={project.state}>
+        <span className={`project-state ${project.state.toLowerCase()}`}>
           {project.state}
         </span>
       </div>
@@ -77,7 +77,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
         )}
         
         {/* DELETE: toujours disponible */}
-        <button onClick={() => onDeleteRequest(project.id, project.name)}
+        <button className="delete-btn" onClick={() => onDeleteRequest(project.id, project.name)}
           disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`]}>
           {actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`] ? '...' : 'DELETE'}
         </button>

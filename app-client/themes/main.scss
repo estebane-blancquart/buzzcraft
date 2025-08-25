@@ -1,2 +1,11 @@
 @use 'variables';
 @use 'base';
+
+@use '../pages/dashboard/metrics/MetricsModule.scss';
+@use '../pages/dashboard/projects/ProjectsModule.scss'; 
+@use '../pages/dashboard/terminal/TerminalModule.scss';
+@use '../pages/editor/Editor.scss';
+@use '../pages/editor/toolbar/ToolbarModule.scss';
+@use '../pages/editor/structure/StructureModule.scss';
+@use '../pages/editor/preview/PreviewModule.scss';
+@use '../pages/editor/properties/PropertiesModule.scss';

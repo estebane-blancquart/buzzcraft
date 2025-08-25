@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { apiUrl } from '@config/api.js';
 
 /*
- * FAIT QUOI : Modal création nouveau projet (renommé depuis CreateModal)
+ * FAIT QUOI : Modal création nouveau projet (CLEAN VERSION)
  * REÇOIT : isOpen, onClose, onSubmit
- * RETOURNE : Modal avec formulaire création
- * ERREURS : Validation inline + gestion erreurs API
+ * RETOURNE : Modal avec formulaire création + fallback templates
+ * ERREURS : Validation inline + fallback automatique si API fail
  */
 
 function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => {} }) {
@@ -20,6 +20,7 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
   const [templates, setTemplates] = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
 
+
   useEffect(() => {
     if (isOpen) {
       loadTemplates();
@@ -28,8 +29,14 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
 
   const loadTemplates = async () => {
     setTemplatesLoading(true);
+    
     try {
       const response = await fetch(apiUrl('projects/meta/templates'));
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -37,9 +44,27 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
         if (data.templates.length > 0) {
           setFormData(prev => ({ ...prev, template: data.templates[0].id }));
         }
+      } else {
+        // FALLBACK : Templates hardcodés
+        const fallbackTemplates = [
+          { id: 'basic', name: 'Basic Project Template' },
+          { id: 'restaurant', name: 'Restaurant Template' },
+          { id: 'contact', name: 'Contact Form Template' }
+        ];
+        setTemplates(fallbackTemplates);
+        setFormData(prev => ({ ...prev, template: 'basic' }));
       }
     } catch (error) {
       console.error('Templates load error:', error);
+      
+      // FALLBACK : Templates hardcodés
+      const fallbackTemplates = [
+        { id: 'basic', name: 'Basic Project Template' },
+        { id: 'restaurant', name: 'Restaurant Template' },
+        { id: 'contact', name: 'Contact Form Template' }
+      ];
+      setTemplates(fallbackTemplates);
+      setFormData(prev => ({ ...prev, template: 'basic' }));
     } finally {
       setTemplatesLoading(false);
     }
@@ -127,6 +152,8 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
           </div>
         )}
 
+        {/* Zone de debug supprimée - modal propre */}
+
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-field">
             <label>ID Projet *</label>
@@ -157,13 +184,14 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
           <div className="form-field">
             <label>Template *</label>
             {templatesLoading ? (
-              <div className="loading-templates">Chargement...</div>
+              <div className="loading-templates">Chargement templates...</div>
             ) : (
               <select
                 value={formData.template}
                 onChange={(e) => handleInputChange('template', e.target.value)}
                 disabled={loading || templates.length === 0}
               >
+                <option value="">-- Sélectionnez un template --</option>
                 {templates.map(template => (
                   <option key={template.id} value={template.id}>
                     {template.name}
