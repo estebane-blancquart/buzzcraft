@@ -3,16 +3,13 @@ import react from '@vitejs/plugin-react';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// Récupérer le chemin du fichier actuel
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
-
-  // Root pointe vers app-client
   root: '.',
-
+  
   resolve: {
     alias: {
       '@': resolve(__dirname, '.'),
@@ -22,7 +19,10 @@ export default defineConfig({
       '@hooks': resolve(__dirname, 'hooks'),
       '@themes': resolve(__dirname, 'themes'),
       '@theme': resolve(__dirname, 'themes'),
-      '@modules': resolve(__dirname, 'pages') // ALIAS AJOUTÉ pour @modules/ProjectTree etc
+      // FIX: @modules doit pointer vers les vrais emplacements
+      '@modules/ProjectTree.jsx': resolve(__dirname, 'pages/editor/structure/ProjectTree.jsx'),
+      '@modules/ProjectPreview.jsx': resolve(__dirname, 'pages/editor/preview/ProjectPreview.jsx'),
+      '@modules/ProjectProperties.jsx': resolve(__dirname, 'pages/editor/properties/ProjectProperties.jsx')
     }
   },
 
