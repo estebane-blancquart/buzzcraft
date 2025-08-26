@@ -1,159 +1,58 @@
-import { resolve } from "path";
-import { PATHS } from "./constants.js";
+import { resolve, dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { stat } from 'fs/promises';
 
 /**
- * Résolution centralisée de tous les paths BuzzCraft - VERSION PIXEL PARFAIT
+ * Résolution sécurisée de paths absolus pour BuzzCraft - VERSION PIXEL PARFAIT
  * @module paths
- * @description Utilitaires pour générer des chemins absolus vers tous les assets BuzzCraft
+ * @description Gestion centralisée des chemins avec validation et sécurité
  */
 
+// Résolution du chemin racine
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PROJECT_ROOT = resolve(__dirname, '../..');
+
+// Paths de base du projet
+const PATHS = {
+  root: PROJECT_ROOT,
+  serverData: resolve(PROJECT_ROOT, 'app-server/data'),
+  inputs: resolve(PROJECT_ROOT, 'app-server/data/inputs'),
+  outputs: resolve(PROJECT_ROOT, 'app-server/data/outputs'),
+  templates: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates'),
+  schemas: resolve(PROJECT_ROOT, 'app-server/data/inputs/schemas')
+};
+
 /**
- * Résout un path de projet spécifique
- * @param {string} projectId - Identifiant unique du projet
- * @returns {string} Path absolu vers le répertoire du projet
- * @throws {ValidationError} Si projectId manquant ou invalide
+ * Génère le path absolu vers un projet
+ * @param {string} projectId - Identifiant du projet
+ * @returns {string} Path absolu vers le dossier projet
+ * @throws {ValidationError} Si projectId invalide
  * 
  * @example
- * const projectPath = getProjectPath('mon-site-web');
- * // Returns: '/absolute/path/to/app-server/data/outputs/mon-site-web'
+ * const path = getProjectPath('mon-site');
+ * // Returns: '/absolute/path/to/outputs/mon-site'
  */
 export function getProjectPath(projectId) {
-  console.log(`[PATH-RESOLVER] Resolving project path for: ${projectId}`);
+  console.log(`[PATH-RESOLVER] Resolving project path: ${projectId}`);
   
   validateProjectId(projectId);
   
-  const resolvedPath = resolve(PATHS.serverOutputs, projectId);
+  const resolvedPath = resolve(PATHS.outputs, projectId);
   console.log(`[PATH-RESOLVER] Project path resolved: ${resolvedPath}`);
   
   return resolvedPath;
 }
 
 /**
- * Résout un path de template structure par type et ID
- * @param {string} templateType - Type de template ('project', 'component', 'container')
- * @param {string} templateId - Identifiant du template
- * @returns {string} Path absolu vers le fichier template JSON
- * @throws {ValidationError} Si paramètres manquants ou type inconnu
- * 
- * @example
- * const templatePath = getTemplatePath('component', 'button');
- * // Returns: '/absolute/path/to/templates/structure/components/button.json'
- */
-export function getTemplatePath(templateType, templateId) {
-  console.log(`[PATH-RESOLVER] Resolving template path: ${templateType}/${templateId}`);
-  
-  validateTemplateParameters(templateType, templateId);
-  
-  const typeMap = {
-    'project': PATHS.templatesProjects,
-    'component': PATHS.templatesComponents,
-    'container': PATHS.templatesContainers
-  };
-  
-  const basePath = typeMap[templateType];
-  if (!basePath) {
-    throw new Error(`ValidationError: unknown template type '${templateType}'. Valid: ${Object.keys(typeMap).join(', ')}`);
-  }
-  
-  const resolvedPath = resolve(basePath, `${templateId}.json`);
-  console.log(`[PATH-RESOLVER] Template path resolved: ${resolvedPath}`);
-  
-  return resolvedPath;
-}
-
-/**
- * Résout un path de template code Handlebars
- * @param {string} relativePath - Chemin relatif depuis templates/code/
- * @returns {string} Path absolu vers le fichier template Handlebars
- * @throws {ValidationError} Si relativePath manquant
- * 
- * @example
- * const codePath = getCodeTemplatePath('app-visitor/components/Button.tsx.hbs');
- * // Returns: '/absolute/path/to/templates/code/app-visitor/components/Button.tsx.hbs'
- */
-export function getCodeTemplatePath(relativePath) {
-  console.log(`[PATH-RESOLVER] Resolving code template path: ${relativePath}`);
-  
-  validateRelativePath(relativePath);
-  
-  const resolvedPath = resolve(PATHS.templatesCode, relativePath);
-  console.log(`[PATH-RESOLVER] Code template path resolved: ${resolvedPath}`);
-  
-  return resolvedPath;
-}
-
-/**
- * Résout un path de validation schema JSON
- * @param {string} schemaId - Identifiant du schema de validation
- * @returns {string} Path absolu vers le fichier schema JSON
- * @throws {ValidationError} Si schemaId manquant
- * 
- * @example
- * const schemaPath = getValidationSchemaPath('component-button');
- * // Returns: '/absolute/path/to/validations/component-button.schema.json'
- */
-export function getValidationSchemaPath(schemaId) {
-  console.log(`[PATH-RESOLVER] Resolving validation schema: ${schemaId}`);
-  
-  validateSchemaId(schemaId);
-  
-  const resolvedPath = resolve(PATHS.validations, `${schemaId}.schema.json`);
-  console.log(`[PATH-RESOLVER] Schema path resolved: ${resolvedPath}`);
-  
-  return resolvedPath;
-}
-
-/**
- * Résout un path relatif depuis la racine du projet BuzzCraft
- * @param {string} relativePath - Chemin relatif depuis la racine
- * @returns {string} Path absolu depuis la racine projet
- * @throws {ValidationError} Si relativePath manquant
- * 
- * @example
- * const configPath = resolveFromRoot('.configs/jest.config.js');
- * // Returns: '/absolute/path/to/buzzcraft/.configs/jest.config.js'
- */
-export function resolveFromRoot(relativePath) {
-  console.log(`[PATH-RESOLVER] Resolving from root: ${relativePath}`);
-  
-  validateRelativePath(relativePath);
-  
-  const resolvedPath = resolve(PATHS.root, relativePath);
-  console.log(`[PATH-RESOLVER] Root path resolved: ${resolvedPath}`);
-  
-  return resolvedPath;
-}
-
-/**
- * Résout un path relatif depuis le répertoire app-server
- * @param {string} relativePath - Chemin relatif depuis app-server/
- * @returns {string} Path absolu depuis app-server
- * @throws {ValidationError} Si relativePath manquant
- * 
- * @example
- * const enginePath = resolveFromServer('engines/create-coordinator.js');
- * // Returns: '/absolute/path/to/app-server/engines/create-coordinator.js'
- */
-export function resolveFromServer(relativePath) {
-  console.log(`[PATH-RESOLVER] Resolving from server: ${relativePath}`);
-  
-  validateRelativePath(relativePath);
-  
-  const resolvedPath = resolve(PATHS.appServer, relativePath);
-  console.log(`[PATH-RESOLVER] Server path resolved: ${resolvedPath}`);
-  
-  return resolvedPath;
-}
-
-/**
- * Génère un path pour un fichier spécifique dans un projet
+ * Génère le path vers un fichier dans un projet
  * @param {string} projectId - Identifiant du projet
- * @param {string} filename - Nom du fichier dans le projet
- * @returns {string} Path absolu vers le fichier dans le projet
- * @throws {ValidationError} Si paramètres manquants
+ * @param {string} filename - Nom du fichier
+ * @returns {string} Path absolu vers le fichier projet
+ * @throws {ValidationError} Si paramètres invalides
  * 
  * @example
- * const projectFile = getProjectFilePath('mon-site', 'project.json');
+ * const path = getProjectFilePath('mon-site', 'project.json');
  * // Returns: '/absolute/path/to/outputs/mon-site/project.json'
  */
 export function getProjectFilePath(projectId, filename) {
@@ -208,7 +107,6 @@ export async function validatePathExists(path) {
   try {
     validatePathString(path);
     
-    const { stat } = await import('fs/promises');
     await stat(path);
     
     console.log(`[PATH-RESOLVER] Path exists: ${path}`);
@@ -235,102 +133,71 @@ export async function validatePathExists(path) {
 }
 
 /**
- * Validation batch de l'existence de paths critiques (optimisée)
- * @param {object} [options={}] - Options de validation
- * @param {boolean} [options.checkAll=false] - Vérifier tous les paths ou seulement critiques
- * @param {string[]} [options.customPaths=[]] - Paths supplémentaires à vérifier
- * @returns {Promise<{success: boolean, data: {valid: boolean, missing: string[], errors: string[]}}>} Résultat validation
+ * Génère le path vers un template spécifique
+ * @param {string} templateType - Type de template ('project', 'component', etc.)
+ * @param {string} templateId - ID du template
+ * @returns {string} Path absolu vers le template
+ * @throws {ValidationError} Si paramètres invalides
+ * 
+ * @example
+ * const path = getTemplatePath('project', 'basic');
+ * // Returns: '/absolute/path/to/templates/project/basic.json'
  */
-export async function validateCriticalPaths(options = {}) {
-  console.log(`[PATH-RESOLVER] Validating critical paths`);
+export function getTemplatePath(templateType, templateId) {
+  console.log(`[PATH-RESOLVER] Resolving template: ${templateType}/${templateId}`);
   
-  try {
-    const { checkAll = false, customPaths = [] } = options;
-    
-    const missing = [];
-    const errors = [];
-    
-    // Paths critiques qui doivent toujours exister
-    const criticalPaths = [
-      'root',
-      'appServer',
-      'serverData',
-      'templates'
-    ];
-    
-    const pathsToCheck = checkAll ? Object.keys(PATHS) : criticalPaths;
-    const allPathsToCheck = [...pathsToCheck, ...customPaths];
-    
-    // Validation batch optimisée avec Promise.allSettled
-    const pathPromises = allPathsToCheck.map(async (pathKey) => {
-      try {
-        const pathValue = PATHS[pathKey] || pathKey; // Support custom paths
-        const result = await validatePathExists(pathValue);
-        
-        return {
-          pathKey,
-          pathValue,
-          exists: result.success && result.data.exists,
-          error: result.error
-        };
-        
-      } catch (error) {
-        return {
-          pathKey,
-          pathValue: PATHS[pathKey] || pathKey,
-          exists: false,
-          error: error.message
-        };
-      }
-    });
-    
-    const results = await Promise.allSettled(pathPromises);
-    
-    // Traitement des résultats
-    results.forEach(result => {
-      if (result.status === 'fulfilled') {
-        const { pathKey, exists, error } = result.value;
-        
-        if (!exists) {
-          missing.push(pathKey);
-        }
-        
-        if (error) {
-          errors.push(`${pathKey}: ${error}`);
-        }
-      } else {
-        errors.push(`Validation failed: ${result.reason.message}`);
-      }
-    });
-    
-    const isValid = missing.length === 0 && errors.length === 0;
-    
-    console.log(`[PATH-RESOLVER] Critical paths validation: ${isValid ? 'VALID' : 'INVALID'} (${missing.length} missing, ${errors.length} errors)`);
-    
-    return {
-      success: true,
-      data: {
-        valid: isValid,
-        missing,
-        errors,
-        stats: {
-          totalChecked: allPathsToCheck.length,
-          validCount: allPathsToCheck.length - missing.length,
-          validatedAt: new Date().toISOString()
-        }
-      }
-    };
-    
-  } catch (error) {
-    console.log(`[PATH-RESOLVER] Critical paths validation failed: ${error.message}`);
-    return {
-      success: false,
-      error: `Critical paths validation failed: ${error.message}`
-    };
-  }
+  validateTemplateType(templateType);
+  validateTemplateId(templateId);
+  
+  const templatePath = resolve(PATHS.templates, templateType, `${templateId}.json`);
+  console.log(`[PATH-RESOLVER] Template path resolved: ${templatePath}`);
+  
+  return templatePath;
 }
 
-// === VALIDATION HELPERS (PRIVÉES) ===
+/**
+ * Génère le path vers un schéma de validation
+ * @param {string} schemaId - ID du schéma
+ * @returns {string} Path absolu vers le schéma
+ * @throws {ValidationError} Si schemaId invalide
+ * 
+ * @example
+ * const path = getSchemaPath('project-v1');
+ * // Returns: '/absolute/path/to/schemas/project-v1.json'
+ */
+export function getSchemaPath(schemaId) {
+  console.log(`[PATH-RESOLVER] Resolving schema: ${schemaId}`);
+  
+  validateSchemaId(schemaId);
+  
+  const schemaPath = resolve(PATHS.schemas, `${schemaId}.json`);
+  console.log(`[PATH-RESOLVER] Schema path resolved: ${schemaPath}`);
+  
+  return schemaPath;
+}
+
+/**
+ * Génère le path vers les templates de code
+ * @param {string} relativePath - Chemin relatif dans templates/code
+ * @returns {string} Path absolu vers le template de code
+ * @throws {ValidationError} Si relativePath invalide
+ * 
+ * @example
+ * const path = getCodeTemplatePath('app-visitor/src/App.tsx.hbs');
+ * // Returns: '/absolute/path/to/templates/code/app-visitor/src/App.tsx.hbs'
+ */
+export function getCodeTemplatePath(relativePath) {
+  console.log(`[PATH-RESOLVER] Resolving code template: ${relativePath}`);
+  
+  validateRelativePath(relativePath);
+  
+  const codePath = resolve(PATHS.templates, 'code', relativePath);
+  console.log(`[PATH-RESOLVER] Code template path resolved: ${codePath}`);
+  
+  return codePath;
+}
+
+// === FONCTIONS DE VALIDATION ===
 
 /**
  * Valide un ID de projet
@@ -344,17 +211,33 @@ function validateProjectId(projectId) {
   if (projectId.trim().length === 0) {
     throw new Error('ValidationError: projectId cannot be empty or whitespace only');
   }
+  
+  // Validation pattern sécurisé
+  if (!/^[a-z0-9-]+$/.test(projectId)) {
+    throw new Error('ValidationError: projectId must contain only lowercase letters, numbers, and hyphens');
+  }
 }
 
 /**
- * Valide les paramètres de template
+ * Valide un type de template
  * @private
  */
-function validateTemplateParameters(templateType, templateId) {
+function validateTemplateType(templateType) {
   if (!templateType || typeof templateType !== 'string') {
     throw new Error('ValidationError: templateType must be non-empty string');
   }
   
+  const validTypes = ['project', 'component', 'container', 'layout'];
+  if (!validTypes.includes(templateType)) {
+    throw new Error(`ValidationError: templateType must be one of: ${validTypes.join(', ')}`);
+  }
+}
+
+/**
+ * Valide un ID de template
+ * @private
+ */
+function validateTemplateId(templateId) {
   if (!templateId || typeof templateId !== 'string') {
     throw new Error('ValidationError: templateId must be non-empty string');
   }
@@ -447,4 +330,4 @@ export const projectPath = getProjectPath;
  */
 export const projectFile = getProjectFilePath;
 
-console.log(`[PATH-RESOLVER] Paths resolver loaded successfully - PIXEL PERFECT VERSION`);
+console.log(`[PATH-RESOLVER] Path resolver loaded successfully - PIXEL PERFECT VERSION`);

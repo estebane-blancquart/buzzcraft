@@ -1,51 +1,40 @@
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
-import { existsSync } from "fs";
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
-/**
- * Constantes centralisées pour éviter les cycles d'imports - VERSION PIXEL PARFAIT
- * @module constants
- * @description Toutes les constantes système BuzzCraft organisées par domaine
- */
-
-// Détection automatique de la racine projet
+// Résolution du chemin racine du projet BuzzCraft
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// CORRIGÉ: Navigation depuis app-server/cores/ vers racine buzzcraft/
-const PROJECT_ROOT = resolve(__dirname, '../../');
+const PROJECT_ROOT = resolve(__dirname, '../..');
 
 /**
- * Chemins absolus vers tous les répertoires du projet
+ * Paths absolus vers tous les répertoires du projet BuzzCraft
  * @type {object}
  * @readonly
  */
 export const PATHS = {
-  // Racine projet
+  // Racine du projet
   root: PROJECT_ROOT,
   
   // Services principaux
   appApi: resolve(PROJECT_ROOT, 'app-api'),
-  appServer: resolve(PROJECT_ROOT, 'app-server'),
+  appServer: resolve(PROJECT_ROOT, 'app-server'), 
   appClient: resolve(PROJECT_ROOT, 'app-client'),
   
-  // Données app-server
+  // Données server
   serverData: resolve(PROJECT_ROOT, 'app-server/data'),
-  serverInputs: resolve(PROJECT_ROOT, 'app-server/data/inputs'),
-  serverOutputs: resolve(PROJECT_ROOT, 'app-server/data/outputs'),
+  inputs: resolve(PROJECT_ROOT, 'app-server/data/inputs'),
+  outputs: resolve(PROJECT_ROOT, 'app-server/data/outputs'),
   
-  // Templates par catégorie
+  // Templates
   templates: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates'),
-  templatesStructure: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure'),
-  templatesCode: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/code'),
-  templatesProjects: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure/projects'),
-  templatesComponents: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure/components'),
-  templatesContainers: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure/containers'),
+  projectTemplates: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/projects'),
+  codeTemplates: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/code'),
   
-  // Validations et schemas
-  validations: resolve(PROJECT_ROOT, 'app-server/data/inputs/validations'),
+  // Schemas
+  schemas: resolve(PROJECT_ROOT, 'app-server/data/inputs/schemas'),
   
-  // Configuration et documentation
+  // Configuration
   configs: resolve(PROJECT_ROOT, '.configs'),
   docs: resolve(PROJECT_ROOT, '.docs'),
   tests: resolve(PROJECT_ROOT, '.tests'),
@@ -117,71 +106,15 @@ export const ELEMENT_TYPES = {
 };
 
 /**
- * Types de components (éléments atomiques)
- * @type {string[]}
- * @readonly
- */
-export const COMPONENT_TYPES = [
-  ELEMENT_TYPES.HEADING,
-  ELEMENT_TYPES.PARAGRAPH,
-  ELEMENT_TYPES.BUTTON,
-  ELEMENT_TYPES.IMAGE,
-  ELEMENT_TYPES.VIDEO,
-  ELEMENT_TYPES.LINK
-];
-
-/**
- * Types de containers (éléments contenant d'autres éléments)
- * @type {string[]}
- * @readonly
- */
-export const CONTAINER_TYPES = [
-  ELEMENT_TYPES.DIV,
-  ELEMENT_TYPES.LIST,
-  ELEMENT_TYPES.FORM
-];
-
-/**
- * Règles de validation pour les inputs utilisateur
+ * Types de templates disponibles
  * @type {object}
  * @readonly
  */
-export const VALIDATION_RULES = {
-  PROJECT_ID: {
-    MIN_LENGTH: 3,
-    MAX_LENGTH: 50,
-    PATTERN: /^[a-z0-9-]+$/,
-    DESCRIPTION: 'Lowercase letters, numbers and hyphens only'
-  },
-  PROJECT_NAME: {
-    MIN_LENGTH: 2,
-    MAX_LENGTH: 100,
-    DESCRIPTION: 'Human readable project name'
-  },
-  TEMPLATE_ID: {
-    MIN_LENGTH: 2,
-    MAX_LENGTH: 50,
-    PATTERN: /^[a-z0-9-]+$/,
-    DESCRIPTION: 'Template identifier format'
-  }
-};
-
-/**
- * Limites système pour éviter les abus et timeouts
- * @type {object}
- * @readonly
- */
-export const SYSTEM_LIMITS = {
-  /** Profondeur maximum pour validation récursive */
-  MAX_RECURSION_DEPTH: 10,
-  /** Taille maximum d'un fichier template (10MB) */
-  MAX_FILE_SIZE: 10 * 1024 * 1024,
-  /** Nombre maximum de variables dans un template */
-  MAX_TEMPLATE_VARIABLES: 1000,
-  /** Timeout compilation Handlebars (30s) */
-  COMPILATION_TIMEOUT: 30000,
-  /** Timeout workflow complet (5 minutes) */
-  WORKFLOW_TIMEOUT: 300000
+export const TEMPLATE_TYPES = {
+  PROJECT: 'project',
+  COMPONENT: 'component',
+  CONTAINER: 'container',
+  LAYOUT: 'layout'
 };
 
 /**
@@ -190,13 +123,7 @@ export const SYSTEM_LIMITS = {
  * @readonly
  */
 export const ERROR_MESSAGES = {
-  // Types d'erreurs
-  VALIDATION_ERROR: 'ValidationError',
-  GENERATION_ERROR: 'GenerationError',
-  COMPILATION_ERROR: 'CompilationError',
-  LOAD_ERROR: 'LoadError',
-  
-  // Messages spécifiques
+  MISSING_PROJECT_ID: 'Project ID is required',
   INVALID_PROJECT_ID: 'Project ID must be non-empty string matching pattern',
   INVALID_TEMPLATE: 'Template not found or invalid format',
   WORKFLOW_FORBIDDEN: 'Workflow not allowed in current state',
@@ -269,3 +196,5 @@ export function debugPaths() {
   });
   console.log('===============================\n');
 }
+
+console.log(`[CONSTANTS] Constants loaded successfully - PIXEL PERFECT VERSION`);

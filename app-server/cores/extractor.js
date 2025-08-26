@@ -36,7 +36,7 @@ const ALL_ELEMENT_TYPES = [...COMPONENT_TYPES, ...CONTAINER_TYPES];
  * });
  */
 export async function extractAllElements(projectData, options = {}) {
-  console.log(`[EXTRACT] Starting element extraction`);
+  console.log(`[EXTRACTOR] Starting element extraction`);
   
   try {
     // Validation et préparation
@@ -46,7 +46,7 @@ export async function extractAllElements(projectData, options = {}) {
     const project = projectData.project || projectData;
     
     if (!project || typeof project !== 'object') {
-      console.log(`[EXTRACT] No project data found`);
+      console.log(`[EXTRACTOR] No project data found`);
       return {
         success: true,
         data: {
@@ -75,7 +75,7 @@ export async function extractAllElements(projectData, options = {}) {
     // Génération des statistiques
     const stats = config.includeStats ? generateExtractionStats(filteredElements, extractionContext) : undefined;
     
-    console.log(`[EXTRACT] Extraction complete: ${filteredElements.length} elements found`);
+    console.log(`[EXTRACTOR] Extraction complete: ${filteredElements.length} elements found`);
     
     return {
       success: true,
@@ -86,7 +86,7 @@ export async function extractAllElements(projectData, options = {}) {
     };
     
   } catch (error) {
-    console.log(`[EXTRACT] Extraction failed: ${error.message}`);
+    console.log(`[EXTRACTOR] Extraction failed: ${error.message}`);
     return {
       success: false,
       error: `Element extraction failed: ${error.message}`
@@ -105,7 +105,7 @@ export async function extractAllElements(projectData, options = {}) {
  * const buttons = result.data.elements.filter(el => el.type === 'button');
  */
 export async function extractComponents(projectData, options = {}) {
-  console.log(`[EXTRACT] Extracting components only`);
+  console.log(`[EXTRACTOR] Extracting components only`);
   
   const componentOptions = {
     ...options,
@@ -126,7 +126,7 @@ export async function extractComponents(projectData, options = {}) {
  * const forms = result.data.elements.filter(el => el.type === 'form');
  */
 export async function extractContainers(projectData, options = {}) {
-  console.log(`[EXTRACT] Extracting containers only`);
+  console.log(`[EXTRACTOR] Extracting containers only`);
   
   const containerOptions = {
     ...options,
@@ -150,7 +150,7 @@ export async function extractContainers(projectData, options = {}) {
  * }
  */
 export async function findElementById(projectData, elementId, options = {}) {
-  console.log(`[EXTRACT] Searching for element: ${elementId}`);
+  console.log(`[EXTRACTOR] Searching for element: ${elementId}`);
   
   try {
     validateElementId(elementId);
@@ -168,7 +168,7 @@ export async function findElementById(projectData, elementId, options = {}) {
     const foundElement = extractResult.data.elements.find(el => el.id === elementId);
     
     if (foundElement) {
-      console.log(`[EXTRACT] Element found: ${elementId} (${foundElement.type})`);
+      console.log(`[EXTRACTOR] Element found: ${elementId} (${foundElement.type})`);
       return {
         success: true,
         data: {
@@ -177,7 +177,7 @@ export async function findElementById(projectData, elementId, options = {}) {
         }
       };
     } else {
-      console.log(`[EXTRACT] Element not found: ${elementId}`);
+      console.log(`[EXTRACTOR] Element not found: ${elementId}`);
       return {
         success: true,
         data: {
@@ -187,7 +187,7 @@ export async function findElementById(projectData, elementId, options = {}) {
     }
     
   } catch (error) {
-    console.log(`[EXTRACT] Element search failed: ${error.message}`);
+    console.log(`[EXTRACTOR] Element search failed: ${error.message}`);
     return {
       success: false,
       error: `Element search failed: ${error.message}`
@@ -255,7 +255,7 @@ async function extractFromNode(node, path, context) {
   // Protection profondeur
   if (context.currentDepth >= context.config.maxDepth) {
     context.maxDepthReached = true;
-    console.log(`[EXTRACT] Max depth reached at: ${path}`);
+    console.log(`[EXTRACTOR] Max depth reached at: ${path}`);
     return;
   }
   
@@ -264,7 +264,7 @@ async function extractFromNode(node, path, context) {
     const nodeKey = generateNodeKey(node);
     if (context.visited.has(nodeKey)) {
       context.cyclesDetected++;
-      console.log(`[EXTRACT] Cycle detected at: ${path}`);
+      console.log(`[EXTRACTOR] Cycle detected at: ${path}`);
       return;
     }
     context.visited.add(nodeKey);
@@ -285,7 +285,7 @@ async function extractFromNode(node, path, context) {
     };
     
     context.elements.push(element);
-    console.log(`[EXTRACT] Found ${category}: ${node.type} (${node.id}) at ${path}`);
+    console.log(`[EXTRACTOR] Found ${category}: ${node.type} (${node.id}) at ${path}`);
   }
   
   // Continuer l'extraction récursive
@@ -454,4 +454,4 @@ function generateEmptyStats() {
   };
 }
 
-console.log(`[EXTRACT] Element extractor loaded successfully - PIXEL PERFECT VERSION`);
+console.log(`[EXTRACTOR] Element extractor loaded successfully - PIXEL PERFECT VERSION`);

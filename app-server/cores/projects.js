@@ -4,13 +4,27 @@
  * @description Construction, validation et enrichissement de projets
  */
 
-// Constantes pour les éléments de structure
+import { PROJECT_STATES } from './constants.js';
+
+// === CONSTANTES MODULE ===
 const STRUCTURE_ELEMENTS = {
   PAGES: 'pages',
   SECTIONS: 'sections', 
   DIVS: 'divs',
   COMPONENTS: 'components'
 };
+
+const VALIDATION_MESSAGES = {
+  MISSING_ID: 'Missing required field: id',
+  MISSING_NAME: 'Missing required field: name', 
+  MISSING_STATE: 'Missing required field: state',
+  INVALID_PAGES_TYPE: 'Field pages must be an array',
+  EMPTY_PAGES: 'Project has no pages defined'
+};
+
+const LOG_PREFIX = '[PROJECTS]';
+
+// === EXPORTS PUBLICS ===
 
 /**
  * Construit un projet à partir de config et template
@@ -26,53 +40,25 @@ const STRUCTURE_ELEMENTS = {
  * }
  */
 export function buildProject(projectId, config, templateContent = null) {
-  console.log(`[PROJECTS] Building project: ${projectId}`);
+  console.log(`${LOG_PREFIX} Building project: ${projectId}`);
+
+  // Validation des inputs
+  const validation = _validateBuildInputs(projectId, config);
+  if (!validation.success) return validation;
 
   try {
-    if (!projectId || typeof projectId !== 'string') {
-      return {
-        success: false,
-        error: 'ValidationError: projectId must be non-empty string'
-      };
-    }
-
-    if (!config || typeof config !== 'object') {
-      return {
-        success: false,
-        error: 'ValidationError: config must be an object'
-      };
-    }
-
-    let projectData;
-
-    if (templateContent && templateContent.project) {
-      // Construction à partir d'un template
-      projectData = buildFromTemplate(projectId, config, templateContent);
-      console.log(`[PROJECTS] Project built from template: ${templateContent.project.name}`);
-    } else {
-      // Construction fallback sans template
-      projectData = buildFallbackProject(projectId, config);
-      console.log(`[PROJECTS] Project built from fallback template`);
-    }
-
-    // Ajout des métadonnées système
-    projectData.created = new Date().toISOString();
-    projectData.state = "DRAFT";
-    projectData.lastModified = projectData.created;
-
-    console.log(`[PROJECTS] Project built successfully: ${projectId}`);
+    // Construction du projet
+    const projectData = _constructProjectCore(projectId, config, templateContent);
     
-    return {
-      success: true,
-      data: projectData
-    };
+    // Ajout des métadonnées
+    const finalProject = _addProjectMetadata(projectData);
+
+    console.log(`${LOG_PREFIX} Project built successfully: ${projectId}`);
+    return { success: true, data: finalProject };
 
   } catch (error) {
-    console.log(`[PROJECTS] Error building project: ${error.message}`);
-    return {
-      success: false,
-      error: `Project build failed: ${error.message}`
-    };
+    console.log(`${LOG_PREFIX} Error building project: ${error.message}`);
+    return { success: false, error: `Project build failed: ${error.message}` };
   }
 }
 
@@ -80,7 +66,7 @@ export function buildProject(projectId, config, templateContent = null) {
  * Valide la structure et les données d'un projet
  * @param {object} projectData - Données du projet à valider
  * @param {object} [options={}] - Options de validation
- * @param {boolean} [options.strict=true] - Mode strict (erreur sur warnings)
+ * @param {boolean} [options.strict=false] - Mode strict (erreur sur warnings)
  * @returns {{success: boolean, data?: {valid: boolean, warnings?: string[]}, error?: string}} Résultat validation
  * 
  * @example
@@ -90,61 +76,47 @@ export function buildProject(projectId, config, templateContent = null) {
  * }
  */
 export function validateProject(projectData, options = {}) {
-  console.log(`[PROJECTS] Validating project structure`);
+  console.log(`${LOG_PREFIX} Validating project structure`);
+
+  // Validation des inputs
+  const inputValidation = _validateProjectInputs(projectData, options);
+  if (!inputValidation.success) return inputValidation;
 
   try {
-    if (!projectData || typeof projectData !== 'object') {
-      return {
-        success: false,
-        error: 'ValidationError: projectData must be an object'
-      };
-    }
-
-    const warnings = [];
-
     // Validation des champs requis
-    if (!projectData.id) {
-      warnings.push('Missing required field: id');
-    }
+    const warnings = _validateRequiredFields(projectData);
+    
+    // Validation de la structure
+    const structureWarnings = _validateProjectStructure(projectData);
+    const allWarnings = [...warnings, ...structureWarnings];
 
-    if (!projectData.name) {
-      warnings.push('Missing required field: name');
-    }
+    const strictMode = options.strict === true;
+    const isValid = allWarnings.length === 0 || !strictMode;
 
-    if (!projectData.state) {
-      warnings.push('Missing required field: state');
-    }
-
-    // Validation de la structure des pages
-    if (projectData.pages) {
-      if (!Array.isArray(projectData.pages)) {
-        warnings.push('Field pages must be an array');
-      } else if (projectData.pages.length === 0) {
-        warnings.push('Project has no pages defined');
-      }
-    }
-
-    const isValid = warnings.length === 0 || !options.strict;
-
-    if (!isValid && options.strict) {
+    if (strictMode && !isValid) {
       return {
         success: false,
-        error: `Validation failed: ${warnings.join(', ')}`
+        error: `Validation failed: ${allWarnings.join(', ')}`
       };
     }
 
-    console.log(`[PROJECTS] Project validation ${isValid ? 'successful' : 'completed with warnings'}`);
+    if (allWarnings.length > 0) {
+      console.log(`${LOG_PREFIX} Validation warnings detected: ${allWarnings.length}`);
+      allWarnings.forEach(warning => console.log(`${LOG_PREFIX} - ${warning}`));
+    }
+
+    console.log(`${LOG_PREFIX} Project validation ${isValid ? 'successful' : 'completed with warnings'}`);
     
     return {
       success: true,
       data: {
         valid: isValid,
-        ...(warnings.length > 0 && { warnings })
+        ...(allWarnings.length > 0 && { warnings: allWarnings })
       }
     };
 
   } catch (error) {
-    console.log(`[PROJECTS] Validation error: ${error.message}`);
+    console.log(`${LOG_PREFIX} Validation error: ${error.message}`);
     return {
       success: false,
       error: `Validation failed: ${error.message}`
@@ -166,7 +138,7 @@ export function validateProject(projectData, options = {}) {
  * }
  */
 export function enrichProject(projectData, options = {}) {
-  console.log(`[PROJECTS] Enriching project with metadata`);
+  console.log(`${LOG_PREFIX} Enriching project with metadata`);
 
   try {
     if (!projectData || typeof projectData !== 'object') {
@@ -179,7 +151,7 @@ export function enrichProject(projectData, options = {}) {
     const enriched = { ...projectData };
 
     // Calcul des statistiques de structure
-    const structureStats = calculateStructureStats(projectData);
+    const structureStats = _calculateStructureStats(projectData);
     
     enriched._metadata = {
       structure: structureStats,
@@ -194,7 +166,7 @@ export function enrichProject(projectData, options = {}) {
       enriched._metadata.template = options.templateInfo;
     }
 
-    console.log(`[PROJECTS] Project enriched successfully`);
+    console.log(`${LOG_PREFIX} Project enriched successfully`);
     
     return {
       success: true,
@@ -202,7 +174,7 @@ export function enrichProject(projectData, options = {}) {
     };
 
   } catch (error) {
-    console.log(`[PROJECTS] Enrichment failed: ${error.message}`);
+    console.log(`${LOG_PREFIX} Enrichment failed: ${error.message}`);
     return {
       success: false,
       error: `Project enrichment failed: ${error.message}`
@@ -213,15 +185,128 @@ export function enrichProject(projectData, options = {}) {
 // === FONCTIONS INTERNES ===
 
 /**
- * Construit un projet à partir d'un template
+ * Validation pure des inputs buildProject - fonction privée
  * @private
  */
-function buildFromTemplate(projectId, config, templateContent) {
+function _validateBuildInputs(projectId, config) {
+  if (!projectId || typeof projectId !== 'string') {
+    return { success: false, error: 'ValidationError: projectId must be non-empty string' };
+  }
+  if (!config || typeof config !== 'object') {
+    return { success: false, error: 'ValidationError: config must be an object' };
+  }
+  return { success: true };
+}
+
+/**
+ * Construction du projet sans métadonnées - fonction privée
+ * @private
+ */
+function _constructProjectCore(projectId, config, templateContent) {
+  if (templateContent && templateContent.project) {
+    const projectData = _buildFromTemplate(projectId, config, templateContent);
+    console.log(`${LOG_PREFIX} Project built from template: ${templateContent.project.name}`);
+    return projectData;
+  } else {
+    const projectData = _buildFallbackProject(projectId, config);
+    console.log(`${LOG_PREFIX} Project built from fallback template`);
+    return projectData;
+  }
+}
+
+/**
+ * Ajout des métadonnées système - fonction privée
+ * @private
+ */
+function _addProjectMetadata(projectData) {
+  const now = new Date().toISOString();
+  return {
+    ...projectData,
+    created: now,
+    state: PROJECT_STATES.DRAFT,
+    lastModified: now
+  };
+}
+
+/**
+ * Validation des inputs validateProject - fonction privée
+ * @private
+ */
+function _validateProjectInputs(projectData, options) {
+  if (!projectData || typeof projectData !== 'object') {
+    return {
+      success: false,
+      error: 'ValidationError: projectData must be an object'
+    };
+  }
+
+  if (options && typeof options !== 'object') {
+    return {
+      success: false,
+      error: 'ValidationError: options must be an object'
+    };
+  }
+
+  if (options.strict !== undefined && typeof options.strict !== 'boolean') {
+    return {
+      success: false,
+      error: 'ValidationError: options.strict must be a boolean'
+    };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Validation des champs requis - fonction privée
+ * @private
+ */
+function _validateRequiredFields(projectData) {
+  const warnings = [];
+
+  if (!projectData.id) {
+    warnings.push(VALIDATION_MESSAGES.MISSING_ID);
+  }
+
+  if (!projectData.name) {
+    warnings.push(VALIDATION_MESSAGES.MISSING_NAME);
+  }
+
+  if (!projectData.state) {
+    warnings.push(VALIDATION_MESSAGES.MISSING_STATE);
+  }
+
+  return warnings;
+}
+
+/**
+ * Validation de la structure du projet - fonction privée
+ * @private
+ */
+function _validateProjectStructure(projectData) {
+  const warnings = [];
+
+  if (projectData.pages) {
+    if (!Array.isArray(projectData.pages)) {
+      warnings.push(VALIDATION_MESSAGES.INVALID_PAGES_TYPE);
+    } else if (projectData.pages.length === 0) {
+      warnings.push(VALIDATION_MESSAGES.EMPTY_PAGES);
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Construit un projet à partir d'un template - fonction privée
+ * @private
+ */
+function _buildFromTemplate(projectId, config, templateContent) {
   const templateProject = templateContent.project;
 
   return {
-    ...templateProject, // Copie de la structure du template
-    id: projectId, // Override avec l'ID fourni
+    ...templateProject,
+    id: projectId,
     name: config.name || projectId,
     template: config.template || templateProject.id || "basic",
     templateName: templateProject.name || "Unknown Template",
@@ -231,10 +316,10 @@ function buildFromTemplate(projectId, config, templateContent) {
 }
 
 /**
- * Construit un projet fallback minimal
+ * Construit un projet fallback minimal - fonction privée
  * @private
  */
-function buildFallbackProject(projectId, config) {
+function _buildFallbackProject(projectId, config) {
   return {
     id: projectId,
     name: config.name || projectId,
@@ -267,48 +352,49 @@ function buildFallbackProject(projectId, config) {
 }
 
 /**
- * Calcule des statistiques sur la structure du projet
+ * Calcule des statistiques sur la structure du projet - fonction privée
  * @private
  */
-function calculateStructureStats(projectData) {
+function _calculateStructureStats(projectData) {
   try {
-    let pagesCount = 0;
-    let sectionsCount = 0;
-    let divsCount = 0;
-    let componentsCount = 0;
-
-    if (projectData.pages && Array.isArray(projectData.pages)) {
-      pagesCount = projectData.pages.length;
-      
-      projectData.pages.forEach(page => {
-        if (page.layout && page.layout.sections && Array.isArray(page.layout.sections)) {
-          sectionsCount += page.layout.sections.length;
-          
-          page.layout.sections.forEach(section => {
-            if (section.divs && Array.isArray(section.divs)) {
-              divsCount += section.divs.length;
-              
-              section.divs.forEach(div => {
-                if (div.components && Array.isArray(div.components)) {
-                  componentsCount += div.components.length;
-                }
-              });
-            }
-          });
-        }
-      });
-    }
-
-    return {
-      pagesCount,
-      sectionsCount,
-      divsCount,
-      componentsCount,
-      totalElements: pagesCount + sectionsCount + divsCount + componentsCount
+    const stats = {
+      pagesCount: 0,
+      sectionsCount: 0,
+      divsCount: 0,
+      componentsCount: 0,
+      totalElements: 0
     };
 
+    if (!projectData.pages || !Array.isArray(projectData.pages)) {
+      return stats;
+    }
+
+    stats.pagesCount = projectData.pages.length;
+    
+    projectData.pages.forEach(page => {
+      if (page.layout && page.layout.sections && Array.isArray(page.layout.sections)) {
+        stats.sectionsCount += page.layout.sections.length;
+        
+        page.layout.sections.forEach(section => {
+          if (section.divs && Array.isArray(section.divs)) {
+            stats.divsCount += section.divs.length;
+            
+            section.divs.forEach(div => {
+              if (div.components && Array.isArray(div.components)) {
+                stats.componentsCount += div.components.length;
+              }
+            });
+          }
+        });
+      }
+    });
+
+    stats.totalElements = stats.pagesCount + stats.sectionsCount + stats.divsCount + stats.componentsCount;
+
+    return stats;
+
   } catch (error) {
-    console.log(`[PROJECTS] Stats calculation failed: ${error.message}`);
+    console.log(`${LOG_PREFIX} Stats calculation failed: ${error.message}`);
     return {
       pagesCount: 0,
       sectionsCount: 0,
@@ -320,4 +406,4 @@ function calculateStructureStats(projectData) {
   }
 }
 
-console.log(`[PROJECTS] Projects core loaded successfully`);
+console.log(`[PROJECTS] Projects core loaded successfully - PIXEL PERFECT VERSION`);

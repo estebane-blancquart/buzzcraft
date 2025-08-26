@@ -130,55 +130,38 @@ function shouldGenerateService(templatePath, elements) {
     
     return { 
       generate: isUsed, 
-      reason: isUsed ? 'element type used' : `element type '${elementType}' not used`
+      reason: isUsed ? `${elementType} is used` : `${elementType} not used` 
     };
 
   } catch (error) {
-    console.log(`[SERVICE-BUILDER] Generation decision failed for ${templatePath}: ${error.message}`);
-    return { generate: false, reason: 'decision_error' };
+    console.log(`[SERVICE-BUILDER] Service generation decision failed: ${error.message}`);
+    return { generate: false, reason: 'decision error' };
   }
 }
 
 /*
- * FAIT QUOI : Prépare les variables spécifiques à un template
- * REÇOIT : baseVariables: object, templatePath: string, elements: object, projectData: object
- * RETOURNE : object (variables enrichies pour ce template)
+ * FAIT QUOI : Prépare les variables pour un template spécifique
+ * REÇOIT : baseVariables, templatePath, elements, projectData
+ * RETOURNE : object (variables enrichies)
  * ERREURS : Retourne baseVariables si enrichissement échoue
  */
 function prepareTemplateVariables(baseVariables, templatePath, elements, projectData) {
   try {
-    let enrichedVariables = { ...baseVariables };
+    const enrichedVariables = { ...baseVariables };
 
-    if (templatePath.includes("/components/")) {
-      const componentType = extractElementTypeFromPath(templatePath);
-      const componentData = findElementByType(elements.components, componentType);
+    // Enrichissement spécifique aux templates de composants/containers
+    if (templatePath.includes('/components/') || templatePath.includes('/containers/')) {
+      const elementType = extractElementTypeFromPath(templatePath);
+      const element = findElementByType(elements.allElements, elementType);
       
-      if (componentData) {
-        enrichedVariables = {
-          ...enrichedVariables,
-          ...componentData,
-          allComponents: elements.components.filter(
-            (c) => c.type?.toLowerCase() === componentType.toLowerCase()
-          )
-        };
+      if (element) {
+        enrichedVariables.element = element;
+        enrichedVariables.elementType = elementType;
       }
-      
-    } else if (templatePath.includes("/containers/")) {
-      const containerType = extractElementTypeFromPath(templatePath);
-      const containerData = findElementByType(elements.containers, containerType);
-      
-      if (containerData) {
-        enrichedVariables = {
-          ...enrichedVariables,
-          ...containerData,
-          allContainers: elements.containers.filter(
-            (c) => c.type?.toLowerCase() === containerType.toLowerCase()
-          )
-        };
-      }
-      
-    } else {
-      // Templates de service - ajouter métadonnées globales
+    }
+
+    // Variables globales
+    if (elements.allElements.length > 0) {
       enrichedVariables.metadata = {
         ...enrichedVariables.metadata,
         elementsCount: elements.allElements.length,
@@ -391,4 +374,4 @@ export function filterServices(services, filters = {}) {
   }
 }
 
-console.log(`[SERVICE-BUILDER] Builder loaded successfully`);
+console.log(`[SERVICE-BUILDER] Service builder loaded successfully - PIXEL PERFECT VERSION`);
