@@ -1,13 +1,13 @@
 import { detectVoidState } from '../probes/void-detector.js';
 import { detectDraftState } from '../probes/draft-detector.js';
-import { loadTemplate } from '../cores/compiler.js';
-import { generateProject } from '../cores/compiler.js';
+import { readTemplate } from '../cores/templates.js';
+import { buildProject, validateProject } from '../cores/projects.js';
+import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
 import { writePath } from '../cores/writer.js';
 import { readPath } from '../cores/reader.js';
-import { getProjectPath, getProjectFilePath } from '../cores/path-resolver.js';
 
 /*
-* FAIT QUOI : Orchestre workflow CREATE (VOID → DRAFT) - VERSION MIGRÉE
+* FAIT QUOI : Orchestre workflow CREATE (VOID → DRAFT) - VERSION CORES PURS
 * REÇOIT : projectId: string, config: object
 * RETOURNE : { success: boolean, data: object }
 * ERREURS : ValidationError si paramètres manquants, refuse si projet existe, rollback automatique
@@ -63,34 +63,39 @@ export async function createWorkflow(projectId, config = {}) {
  const createdArtifacts = [];
  
  try {
-   // CALL 5: Load template
+   // CALL 5: Load template (utilise core pur)
    console.log(`[CREATE] CALL 5: Loading template...`);
    const templateId = config.template || 'basic';
-   const templateLoad = await loadTemplate(templateId);
-   console.log(`[CREATE] Template loaded: ${templateLoad.loaded}`);
+   const templateContent = await readTemplate(templateId);
    
-   if (!templateLoad.loaded) {
-     console.log(`[CREATE] Template load failed, using fallback: ${templateLoad.error}`);
+   if (templateContent) {
+     console.log(`[CREATE] Template loaded successfully: ${templateId}`);
+   } else {
+     console.log(`[CREATE] Template not found, using fallback: ${templateId}`);
    }
    
    // CALL 6: (Implicite) Pas de resource reading nécessaire pour CREATE
    
-   // CALL 7: Generate project
-   console.log(`[CREATE] CALL 7: Generating project data...`);
-   const generation = await generateProject(projectId, config, { 
-     template: templateLoad.loaded ? templateLoad.data : null 
-   });
+   // CALL 7: Generate project (utilise core pur)
+   console.log(`[CREATE] CALL 7: Building project data...`);
+   const projectData = buildProject(projectId, config, templateContent);
    
-   if (!generation.generated) {
-     throw new Error(`Project generation failed: ${generation.error}`);
+   if (!projectData) {
+     throw new Error(`Project building failed`);
    }
    
-   console.log(`[CREATE] Project generated successfully`);
+   console.log(`[CREATE] Project built successfully`);
    
-   // CALL 8: Write project files
-   console.log(`[CREATE] CALL 8: Writing to filesystem...`);
+   // CALL 8: Validate project
+   console.log(`[CREATE] CALL 8: Validating project structure...`);
+   if (!validateProject(projectData)) {
+     throw new Error(`Project validation failed`);
+   }
+   
+   // CALL 9: Write project files
+   console.log(`[CREATE] CALL 9: Writing to filesystem...`);
    const projectFilePath = getProjectFilePath(projectId, 'project.json');
-   const writeResult = await writePath(projectFilePath, generation.output);
+   const writeResult = await writePath(projectFilePath, projectData);
    
    if (!writeResult.success) {
      throw new Error(`Failed to write project: ${writeResult.error}`);
@@ -99,14 +104,14 @@ export async function createWorkflow(projectId, config = {}) {
    createdArtifacts.push(projectFilePath);
    console.log(`[CREATE] Project file written: ${projectFilePath}`);
    
-   // CALL 9: Validation - Detect new state
-   console.log(`[CREATE] CALL 9: Detecting DRAFT state...`);
+   // CALL 10: Validation - Detect new state
+   console.log(`[CREATE] CALL 10: Detecting DRAFT state...`);
    const newStateDetection = await detectDraftState(projectPath);
    const finalState = newStateDetection.data?.state || 'UNKNOWN';
    console.log(`[CREATE] New state detected: ${finalState}`);
    
-   // CALL 10: Verification - Final validation
-   console.log(`[CREATE] CALL 10: Final verification...`);
+   // CALL 11: Verification - Final validation
+   console.log(`[CREATE] CALL 11: Final verification...`);
    const verification = await readPath(projectFilePath);
    
    if (!verification.success || !verification.data.exists) {
@@ -115,7 +120,7 @@ export async function createWorkflow(projectId, config = {}) {
    
    const duration = Date.now() - startTime;
    
-   console.log(`[CREATE] CALL 11: Project ${projectId} created successfully in ${duration}ms`);
+   console.log(`[CREATE] CALL 12: Project ${projectId} created successfully in ${duration}ms`);
    console.log(`[CREATE] State transition: VOID → ${finalState}`);
    
    return {
@@ -126,9 +131,9 @@ export async function createWorkflow(projectId, config = {}) {
        toState: finalState,
        duration,
        templateUsed: templateId,
-       templateLoaded: templateLoad.loaded,
+       templateLoaded: !!templateContent,
        fileWritten: projectFilePath,
-       fallbackUsed: generation.metadata?.fallbackUsed || false,
+       fallbackUsed: !templateContent,
        artifacts: createdArtifacts
      }
    };

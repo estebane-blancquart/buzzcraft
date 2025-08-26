@@ -1,14 +1,15 @@
 import { detectDraftState } from '../probes/draft-detector.js';
 import { detectBuiltState } from '../probes/built-detector.js';
-import { loadCodeTemplates } from '../cores/compiler.js';
-import { generateServices } from '../cores/compiler.js';
 import { readPath } from '../cores/reader.js';
 import { writePath } from '../cores/writer.js';
-import { getProjectPath, getProjectFilePath } from '../cores/path-resolver.js';
 import { rm } from 'fs/promises';
+import { readCodeTemplates } from '../cores/templates.js';
+import { compileTemplates, generateBaseVariables } from '../cores/handlebars.js';
+import { buildServices, validateServices } from '../cores/services.js';
+import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
 
 /*
- * FAIT QUOI : Orchestre workflow BUILD (DRAFT → BUILT) - VERSION MIGRÉE
+ * FAIT QUOI : Orchestre workflow BUILD (DRAFT → BUILT) - VERSION CORES PURS
  * REÇOIT : projectId: string, config: object
  * RETOURNE : { success: boolean, data: object }
  * ERREURS : ValidationError si paramètres manquants, rollback automatique si échec partiel
@@ -69,37 +70,53 @@ export async function buildWorkflow(projectId, config = {}) {
     };
   }
   
-  // CALL 6: Load code templates
+  // CALL 6: Load code templates (utilise core pur)
   console.log(`[BUILD] CALL 6: Loading code templates...`);
-  const templatesLoad = await loadCodeTemplates(projectId, { 
-    maxDepth: 10 // Protection récursion infinie
-  });
+  const codeTemplates = await readCodeTemplates(projectId);
   
-  console.log(`[BUILD] Templates loaded: ${templatesLoad.loaded}`);
-  console.log(`[BUILD] Templates count: ${templatesLoad.data?.templatesCount || 0}`);
-  
-  if (!templatesLoad.loaded) {
+  if (!codeTemplates) {
     return {
       success: false,
-      error: `Failed to load templates: ${templatesLoad.error}`
+      error: `Failed to load code templates`
     };
   }
-
-  if (!templatesLoad.data.templates || Object.keys(templatesLoad.data.templates).length === 0) {
-    console.log(`[BUILD] WARNING: No templates found - generation will be minimal`);
-  }
   
-  // CALL 7: Generate services
-  console.log(`[BUILD] CALL 7: Generating services...`);
-  let generation;
-  try {
-    generation = await generateServices(projectData, templatesLoad.data);
-    console.log(`[BUILD] Services generated: ${generation.artifacts?.length || 0}`);
-  } catch (generationError) {
-    console.log(`[BUILD] Services generation failed: ${generationError.message}`);
+  console.log(`[BUILD] Code templates loaded: ${Object.keys(codeTemplates).length} templates`);
+  
+  // CALL 7: Generate base variables (utilise core pur)
+  console.log(`[BUILD] CALL 7: Generating template variables...`);
+  const baseVariables = generateBaseVariables(projectData);
+  
+  // CALL 8: Compile templates (utilise core pur)
+  console.log(`[BUILD] CALL 8: Compiling templates with variables...`);
+  const compiledServices = compileTemplates(codeTemplates, baseVariables);
+  
+  if (!compiledServices) {
     return {
       success: false,
-      error: `Failed to generate services: ${generationError.message}`
+      error: `Failed to compile templates`
+    };
+  }
+  
+  console.log(`[BUILD] Templates compiled: ${Object.keys(compiledServices).length} services`);
+  
+  // CALL 9: Build services (utilise core pur)
+  console.log(`[BUILD] CALL 9: Building services...`);
+  const services = buildServices(projectData, compiledServices, baseVariables);
+  
+  if (!services) {
+    return {
+      success: false,
+      error: `Failed to build services`
+    };
+  }
+  
+  // CALL 10: Validate services (utilise core pur)
+  console.log(`[BUILD] CALL 10: Validating built services...`);
+  if (!validateServices(services)) {
+    return {
+      success: false,
+      error: `Service validation failed`
     };
   }
   
@@ -107,14 +124,10 @@ export async function buildWorkflow(projectId, config = {}) {
   const writtenFiles = [];
   
   try {
-    // CALL 8: Write services to filesystem
-    console.log(`[BUILD] CALL 8: Writing services to filesystem...`);
+    // CALL 11: Write services to filesystem
+    console.log(`[BUILD] CALL 11: Writing services to filesystem...`);
     
-    if (!generation.output?.services || Object.keys(generation.output.services).length === 0) {
-      console.log(`[BUILD] WARNING: No services to write - this may indicate a template loading problem`);
-    }
-    
-    for (const [servicePath, serviceContent] of Object.entries(generation.output.services || {})) {
+    for (const [servicePath, serviceContent] of Object.entries(services)) {
       const fullPath = getProjectFilePath(projectId, servicePath);
       console.log(`[BUILD] Writing service: ${fullPath}`);
       
@@ -129,22 +142,20 @@ export async function buildWorkflow(projectId, config = {}) {
     
     console.log(`[BUILD] Written ${writtenFiles.length} service files`);
     
-    // CALL 9: Update project state to BUILT
-    console.log(`[BUILD] CALL 9: Updating project state to BUILT...`);
+    // CALL 12: Update project state to BUILT
+    console.log(`[BUILD] CALL 12: Updating project state to BUILT...`);
     
     // Mise à jour des métadonnées projet
     projectData.state = 'BUILT';
     projectData.lastBuild = new Date().toISOString();
     projectData.buildDuration = Date.now() - startTime;
-    projectData.servicesGenerated = generation.artifacts?.length || 0;
+    projectData.servicesGenerated = Object.keys(services).length;
     projectData.buildVersion = (projectData.buildVersion || 0) + 1;
     projectData.buildMetadata = {
-      templatesUsed: Object.keys(generation.output?.services || {}).length,
-      componentsFound: generation.metadata?.componentsFound || 0,
-      containersFound: generation.metadata?.containersFound || 0,
-      usedComponentTypes: generation.metadata?.usedElementTypes || [],
-      hasGenerationErrors: generation.metadata?.hasGenerationErrors || false,
-      generationErrors: generation.metadata?.generationErrors || []
+      templatesUsed: Object.keys(codeTemplates).length,
+      servicesBuilt: Object.keys(services).length,
+      buildTimestamp: new Date().toISOString(),
+      coresUsed: ['template-reader', 'handlebars-engine', 'service-builder']
     };
     
     const updateResult = await writePath(projectFilePath, projectData);
@@ -154,14 +165,13 @@ export async function buildWorkflow(projectId, config = {}) {
     
     console.log(`[BUILD] Project metadata updated`);
     
-    // CALL 10: Validation - Verify BUILT state
-    console.log(`[BUILD] CALL 10: Verifying BUILT state...`);
+    // CALL 13: Validation - Verify BUILT state
+    console.log(`[BUILD] CALL 13: Verifying BUILT state...`);
     const newStateDetection = await detectBuiltState(projectPath);
     const detectedState = newStateDetection.data?.state;
     console.log(`[BUILD] New state detected: ${detectedState || 'UNKNOWN'}`);
     
-    // CALL 11: Final verification
-    console.log(`[BUILD] CALL 11: Final verification...`);
+    // Final verification
     if (detectedState !== 'BUILT') {
       throw new Error(`State verification failed: expected BUILT, got ${detectedState || 'UNKNOWN'}`);
     }
@@ -175,12 +185,12 @@ export async function buildWorkflow(projectId, config = {}) {
         projectId,
         fromState: 'DRAFT',
         toState: 'BUILT',
-        servicesGenerated: generation.artifacts?.length || 0,
+        servicesGenerated: Object.keys(services).length,
         duration,
         buildVersion: projectData.buildVersion,
         filesWritten: writtenFiles.length,
-        templatesUsed: Object.keys(generation.output?.services || {}).length,
-        hasWarnings: (generation.metadata?.generationErrors || []).length > 0
+        templatesUsed: Object.keys(codeTemplates).length,
+        coresUsed: ['template-reader', 'handlebars-engine', 'service-builder']
       }
     };
     

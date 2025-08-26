@@ -1,53 +1,12 @@
-import { fileURLToPath } from "url";
-import { dirname, resolve, join } from "path";
+import { resolve } from "path";
+import { PATHS } from "./constants.js";
 
 /*
  * FAIT QUOI : Résolution centralisée de tous les paths BuzzCraft
- * REÇOIT : Rien (utilise import.meta.url du module appelant)
- * RETOURNE : Object avec tous les paths absolus
- * ERREURS : Aucune (paths calculés statiquement)
+ * REÇOIT : IDs et paramètres de chemins
+ * RETOURNE : Paths absolus résolus
+ * ERREURS : ValidationError si paramètres manquants
  */
-
-// Détection automatique de la racine projet
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// CORRIGÉ: Navigation depuis app-server/cores/ vers racine buzzcraft/
-const PROJECT_ROOT = resolve(__dirname, '../../');
-const OUTPUTS_PATH = resolve(PROJECT_ROOT, 'app-server/data/outputs');
-
-// === PATHS PRINCIPAUX ===
-
-export const PATHS = {
-  // Racine projet
-  root: PROJECT_ROOT,
-  
-  // Services
-  appApi: resolve(PROJECT_ROOT, 'app-api'),
-  appServer: resolve(PROJECT_ROOT, 'app-server'),
-  appClient: resolve(PROJECT_ROOT, 'app-client'),
-  
-  // Données app-server
-  serverData: resolve(PROJECT_ROOT, 'app-server/data'),
-  serverInputs: resolve(PROJECT_ROOT, 'app-server/data/inputs'),
-  serverOutputs: OUTPUTS_PATH,
-  
-  // Templates
-  templates: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates'),
-  templatesStructure: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure'),
-  templatesCode: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/code'),
-  templatesProjects: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure/projects'),
-  templatesComponents: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure/components'),
-  templatesContainers: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates/structure/containers'),
-  
-  // Validations
-  validations: resolve(PROJECT_ROOT, 'app-server/data/inputs/validations'),
-  
-  // Configuration
-  configs: resolve(PROJECT_ROOT, '.configs'),
-  docs: resolve(PROJECT_ROOT, '.docs'),
-  tests: resolve(PROJECT_ROOT, '.tests'),
-};
 
 /*
  * FAIT QUOI : Résout un path de projet spécifique
@@ -60,7 +19,7 @@ export function getProjectPath(projectId) {
     throw new Error('ValidationError: projectId must be non-empty string');
   }
   
-  return resolve(OUTPUTS_PATH, projectId);
+  return resolve(PATHS.serverOutputs, projectId);
 }
 
 /*
@@ -229,9 +188,4 @@ export async function validatePathsExistence(options = {}) {
   };
 }
 
-// === EXPORTS LEGACY (rétrocompatibilité) ===
-
-// Pour migration progressive depuis l'ancien système
-export const PROJECT_ROOT_LEGACY = PROJECT_ROOT;
-export const TEMPLATES_STRUCTURE_PATH = PATHS.templatesStructure;
-export const TEMPLATES_CODE_PATH = PATHS.templatesCode;
+console.log(`[PATHS] Paths resolver loaded successfully`);
