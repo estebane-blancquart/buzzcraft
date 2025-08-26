@@ -30,11 +30,16 @@ buzzcraft/
 │   │   │   └── code/
 │   │   └── outputs/
 │   ├── cores/
-│   │   ├── reader.js
-│   │   ├── writer.js
+│   │   ├── constants.js
 │   │   ├── extractor.js
+│   │   ├── handlebars.js
+│   │   ├── path.js
+│   │   ├── projects.js
+│   │   ├── reader.js
+│   │   ├── services.js
+│   │   ├── templates.js
 │   │   ├── validator.js
-│   │   └── compiler.js
+│   │   └── writer.js
 │   └── package.json
 └── app-client/       # Service React
     ├── pages/
