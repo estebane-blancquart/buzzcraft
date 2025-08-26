@@ -1,5 +1,6 @@
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { existsSync } from "fs";
 
 /**
  * Constantes centralisées pour éviter les cycles d'imports - VERSION PIXEL PARFAIT
@@ -56,61 +57,35 @@ export const PATHS = {
  * @readonly
  */
 export const PROJECT_STATES = {
-  /** Projet inexistant, pas de project.json */
   VOID: 'VOID',
-  /** Structure JSON créée, éditable, pas de code généré */
   DRAFT: 'DRAFT',
-  /** Services générés, prêts pour déploiement */
   BUILT: 'BUILT',
-  /** Containers créés mais arrêtés */
   OFFLINE: 'OFFLINE',
-  /** Services actifs, site accessible */
   ONLINE: 'ONLINE'
 };
 
 /**
- * Actions de workflow disponibles dans BuzzCraft
+ * Actions de workflow disponibles
  * @type {object}
  * @readonly
  */
 export const WORKFLOW_ACTIONS = {
-  /** Créer un nouveau projet (VOID → DRAFT) */
   CREATE: 'CREATE',
-  /** Générer les services (DRAFT → BUILT) */
   BUILD: 'BUILD',
-  /** Déployer les containers (BUILT → OFFLINE) */
   DEPLOY: 'DEPLOY',
-  /** Démarrer les services (OFFLINE → ONLINE) */
   START: 'START',
-  /** Arrêter les services (ONLINE → OFFLINE) */
   STOP: 'STOP',
-  /** Mettre à jour sans changer d'état */
+  REVERT: 'REVERT',
   UPDATE: 'UPDATE',
-  /** Supprimer complètement (ANY → VOID) */
-  DELETE: 'DELETE',
-  /** Revenir en arrière dans la machine à états */
-  REVERT: 'REVERT'
+  DELETE: 'DELETE'
 };
 
 /**
- * Transitions d'état autorisées pour validation
+ * Transitions de la machine à états
  * @type {object}
  * @readonly
  */
 export const STATE_TRANSITIONS = {
-  [PROJECT_STATES.VOID]: [PROJECT_STATES.DRAFT],
-  [PROJECT_STATES.DRAFT]: [PROJECT_STATES.BUILT, PROJECT_STATES.VOID],
-  [PROJECT_STATES.BUILT]: [PROJECT_STATES.OFFLINE, PROJECT_STATES.DRAFT, PROJECT_STATES.VOID],
-  [PROJECT_STATES.OFFLINE]: [PROJECT_STATES.ONLINE, PROJECT_STATES.BUILT, PROJECT_STATES.VOID],
-  [PROJECT_STATES.ONLINE]: [PROJECT_STATES.OFFLINE, PROJECT_STATES.VOID]
-};
-
-/**
- * Mapping entre actions et transitions d'état attendues
- * @type {object}
- * @readonly
- */
-export const ACTION_TRANSITIONS = {
   [WORKFLOW_ACTIONS.CREATE]: { from: PROJECT_STATES.VOID, to: PROJECT_STATES.DRAFT },
   [WORKFLOW_ACTIONS.BUILD]: { from: PROJECT_STATES.DRAFT, to: PROJECT_STATES.BUILT },
   [WORKFLOW_ACTIONS.DEPLOY]: { from: PROJECT_STATES.BUILT, to: PROJECT_STATES.OFFLINE },
@@ -267,53 +242,30 @@ export const FILE_EXTENSIONS = {
 };
 
 /**
- * Utilitaire de debug pour afficher tous les paths calculés
+ * Extensions pour templates Handlebars
+ * @type {object}
+ * @readonly
+ */
+export const TEMPLATE_EXTENSIONS = {
+  HANDLEBARS: ['.hbs', '.handlebars'],
+  PARTIALS: ['.partial.hbs'],
+  LAYOUTS: ['.layout.hbs']
+};
+
+/**
+ * Utilitaire de debug pour afficher tous les paths calculés avec vérification existence
  * @returns {void} Affiche les paths dans la console
+ * 
+ * @example
+ * import { debugPaths } from './constants.js';
+ * debugPaths(); // Affiche tous les paths avec statut EXISTS/MISSING
  */
 export function debugPaths() {
   console.log('\n=== BUZZCRAFT PATHS DEBUG ===');
   Object.entries(PATHS).forEach(([key, path]) => {
-    const status = path ? '✅' : '❌';
-    console.log(`${status} ${key.padEnd(20)} : ${path}`);
+    const exists = existsSync(path);
+    const status = exists ? '✅ EXISTS' : '❌ MISSING';
+    console.log(`${key.padEnd(20)} ${status} ${path}`);
   });
-  console.log('==============================\n');
+  console.log('===============================\n');
 }
-
-/**
- * Valide qu'un état de projet est valide
- * @param {string} state - État à valider
- * @returns {boolean} true si l'état est valide
- */
-export function isValidProjectState(state) {
-  return Object.values(PROJECT_STATES).includes(state);
-}
-
-/**
- * Valide qu'une action de workflow est valide
- * @param {string} action - Action à valider
- * @returns {boolean} true si l'action est valide
- */
-export function isValidWorkflowAction(action) {
-  return Object.values(WORKFLOW_ACTIONS).includes(action);
-}
-
-/**
- * Vérifie si une transition d'état est autorisée
- * @param {string} fromState - État de départ
- * @param {string} toState - État d'arrivée
- * @returns {boolean} true si la transition est autorisée
- */
-export function isValidStateTransition(fromState, toState) {
-  const allowedTransitions = STATE_TRANSITIONS[fromState];
-  return allowedTransitions && allowedTransitions.includes(toState);
-}
-
-// === EXPORTS LEGACY (rétrocompatibilité) ===
-/** @deprecated Utiliser PATHS.root */
-export const PROJECT_ROOT_LEGACY = PROJECT_ROOT;
-/** @deprecated Utiliser PATHS.templatesStructure */
-export const TEMPLATES_STRUCTURE_PATH = PATHS.templatesStructure;
-/** @deprecated Utiliser PATHS.templatesCode */
-export const TEMPLATES_CODE_PATH = PATHS.templatesCode;
-
-console.log(`[CONSTANTS] Constants loaded successfully - PIXEL PERFECT VERSION`);

@@ -1,30 +1,48 @@
-/*
- * FAIT QUOI : Construction pure de structures projet (outil core)
- * REÇOIT : projectId, config, template
- * RETOURNE : Objet projet ou null
- * ERREURS : null si données invalides, pas de throw
+/**
+ * Gestion des projets BuzzCraft avec patterns uniformisés
+ * @module projects
+ * @description Construction, validation et enrichissement de projets
  */
 
-/*
- * FAIT QUOI : Construit un projet à partir de config et template
- * REÇOIT : projectId: string, config: object, templateContent: object|null
- * RETOURNE : object|null (projet construit ou null si échec)
- * ERREURS : null si paramètres invalides
+// Constantes pour les éléments de structure
+const STRUCTURE_ELEMENTS = {
+  PAGES: 'pages',
+  SECTIONS: 'sections', 
+  DIVS: 'divs',
+  COMPONENTS: 'components'
+};
+
+/**
+ * Construit un projet à partir de config et template
+ * @param {string} projectId - Identifiant unique du projet
+ * @param {object} config - Configuration du projet
+ * @param {object|null} [templateContent=null] - Template source optionnel
+ * @returns {{success: boolean, data?: object, error?: string}} Projet construit ou erreur
+ * 
+ * @example
+ * const result = buildProject('mon-site', { name: 'Mon Site' }, templateData);
+ * if (result.success) {
+ *   console.log('Projet créé:', result.data.id);
+ * }
  */
 export function buildProject(projectId, config, templateContent = null) {
   console.log(`[PROJECTS] Building project: ${projectId}`);
 
-  if (!projectId || typeof projectId !== 'string') {
-    console.log(`[PROJECTS] Invalid projectId`);
-    return null;
-  }
-
-  if (!config || typeof config !== 'object') {
-    console.log(`[PROJECTS] Invalid config`);
-    return null;
-  }
-
   try {
+    if (!projectId || typeof projectId !== 'string') {
+      return {
+        success: false,
+        error: 'ValidationError: projectId must be non-empty string'
+      };
+    }
+
+    if (!config || typeof config !== 'object') {
+      return {
+        success: false,
+        error: 'ValidationError: config must be an object'
+      };
+    }
+
     let projectData;
 
     if (templateContent && templateContent.project) {
@@ -43,19 +61,160 @@ export function buildProject(projectId, config, templateContent = null) {
     projectData.lastModified = projectData.created;
 
     console.log(`[PROJECTS] Project built successfully: ${projectId}`);
-    return projectData;
+    
+    return {
+      success: true,
+      data: projectData
+    };
 
   } catch (error) {
     console.log(`[PROJECTS] Error building project: ${error.message}`);
-    return null;
+    return {
+      success: false,
+      error: `Project build failed: ${error.message}`
+    };
   }
 }
 
-/*
- * FAIT QUOI : Construit un projet à partir d'un template
- * REÇOIT : projectId: string, config: object, templateContent: object
- * RETOURNE : object (projet basé sur template)
- * ERREURS : throw si template invalide
+/**
+ * Valide la structure et les données d'un projet
+ * @param {object} projectData - Données du projet à valider
+ * @param {object} [options={}] - Options de validation
+ * @param {boolean} [options.strict=true] - Mode strict (erreur sur warnings)
+ * @returns {{success: boolean, data?: {valid: boolean, warnings?: string[]}, error?: string}} Résultat validation
+ * 
+ * @example
+ * const validation = validateProject(projectData);
+ * if (validation.success && validation.data.valid) {
+ *   console.log('Projet valide');
+ * }
+ */
+export function validateProject(projectData, options = {}) {
+  console.log(`[PROJECTS] Validating project structure`);
+
+  try {
+    if (!projectData || typeof projectData !== 'object') {
+      return {
+        success: false,
+        error: 'ValidationError: projectData must be an object'
+      };
+    }
+
+    const warnings = [];
+
+    // Validation des champs requis
+    if (!projectData.id) {
+      warnings.push('Missing required field: id');
+    }
+
+    if (!projectData.name) {
+      warnings.push('Missing required field: name');
+    }
+
+    if (!projectData.state) {
+      warnings.push('Missing required field: state');
+    }
+
+    // Validation de la structure des pages
+    if (projectData.pages) {
+      if (!Array.isArray(projectData.pages)) {
+        warnings.push('Field pages must be an array');
+      } else if (projectData.pages.length === 0) {
+        warnings.push('Project has no pages defined');
+      }
+    }
+
+    const isValid = warnings.length === 0 || !options.strict;
+
+    if (!isValid && options.strict) {
+      return {
+        success: false,
+        error: `Validation failed: ${warnings.join(', ')}`
+      };
+    }
+
+    console.log(`[PROJECTS] Project validation ${isValid ? 'successful' : 'completed with warnings'}`);
+    
+    return {
+      success: true,
+      data: {
+        valid: isValid,
+        ...(warnings.length > 0 && { warnings })
+      }
+    };
+
+  } catch (error) {
+    console.log(`[PROJECTS] Validation error: ${error.message}`);
+    return {
+      success: false,
+      error: `Validation failed: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Enrichit un projet avec des métadonnées calculées
+ * @param {object} projectData - Données du projet à enrichir
+ * @param {object} [options={}] - Options d'enrichissement
+ * @param {object} [options.templateInfo] - Informations de template à ajouter
+ * @returns {{success: boolean, data?: object, error?: string}} Projet enrichi ou erreur
+ * 
+ * @example
+ * const result = enrichProject(projectData, { templateInfo: template });
+ * if (result.success) {
+ *   console.log('Stats:', result.data._metadata.structure);
+ * }
+ */
+export function enrichProject(projectData, options = {}) {
+  console.log(`[PROJECTS] Enriching project with metadata`);
+
+  try {
+    if (!projectData || typeof projectData !== 'object') {
+      return {
+        success: false,
+        error: 'ValidationError: projectData must be an object'
+      };
+    }
+
+    const enriched = { ...projectData };
+
+    // Calcul des statistiques de structure
+    const structureStats = calculateStructureStats(projectData);
+    
+    enriched._metadata = {
+      structure: structureStats,
+      enriched: {
+        at: new Date().toISOString(),
+        by: 'projects-core'
+      }
+    };
+
+    // Ajout d'informations de template si disponibles
+    if (options.templateInfo) {
+      enriched._metadata.template = options.templateInfo;
+    }
+
+    console.log(`[PROJECTS] Project enriched successfully`);
+    
+    return {
+      success: true,
+      data: enriched
+    };
+
+  } catch (error) {
+    console.log(`[PROJECTS] Enrichment failed: ${error.message}`);
+    return {
+      success: false,
+      error: `Project enrichment failed: ${error.message}`
+    };
+  }
+}
+
+// === FONCTIONS INTERNES ===
+
+/**
+ * Construit un projet à partir d'un template
+ * @private
  */
 function buildFromTemplate(projectId, config, templateContent) {
   const templateProject = templateContent.project;
@@ -71,147 +230,45 @@ function buildFromTemplate(projectId, config, templateContent) {
   };
 }
 
-/*
- * FAIT QUOI : Construit un projet fallback minimal
- * REÇOIT : projectId: string, config: object
- * RETOURNE : object (projet minimal fonctionnel)
- * ERREURS : Jamais (génère toujours un projet valide)
+/**
+ * Construit un projet fallback minimal
+ * @private
  */
 function buildFallbackProject(projectId, config) {
   return {
     id: projectId,
     name: config.name || projectId,
     template: config.template || "basic",
-    description: "Generated project with fallback template",
-    version: "1.0.0",
-    pages: [
-      {
-        id: "home",
-        name: "Home Page",
-        layout: {
-          sections: [
-            {
-              id: "hero-section",
-              name: "Hero Section",
-              divs: [
-                {
-                  id: "hero-container",
-                  name: "Hero Container",
-                  classname: "text-center py-16 px-8",
-                  components: [
-                    {
-                      id: "main-title",
-                      type: "heading",
-                      tag: "h1",
-                      content: config.name || projectId,
-                      classname: "text-4xl font-bold text-gray-900 mb-4"
-                    },
-                    {
-                      id: "subtitle",
-                      type: "paragraph",
-                      content: "Welcome to your new project!",
-                      classname: "text-xl text-gray-600 mb-8"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+    templateName: "Basic Template",
+    templateDescription: "Fallback template with minimal structure",
+    pages: [{
+      id: "home",
+      name: "Home",
+      path: "/",
+      layout: {
+        sections: [{
+          id: "hero",
+          name: "Hero Section",
+          divs: [{
+            id: "hero-content",
+            name: "Hero Content",
+            components: [{
+              id: "main-heading",
+              type: "heading",
+              level: 1,
+              content: config.name || projectId,
+              style: {}
+            }]
+          }]
+        }]
       }
-    ]
+    }]
   };
 }
 
-/*
- * FAIT QUOI : Valide qu'un projet construit est cohérent
- * REÇOIT : projectData: object
- * RETOURNE : boolean (true si projet valide)
- * ERREURS : false si validation échoue
- */
-export function validateProject(projectData) {
-  console.log(`[PROJECTS] Validating project`);
-
-  if (!projectData || typeof projectData !== 'object') {
-    return false;
-  }
-
-  // Validation des champs obligatoires
-  const requiredFields = ['id', 'name', 'state'];
-  for (const field of requiredFields) {
-    if (!projectData[field]) {
-      console.log(`[PROJECTS] Missing required field: ${field}`);
-      return false;
-    }
-  }
-
-  // Validation du format ID
-  if (!/^[a-z0-9-]+$/.test(projectData.id)) {
-    console.log(`[PROJECTS] Invalid project ID format: ${projectData.id}`);
-    return false;
-  }
-
-  // Validation de la longueur du nom
-  if (projectData.name.length < 2) {
-    console.log(`[PROJECTS] Project name too short: ${projectData.name}`);
-    return false;
-  }
-
-  // Validation de l'état
-  const validStates = ['VOID', 'DRAFT', 'BUILT', 'OFFLINE', 'ONLINE'];
-  if (!validStates.includes(projectData.state)) {
-    console.log(`[PROJECTS] Invalid project state: ${projectData.state}`);
-    return false;
-  }
-
-  console.log(`[PROJECTS] Project validation successful`);
-  return true;
-}
-
-/*
- * FAIT QUOI : Enrichit un projet avec des métadonnées calculées
- * REÇOIT : projectData: object, options: object
- * RETOURNE : object (projet enrichi)
- * ERREURS : Retourne projet original si enrichissement échoue
- */
-export function enrichProject(projectData, options = {}) {
-  console.log(`[PROJECTS] Enriching project with metadata`);
-
-  if (!projectData || typeof projectData !== 'object') {
-    return projectData;
-  }
-
-  try {
-    const enriched = { ...projectData };
-
-    // Calcul des statistiques de structure
-    enriched._metadata = {
-      structure: calculateStructureStats(projectData),
-      enriched: {
-        at: new Date().toISOString(),
-        by: 'projects-core'
-      }
-    };
-
-    // Ajout d'informations de template si disponibles
-    if (options.templateInfo) {
-      enriched._metadata.template = options.templateInfo;
-    }
-
-    console.log(`[PROJECTS] Project enriched successfully`);
-    return enriched;
-
-  } catch (error) {
-    console.log(`[PROJECTS] Enrichment failed: ${error.message}`);
-    return projectData; // Retour du projet original
-  }
-}
-
-/*
- * FAIT QUOI : Calcule des statistiques sur la structure du projet
- * REÇOIT : projectData: object
- * RETOURNE : object (statistiques calculées)
- * ERREURS : Retourne stats vides si calcul échoue
+/**
+ * Calcule des statistiques sur la structure du projet
+ * @private
  */
 function calculateStructureStats(projectData) {
   try {
