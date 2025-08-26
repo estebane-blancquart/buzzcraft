@@ -20,7 +20,7 @@ export async function detectBuiltState(projectPath) {
     let confidence = 0;
 
     // Vérifier que project.json existe (base DRAFT)
-    const projectFile = join(projectPath, 'project.json'); // ✅ Cross-platform
+    const projectFile = join(projectPath, 'project.json');
     console.log(`[BUILT-DETECTOR] Checking project file: ${projectFile}`);
     const projectCheck = await readPath(projectFile);
 
@@ -41,8 +41,8 @@ export async function detectBuiltState(projectPath) {
     confidence += 20;
     console.log(`[BUILT-DETECTOR] Project file exists`);
 
-    // Vérifier app-visitor/ généré
-    const appVisitorDir = join(projectPath, 'app-visitor'); // ✅ Cross-platform
+    // Vérifier app-visitor/ généré (structure finale sans code/)
+    const appVisitorDir = join(projectPath, 'app-visitor');
     console.log(`[BUILT-DETECTOR] Checking app-visitor: ${appVisitorDir}`);
     const visitorCheck = await readPath(appVisitorDir);
 
@@ -54,8 +54,8 @@ export async function detectBuiltState(projectPath) {
       console.log(`[BUILT-DETECTOR] App-visitor missing = not BUILT`);
     }
 
-    // Vérifier server/ généré  
-    const serverDir = join(projectPath, 'server'); // ✅ Cross-platform
+    // Vérifier server/ généré (structure finale sans code/)
+    const serverDir = join(projectPath, 'server');
     console.log(`[BUILT-DETECTOR] Checking server: ${serverDir}`);
     const serverCheck = await readPath(serverDir);
 
@@ -67,20 +67,10 @@ export async function detectBuiltState(projectPath) {
       console.log(`[BUILT-DETECTOR] Server missing = not BUILT`);
     }
 
-    // Vérifier app-manager/ généré
-    const managerDir = join(projectPath, 'app-manager'); // ✅ Cross-platform
-    console.log(`[BUILT-DETECTOR] Checking app-manager: ${managerDir}`);
-    const managerCheck = await readPath(managerDir);
-
-    if (managerCheck.data.exists && managerCheck.data.type === 'directory') {
-      evidence.push('app-manager directory exists');
-      confidence += 20;
-      console.log(`[BUILT-DETECTOR] App-manager found = good for BUILT`);
-    } else {
-      console.log(`[BUILT-DETECTOR] App-manager missing`);
-    }
-
-    const isBuilt = confidence >= 80;
+    // app-manager n'est plus requis pour BUILT dans cette architecture
+    // On génère seulement app-visitor et server
+    
+    const isBuilt = confidence >= 80; // 20 (project.json) + 30 (app-visitor) + 30 (server) = 80
     const finalState = isBuilt ? 'BUILT' : null;
     
     console.log(`[BUILT-DETECTOR] Final assessment: confidence=${confidence}, state=${finalState}`);

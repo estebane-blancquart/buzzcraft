@@ -1,4 +1,5 @@
 import { extractAllElements } from "./extractor.js";
+import { compileTemplate } from "./handlebars.js";
 
 /*
  * FAIT QUOI : Construction pure de services à partir de projets (outil core)
@@ -9,11 +10,13 @@ import { extractAllElements } from "./extractor.js";
 
 /*
  * FAIT QUOI : Construit des services à partir d'un projet et de templates
- * REÇOIT : projectData: object, compiledTemplates: object, baseVariables: object
+ * REÇOIT : projectData: object, rawTemplates: object (templates NON compilés), baseVariables: object
  * RETOURNE : object|null (services par chemin ou null si échec)
  * ERREURS : null si données invalides
+ * 
+ * 🔧 FIX MAJEUR: Compile chaque template avec les variables spécifiques de l'élément
  */
-export function buildServices(projectData, compiledTemplates, baseVariables) {
+export async function buildServices(projectData, rawTemplates, baseVariables) {
   console.log(`[SERVICE-BUILDER] Building services`);
 
   if (!projectData || typeof projectData !== 'object') {
@@ -21,8 +24,8 @@ export function buildServices(projectData, compiledTemplates, baseVariables) {
     return null;
   }
 
-  if (!compiledTemplates || typeof compiledTemplates !== 'object') {
-    console.log(`[SERVICE-BUILDER] Invalid compiled templates`);
+  if (!rawTemplates || typeof rawTemplates !== 'object') {
+    console.log(`[SERVICE-BUILDER] Invalid raw templates`);
     return null;
   }
 
@@ -33,21 +36,22 @@ export function buildServices(projectData, compiledTemplates, baseVariables) {
 
   try {
     // Extraction des éléments du projet
-    const elements = extractProjectElements(projectData);
+    const elements = await extractProjectElements(projectData);
     console.log(`[SERVICE-BUILDER] Extracted ${elements.allElements.length} elements`);
 
     // Construction des services
     const services = {};
     let builtCount = 0;
 
-    for (const [templatePath, templateContent] of Object.entries(compiledTemplates)) {
+    for (const [templatePath, rawTemplateContent] of Object.entries(rawTemplates)) {
       const normalizedPath = templatePath.replace(/\\/g, "/");
       
-      // Vérifier si ce template doit être généré
+      console.log(`[SERVICE-BUILDER] Template: ${normalizedPath} -> Generate: ${shouldGenerateService(normalizedPath, elements).generate} (${shouldGenerateService(normalizedPath, elements).reason})`);
+      
       const shouldGenerate = shouldGenerateService(normalizedPath, elements);
       
       if (shouldGenerate.generate) {
-        // Préparer les variables pour ce template
+        // 🔧 FIX: Préparer les variables spécifiques pour ce template ET cet élément
         const templateVariables = prepareTemplateVariables(
           baseVariables, 
           normalizedPath, 
@@ -55,12 +59,19 @@ export function buildServices(projectData, compiledTemplates, baseVariables) {
           projectData
         );
 
-        // Le template content est déjà compilé par handlebars-engine
-        const outputPath = templatePath.replace(/\.hbs$/, '');
-        services[outputPath] = templateContent;
-        builtCount++;
-        
-        console.log(`[SERVICE-BUILDER] Service built: ${outputPath}`);
+        // 🔧 FIX: Compiler le template RAW avec les variables spécifiques
+        const compilationResult = await compileTemplate(rawTemplateContent, templateVariables);
+
+        if (compilationResult.success) {
+          // 🔧 FIX CRITIQUE: Supprimer le préfixe "code/" du chemin de sortie
+          const outputPath = templatePath.replace(/\.hbs$/, '').replace(/^code\//, '');
+          services[outputPath] = compilationResult.data;
+          builtCount++;
+          
+          console.log(`[SERVICE-BUILDER] Service built: ${outputPath} (${compilationResult.data.length} chars)`);
+        } else {
+          console.log(`[SERVICE-BUILDER] Template compilation failed for ${templatePath}: ${compilationResult.error}`);
+        }
       } else {
         console.log(`[SERVICE-BUILDER] Service skipped: ${normalizedPath} - ${shouldGenerate.reason}`);
       }
@@ -85,13 +96,57 @@ export function buildServices(projectData, compiledTemplates, baseVariables) {
  * REÇOIT : projectData: object
  * RETOURNE : object (éléments organisés par catégorie)
  * ERREURS : Retourne structure vide si extraction échoue
+ * 
+ * 🔧 FIX CRITIQUE: Fonction maintenant ASYNC + correction interface extractAllElements
  */
-function extractProjectElements(projectData) {
+async function extractProjectElements(projectData) {
   try {
-    const allElements = extractAllElements(projectData);
+    console.log(`[SERVICE-BUILDER] Starting element extraction`);
+    
+    // 🔧 FIX: extractAllElements est ASYNC et retourne {success, data: {elements}}
+    const extractionResult = await extractAllElements(projectData);
+    
+    // Vérifier le succès de l'extraction
+    if (!extractionResult.success) {
+      console.log(`[SERVICE-BUILDER] Extraction failed: ${extractionResult.error || 'Unknown error'}`);
+      return {
+        allElements: [],
+        components: [],
+        containers: [],
+        usedTypes: []
+      };
+    }
+    
+    if (!extractionResult.data) {
+      console.log(`[SERVICE-BUILDER] Extraction returned no data`);
+      return {
+        allElements: [],
+        components: [],
+        containers: [],
+        usedTypes: []
+      };
+    }
+    
+    // 🔧 FIX: Récupérer le tableau d'éléments depuis la structure
+    const allElements = extractionResult.data.elements;
+    
+    if (!Array.isArray(allElements)) {
+      console.log(`[SERVICE-BUILDER] Elements is not an array:`, typeof allElements);
+      return {
+        allElements: [],
+        components: [],
+        containers: [],
+        usedTypes: []
+      };
+    }
+    
+    // Maintenant on peut filtrer correctement
     const components = allElements.filter((e) => e._category === "component");
     const containers = allElements.filter((e) => e._category === "container");
     const usedTypes = [...new Set(allElements.map((e) => e.type?.toLowerCase()).filter(Boolean))];
+
+    console.log(`[SERVICE-BUILDER] Successfully extracted ${allElements.length} elements (${components.length} components, ${containers.length} containers)`);
+    console.log(`[SERVICE-BUILDER] Used types: ${usedTypes.join(', ')}`);
 
     return {
       allElements,
@@ -102,6 +157,7 @@ function extractProjectElements(projectData) {
 
   } catch (error) {
     console.log(`[SERVICE-BUILDER] Element extraction failed: ${error.message}`);
+    console.log(`[SERVICE-BUILDER] Stack trace:`, error.stack);
     return {
       allElements: [],
       components: [],
@@ -155,8 +211,29 @@ function prepareTemplateVariables(baseVariables, templatePath, elements, project
       const element = findElementByType(elements.allElements, elementType);
       
       if (element) {
-        enrichedVariables.element = element;
-        enrichedVariables.elementType = elementType;
+        // 🔧 FIX MAJEUR: Injecter les propriétés de l'élément DIRECTEMENT dans les variables
+        // Cela permet à Handlebars d'accéder à {{content}}, {{classname}}, {{id}}, etc.
+        Object.assign(enrichedVariables, {
+          // Propriétés communes à tous les éléments
+          id: element.id,
+          content: element.content,
+          classname: element.classname,
+          // Propriétés spécifiques selon le type
+          ...(element.tag && { tag: element.tag }),           // Pour heading
+          ...(element.href && { href: element.href }),        // Pour button/link  
+          ...(element.target && { target: element.target }),  // Pour link
+          ...(element.src && { src: element.src }),           // Pour image
+          ...(element.alt && { alt: element.alt }),           // Pour image
+          // Ajouter l'élément complet pour les cas complexes
+          element: element,
+          elementType: elementType
+        });
+        
+        console.log(`[SERVICE-BUILDER] Variables enriched for ${elementType}:`, {
+          id: element.id,
+          content: element.content,
+          classname: element.classname
+        });
       }
     }
 
@@ -189,7 +266,8 @@ function extractElementTypeFromPath(templatePath) {
   try {
     const normalizedPath = templatePath.replace(/\\/g, "/");
     const filename = normalizedPath.split("/").pop();
-    const elementName = filename.replace(".tsx.hbs", "").replace(".hbs", "");
+    // 🔧 FIX: D'abord enlever .hbs, puis .tsx, puis lowercase
+    const elementName = filename.replace(".hbs", "").replace(".tsx", "");
     return elementName.toLowerCase();
   } catch (error) {
     console.log(`[SERVICE-BUILDER] Type extraction failed for path: ${templatePath}`);

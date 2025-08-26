@@ -4,7 +4,6 @@ import { readPath } from "../cores/reader.js";
 import { writePath } from "../cores/writer.js";
 import { rm } from "fs/promises";
 import { readCodeTemplates } from "../cores/templates.js";
-import { compileTemplates } from "../cores/handlebars.js";
 import { generateTemplateVariables } from "../cores/variable-generator.js";
 import { buildServices, validateServices } from "../cores/services.js";
 import { getProjectPath, getProjectFilePath } from "../cores/paths.js";
@@ -92,31 +91,21 @@ export async function buildWorkflow(projectId, config = {}) {
   console.log(`[BUILD] CALL 7: Generating template variables...`);
   const variablesResult = await generateTemplateVariables(projectData);
   const baseVariables = variablesResult.success ? variablesResult.data : {};
-  // CALL 8: Compile templates (utilise core pur)
-  // CALL 8: Compile templates (utilise core pur)
-  console.log(`[BUILD] CALL 8: Compiling templates with variables...`);
-  const compiledServices = compileTemplates(codeTemplates, baseVariables);
 
-  if (!compiledServices) {
-    return {
-      success: false,
-      error: `Failed to compile templates`,
-    };
-  }
+  // CALL 8: Skip compilation - buildServices will compile with specific variables
+  console.log(`[BUILD] CALL 8: Templates ready for buildServices...`);
+  console.log(`[BUILD] Templates available: ${Object.keys(codeTemplates).length} raw templates`);
 
-  console.log(
-    `[BUILD] Templates compiled: ${Object.keys(compiledServices).length} services`
-  );
-  // CALL 9: Build services (utilise core pur)
-  console.log(`[BUILD] CALL 9: Building services...`);
+  // CALL 9: Build services (utilise templates RAW + compile avec variables spécifiques)
   console.log(`[BUILD] CALL 9: Building services...`);
 
   let servicesResult;
   try {
-    console.log("[BUILD] About to call buildServices");
-    servicesResult = buildServices(
+    console.log("[BUILD] About to call buildServices with raw templates");
+    // 🔧 FIX MAJEUR: Passer les templates RAW (non compilés) et laisser buildServices compiler chacun avec les variables spécifiques
+    servicesResult = await buildServices(
       projectData,
-      compiledServices,
+      codeTemplates,  // Templates RAW, pas compilés
       baseVariables
     );
     console.log("[BUILD] buildServices returned:", typeof servicesResult);
@@ -128,14 +117,15 @@ export async function buildWorkflow(projectId, config = {}) {
     };
   }
 
-  if (!servicesResult.success) {
+  // 🔧 FIX: buildServices retourne maintenant directement les services, pas un wrapper {success, data}
+  if (!servicesResult) {
     return {
       success: false,
-      error: `Failed to build services: ${servicesResult.error}`,
+      error: `Build services returned null - no services generated`,
     };
   }
 
-  const services = servicesResult.data;
+  const services = servicesResult;
 
   // CALL 10: Validate services (utilise core pur)
   console.log(`[BUILD] CALL 10: Validating built services...`);

@@ -244,7 +244,7 @@ export async function discoverTemplates(options = {}) {
       }
     }
 
-    const structureBasePath = PATHS.templatesProjects;
+    const structureBasePath = PATHS.projectTemplates;
     const discoveredTemplates = [];
     const errors = [];
 
@@ -256,7 +256,10 @@ export async function discoverTemplates(options = {}) {
         .filter((item) => item.isFile() && item.name.endsWith(".json"))
         .map(async (item) => {
           const templateId = item.name.replace(".json", "");
-          const templatePath = join(structureBasePath, item.name);
+          const templatePath = join(
+            PATHS.projectTemplates,
+            `${templateId}.json`
+          );
 
           try {
             const templateFile = await readPath(templatePath);

@@ -30,7 +30,7 @@ export const PATHS = {
   templates: resolve(PROJECT_ROOT, "app-server/data/inputs/templates"),
   projectTemplates: resolve(
     PROJECT_ROOT,
-    "app-server/data/inputs/templates/projects"
+    "app-server/data/inputs/templates/structure/projects"
   ),
   codeTemplates: resolve(PROJECT_ROOT, "app-server/data/inputs/templates/code"), // ✅ AJOUTER
   // Schemas
