@@ -7,7 +7,7 @@ import { process as processResponse } from '../responses/processor.js';
 import { readdir, readFile, writeFile, rm, stat } from 'fs/promises';
 import { createWorkflow } from '../../app-server/engines/create-coordinator.js';
 import { buildWorkflow } from '../../app-server/engines/build-coordinator.js';
-import { validateProjectSchema } from '../../app-server/cores/validator.js';
+import { validateProjectSchema } from '../../app-server/cores/schema-validator.js';
 
 /*
  * FAIT QUOI : Routes HTTP pour gestion des projets

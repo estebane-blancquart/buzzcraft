@@ -38,7 +38,9 @@ buzzcraft/
 │   │   ├── reader.js
 │   │   ├── services.js
 │   │   ├── templates.js
-│   │   ├── validator.js
+│   │   ├── schema-validator.js
+│   │   ├── template-validator.js
+│   │   ├── variable-generator.js
 │   │   └── writer.js
 │   └── package.json
 └── app-client/       # Service React
