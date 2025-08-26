@@ -20,13 +20,13 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  * @param {boolean} [options.cache=false] - Utiliser le cache de découverte
  * @param {boolean} [options.includeMetadata=false] - Inclure métadonnées du fichier
  * @returns {{success: boolean, data?: object, error?: string}} Template chargé ou erreur
- * 
+ *
  * @example
  * const result = await readTemplate('basic');
  * if (result.success) {
  *   console.log(`Template: ${result.data.project.name}`);
  * }
- * 
+ *
  * // Avec métadonnées
  * const withMeta = await readTemplate('basic', { includeMetadata: true });
  * console.log(`Size: ${withMeta.data._metadata.size} bytes`);
@@ -54,7 +54,7 @@ export async function readTemplate(templateId, options = {}) {
       console.log(`[TEMPLATES] Template read failed: ${templateFile.error}`);
       return {
         success: false,
-        error: `Failed to read template: ${templateFile.error}`
+        error: `Failed to read template: ${templateFile.error}`,
       };
     }
 
@@ -62,7 +62,7 @@ export async function readTemplate(templateId, options = {}) {
       console.log(`[TEMPLATES] Template not found: ${templatePath}`);
       return {
         success: false,
-        error: `Template '${templateId}' not found`
+        error: `Template '${templateId}' not found`,
       };
     }
 
@@ -71,10 +71,12 @@ export async function readTemplate(templateId, options = {}) {
     try {
       templateContent = JSON.parse(templateFile.data.content);
     } catch (parseError) {
-      console.log(`[TEMPLATES] Template JSON parsing failed: ${parseError.message}`);
+      console.log(
+        `[TEMPLATES] Template JSON parsing failed: ${parseError.message}`
+      );
       return {
         success: false,
-        error: `Invalid JSON in template '${templateId}': ${parseError.message}`
+        error: `Invalid JSON in template '${templateId}': ${parseError.message}`,
       };
     }
 
@@ -86,23 +88,24 @@ export async function readTemplate(templateId, options = {}) {
           templateId,
           filePath: templatePath,
           size: templateFile.data.size,
-          loadedAt: new Date().toISOString()
-        }
-      })
+          loadedAt: new Date().toISOString(),
+        },
+      }),
     };
 
     console.log(`[TEMPLATES] Template loaded successfully: ${templateId}`);
 
     return {
       success: true,
-      data: result
+      data: result,
     };
-
   } catch (error) {
-    console.log(`[TEMPLATES] Error reading template ${templateId}: ${error.message}`);
+    console.log(
+      `[TEMPLATES] Error reading template ${templateId}: ${error.message}`
+    );
     return {
       success: false,
-      error: `Template loading failed: ${error.message}`
+      error: `Template loading failed: ${error.message}`,
     };
   }
 }
@@ -116,14 +119,14 @@ export async function readTemplate(templateId, options = {}) {
  * @param {boolean} [options.includeMetadata=false] - Inclure métadonnées des fichiers
  * @param {number} [options.maxDepth=10] - Profondeur maximum de scan
  * @returns {{success: boolean, data?: object, error?: string}} Templates par chemin relatif
- * 
+ *
  * @example
  * const result = await readCodeTemplates('mon-projet');
  * if (result.success) {
  *   console.log(`Found ${Object.keys(result.data).length} code templates`);
  *   Object.keys(result.data).forEach(path => console.log(`- ${path}`));
  * }
- * 
+ *
  * // Scan avec options avancées
  * const custom = await readCodeTemplates('test', {
  *   extensions: ['.hbs', '.mustache'],
@@ -131,7 +134,7 @@ export async function readTemplate(templateId, options = {}) {
  *   maxDepth: 5
  * });
  */
-export async function readCodeTemplates(projectId = 'unknown', options = {}) {
+export async function readCodeTemplates(projectId = "unknown", options = {}) {
   console.log(`[TEMPLATES] Reading code templates for: ${projectId}`);
 
   try {
@@ -142,19 +145,19 @@ export async function readCodeTemplates(projectId = 'unknown', options = {}) {
     }
 
     const config = {
-      extensions: options.extensions || ['.hbs'],
+      extensions: options.extensions || [".hbs"],
       excludePaths: options.excludePaths || [],
       includeMetadata: options.includeMetadata === true,
-      maxDepth: options.maxDepth || 10
+      maxDepth: options.maxDepth || 10,
     };
 
-    const templatesBasePath = PATHS.templatesCode;
+    const templatesBasePath = PATHS.templates;
     const templates = {};
 
     // Scan récursif avec protection profondeur
     const scanResult = await scanDirectoryRecursive(
       templatesBasePath,
-      '',
+      "",
       templates,
       config,
       0
@@ -172,24 +175,25 @@ export async function readCodeTemplates(projectId = 'unknown', options = {}) {
         stats: {
           totalFound: 0,
           scannedDirectories: 0,
-          skippedFiles: 0
-        }
+          skippedFiles: 0,
+        },
       };
     }
 
-    console.log(`[TEMPLATES] Found ${Object.keys(templates).length} code templates`);
+    console.log(
+      `[TEMPLATES] Found ${Object.keys(templates).length} code templates`
+    );
 
     return {
       success: true,
       data: templates,
-      stats: scanResult.stats
+      stats: scanResult.stats,
     };
-
   } catch (error) {
     console.log(`[TEMPLATES] Error reading code templates: ${error.message}`);
     return {
       success: false,
-      error: `Code templates loading failed: ${error.message}`
+      error: `Code templates loading failed: ${error.message}`,
     };
   }
 }
@@ -201,7 +205,7 @@ export async function readCodeTemplates(projectId = 'unknown', options = {}) {
  * @param {boolean} [options.includeInvalid=false] - Inclure templates avec erreurs JSON
  * @param {boolean} [options.includeMetadata=true] - Inclure métadonnées des templates
  * @returns {{success: boolean, data?: {templates: object[], count: number}, error?: string}} Templates découverts
- * 
+ *
  * @example
  * const result = await discoverTemplates();
  * if (result.success) {
@@ -209,7 +213,7 @@ export async function readCodeTemplates(projectId = 'unknown', options = {}) {
  *     console.log(`${template.id}: ${template.name} - ${template.description}`);
  *   });
  * }
- * 
+ *
  * // Découverte avec cache désactivé
  * const fresh = await discoverTemplates({ cache: false });
  */
@@ -220,20 +224,22 @@ export async function discoverTemplates(options = {}) {
     const config = {
       cache: options.cache !== false,
       includeInvalid: options.includeInvalid === true,
-      includeMetadata: options.includeMetadata !== false
+      includeMetadata: options.includeMetadata !== false,
     };
 
-    const cacheKey = 'template-discovery';
-    
+    const cacheKey = "template-discovery";
+
     // Vérification cache si activé
     if (config.cache) {
       const cached = getCachedDiscovery(cacheKey);
       if (cached) {
-        console.log(`[TEMPLATES] Using cached discovery: ${cached.templates.length} templates`);
+        console.log(
+          `[TEMPLATES] Using cached discovery: ${cached.templates.length} templates`
+        );
         return {
           success: true,
           data: cached,
-          fromCache: true
+          fromCache: true,
         };
       }
     }
@@ -247,23 +253,23 @@ export async function discoverTemplates(options = {}) {
 
       // Traitement parallèle des fichiers templates
       const templatePromises = items
-        .filter(item => item.isFile() && item.name.endsWith('.json'))
+        .filter((item) => item.isFile() && item.name.endsWith(".json"))
         .map(async (item) => {
-          const templateId = item.name.replace('.json', '');
+          const templateId = item.name.replace(".json", "");
           const templatePath = join(structureBasePath, item.name);
 
           try {
             const templateFile = await readPath(templatePath);
-            
+
             if (!templateFile.success || !templateFile.data.exists) {
               if (config.includeInvalid) {
                 return {
                   id: templateId,
                   name: templateId,
-                  description: 'Template file not accessible',
+                  description: "Template file not accessible",
                   path: templatePath,
                   valid: false,
-                  error: templateFile.error || 'File not found'
+                  error: templateFile.error || "File not found",
                 };
               }
               return null;
@@ -278,13 +284,15 @@ export async function discoverTemplates(options = {}) {
                 return {
                   id: templateId,
                   name: templateId,
-                  description: 'Invalid JSON template',
+                  description: "Invalid JSON template",
                   path: templatePath,
                   valid: false,
-                  error: `JSON parse error: ${parseError.message}`
+                  error: `JSON parse error: ${parseError.message}`,
                 };
               }
-              errors.push(`${templateId}: Invalid JSON - ${parseError.message}`);
+              errors.push(
+                `${templateId}: Invalid JSON - ${parseError.message}`
+              );
               return null;
             }
 
@@ -292,10 +300,11 @@ export async function discoverTemplates(options = {}) {
             const template = {
               id: templateId,
               name: templateData.project?.name || templateId,
-              description: templateData.project?.description || 'No description available',
-              version: templateData.project?.version || '1.0.0',
+              description:
+                templateData.project?.description || "No description available",
+              version: templateData.project?.version || "1.0.0",
               path: templatePath,
-              valid: true
+              valid: true,
             };
 
             // Métadonnées si demandées
@@ -303,16 +312,19 @@ export async function discoverTemplates(options = {}) {
               template._metadata = {
                 fileSize: templateFile.data.size,
                 discoveredAt: new Date().toISOString(),
-                hasPages: !!(templateData.project?.pages?.length),
-                pagesCount: templateData.project?.pages?.length || 0
+                hasPages: !!templateData.project?.pages?.length,
+                pagesCount: templateData.project?.pages?.length || 0,
               };
             }
 
-            console.log(`[TEMPLATES] Discovered template: ${templateId} - ${template.name}`);
+            console.log(
+              `[TEMPLATES] Discovered template: ${templateId} - ${template.name}`
+            );
             return template;
-
           } catch (error) {
-            console.log(`[TEMPLATES] Error processing template ${templateId}: ${error.message}`);
+            console.log(
+              `[TEMPLATES] Error processing template ${templateId}: ${error.message}`
+            );
             errors.push(`${templateId}: ${error.message}`);
             return null;
           }
@@ -320,17 +332,16 @@ export async function discoverTemplates(options = {}) {
 
       // Attendre tous les templates
       const templateResults = await Promise.all(templatePromises);
-      
+
       // Filtrer les résultats null
       templateResults
-        .filter(template => template !== null)
-        .forEach(template => discoveredTemplates.push(template));
-
+        .filter((template) => template !== null)
+        .forEach((template) => discoveredTemplates.push(template));
     } catch (error) {
       console.log(`[TEMPLATES] Directory scan failed: ${error.message}`);
       return {
         success: false,
-        error: `Template discovery failed: ${error.message}`
+        error: `Template discovery failed: ${error.message}`,
       };
     }
 
@@ -340,38 +351,41 @@ export async function discoverTemplates(options = {}) {
         success: true,
         data: {
           templates: [],
-          count: 0
+          count: 0,
         },
-        warnings: errors
+        warnings: errors,
       };
     }
 
     const discoveryResult = {
       templates: discoveredTemplates,
       count: discoveredTemplates.length,
-      validCount: discoveredTemplates.filter(t => t.valid).length,
-      discoveredAt: new Date().toISOString()
+      validCount: discoveredTemplates.filter((t) => t.valid).length,
+      discoveredAt: new Date().toISOString(),
     };
 
     // Mise en cache si activé
     if (config.cache) {
       setCachedDiscovery(cacheKey, discoveryResult);
-      console.log(`[TEMPLATES] Discovery cached: ${discoveryResult.count} templates`);
+      console.log(
+        `[TEMPLATES] Discovery cached: ${discoveryResult.count} templates`
+      );
     }
 
-    console.log(`[TEMPLATES] Discovery complete: ${discoveryResult.count} templates (${discoveryResult.validCount} valid)`);
+    console.log(
+      `[TEMPLATES] Discovery complete: ${discoveryResult.count} templates (${discoveryResult.validCount} valid)`
+    );
 
     return {
       success: true,
       data: discoveryResult,
-      ...(errors.length > 0 && { warnings: errors })
+      ...(errors.length > 0 && { warnings: errors }),
     };
-
   } catch (error) {
     console.log(`[TEMPLATES] Template discovery failed: ${error.message}`);
     return {
       success: false,
-      error: `Template discovery failed: ${error.message}`
+      error: `Template discovery failed: ${error.message}`,
     };
   }
 }
@@ -384,43 +398,51 @@ export async function discoverTemplates(options = {}) {
  * @param {boolean} [options.validate=true] - Valider le schema du template
  * @param {boolean} [options.includeMetadata=false] - Inclure métadonnées
  * @returns {{success: boolean, data?: object, error?: string}} Template typé chargé
- * 
+ *
  * @example
  * const result = await readTemplateByType('component', 'button');
  * if (result.success) {
  *   console.log(`Button schema: ${JSON.stringify(result.data.schema)}`);
  * }
- * 
+ *
  * // Template avec validation désactivée
  * const unsafe = await readTemplateByType('container', 'form', { validate: false });
  */
-export async function readTemplateByType(templateType, templateId, options = {}) {
+export async function readTemplateByType(
+  templateType,
+  templateId,
+  options = {}
+) {
   console.log(`[TEMPLATES] Reading ${templateType} template: ${templateId}`);
 
   try {
     // Validation des paramètres
-    const validation = validateTemplateTypeParams(templateType, templateId, options);
+    const validation = validateTemplateTypeParams(
+      templateType,
+      templateId,
+      options
+    );
     if (!validation.valid) {
       return { success: false, error: validation.error };
     }
 
     const config = {
       validate: options.validate !== false,
-      includeMetadata: options.includeMetadata === true
+      includeMetadata: options.includeMetadata === true,
     };
 
     // Mapping des types vers leurs chemins
     const typeMap = {
-      'project': PATHS.templatesProjects,
-      'component': PATHS.templatesComponents,
-      'container': PATHS.templatesContainers
+      project: PATHS.templatesProjects,
+      component: PATHS.templatesComponents,
+      container: PATHS.templatesContainers,
     };
 
     const basePath = typeMap[templateType];
     if (!basePath) {
       return {
         success: false,
-        error: `Unknown template type '${templateType}'. Valid types: ${Object.keys(typeMap).join(', ')}`
+        error: `Unknown template type '${templateType}'. Valid types: ${Object.keys(typeMap).join(", ")}`,
       };
     }
 
@@ -432,7 +454,7 @@ export async function readTemplateByType(templateType, templateId, options = {})
       console.log(`[TEMPLATES] Template not found: ${templatePath}`);
       return {
         success: false,
-        error: `Template '${templateType}/${templateId}' not found`
+        error: `Template '${templateType}/${templateId}' not found`,
       };
     }
 
@@ -444,17 +466,20 @@ export async function readTemplateByType(templateType, templateId, options = {})
       console.log(`[TEMPLATES] JSON parsing failed: ${parseError.message}`);
       return {
         success: false,
-        error: `Invalid JSON in template '${templateType}/${templateId}': ${parseError.message}`
+        error: `Invalid JSON in template '${templateType}/${templateId}': ${parseError.message}`,
       };
     }
 
     // Validation basique du schema si demandée
     if (config.validate) {
-      const schemaValidation = validateTemplateSchema(templateData, templateType);
+      const schemaValidation = validateTemplateSchema(
+        templateData,
+        templateType
+      );
       if (!schemaValidation.valid) {
         return {
           success: false,
-          error: `Schema validation failed: ${schemaValidation.error}`
+          error: `Schema validation failed: ${schemaValidation.error}`,
         };
       }
     }
@@ -468,23 +493,26 @@ export async function readTemplateByType(templateType, templateId, options = {})
           templateId,
           filePath: templatePath,
           size: templateFile.data.size,
-          loadedAt: new Date().toISOString()
-        }
-      })
+          loadedAt: new Date().toISOString(),
+        },
+      }),
     };
 
-    console.log(`[TEMPLATES] Template loaded successfully: ${templateType}/${templateId}`);
+    console.log(
+      `[TEMPLATES] Template loaded successfully: ${templateType}/${templateId}`
+    );
 
     return {
       success: true,
-      data: result
+      data: result,
     };
-
   } catch (error) {
-    console.log(`[TEMPLATES] Error reading ${templateType} template ${templateId}: ${error.message}`);
+    console.log(
+      `[TEMPLATES] Error reading ${templateType} template ${templateId}: ${error.message}`
+    );
     return {
       success: false,
-      error: `Template loading failed: ${error.message}`
+      error: `Template loading failed: ${error.message}`,
     };
   }
 }
@@ -496,16 +524,25 @@ export async function readTemplateByType(templateType, templateId, options = {})
  * @private
  */
 function validateTemplateId(templateId, options) {
-  if (!templateId || typeof templateId !== 'string') {
-    return { valid: false, error: 'ValidationError: templateId must be non-empty string' };
+  if (!templateId || typeof templateId !== "string") {
+    return {
+      valid: false,
+      error: "ValidationError: templateId must be non-empty string",
+    };
   }
 
   if (templateId.trim().length === 0) {
-    return { valid: false, error: 'ValidationError: templateId cannot be empty or whitespace only' };
+    return {
+      valid: false,
+      error: "ValidationError: templateId cannot be empty or whitespace only",
+    };
   }
 
-  if (options && typeof options !== 'object') {
-    return { valid: false, error: 'ValidationError: options must be an object' };
+  if (options && typeof options !== "object") {
+    return {
+      valid: false,
+      error: "ValidationError: options must be an object",
+    };
   }
 
   return { valid: true };
@@ -516,20 +553,35 @@ function validateTemplateId(templateId, options) {
  * @private
  */
 function validateCodeTemplateOptions(options) {
-  if (options && typeof options !== 'object') {
-    return { valid: false, error: 'ValidationError: options must be an object' };
+  if (options && typeof options !== "object") {
+    return {
+      valid: false,
+      error: "ValidationError: options must be an object",
+    };
   }
 
   if (options.extensions && !Array.isArray(options.extensions)) {
-    return { valid: false, error: 'ValidationError: options.extensions must be an array' };
+    return {
+      valid: false,
+      error: "ValidationError: options.extensions must be an array",
+    };
   }
 
   if (options.excludePaths && !Array.isArray(options.excludePaths)) {
-    return { valid: false, error: 'ValidationError: options.excludePaths must be an array' };
+    return {
+      valid: false,
+      error: "ValidationError: options.excludePaths must be an array",
+    };
   }
 
-  if (options.maxDepth && (typeof options.maxDepth !== 'number' || options.maxDepth < 1)) {
-    return { valid: false, error: 'ValidationError: options.maxDepth must be a positive number' };
+  if (
+    options.maxDepth &&
+    (typeof options.maxDepth !== "number" || options.maxDepth < 1)
+  ) {
+    return {
+      valid: false,
+      error: "ValidationError: options.maxDepth must be a positive number",
+    };
   }
 
   return { valid: true };
@@ -540,16 +592,25 @@ function validateCodeTemplateOptions(options) {
  * @private
  */
 function validateTemplateTypeParams(templateType, templateId, options) {
-  if (!templateType || typeof templateType !== 'string') {
-    return { valid: false, error: 'ValidationError: templateType must be non-empty string' };
+  if (!templateType || typeof templateType !== "string") {
+    return {
+      valid: false,
+      error: "ValidationError: templateType must be non-empty string",
+    };
   }
 
-  if (!templateId || typeof templateId !== 'string') {
-    return { valid: false, error: 'ValidationError: templateId must be non-empty string' };
+  if (!templateId || typeof templateId !== "string") {
+    return {
+      valid: false,
+      error: "ValidationError: templateId must be non-empty string",
+    };
   }
 
-  if (options && typeof options !== 'object') {
-    return { valid: false, error: 'ValidationError: options must be an object' };
+  if (options && typeof options !== "object") {
+    return {
+      valid: false,
+      error: "ValidationError: options must be an object",
+    };
   }
 
   return { valid: true };
@@ -562,7 +623,7 @@ function validateTemplateTypeParams(templateType, templateId, options) {
 function prepareReadConfig(options) {
   return {
     cache: options.cache === true,
-    includeMetadata: options.includeMetadata === true
+    includeMetadata: options.includeMetadata === true,
   };
 }
 
@@ -570,12 +631,18 @@ function prepareReadConfig(options) {
  * Scan récursif de répertoire avec protection
  * @private
  */
-async function scanDirectoryRecursive(currentPath, relativePath, templates, config, currentDepth) {
+async function scanDirectoryRecursive(
+  currentPath,
+  relativePath,
+  templates,
+  config,
+  currentDepth
+) {
   if (currentDepth >= config.maxDepth) {
     console.log(`[TEMPLATES] Max depth reached: ${currentPath}`);
     return {
       success: true,
-      stats: { maxDepthReached: true }
+      stats: { maxDepthReached: true },
     };
   }
 
@@ -586,10 +653,16 @@ async function scanDirectoryRecursive(currentPath, relativePath, templates, conf
 
     for (const item of items) {
       const fullPath = join(currentPath, item.name);
-      const relativeItemPath = relativePath ? join(relativePath, item.name) : item.name;
+      const relativeItemPath = relativePath
+        ? join(relativePath, item.name)
+        : item.name;
 
       // Vérifier exclusions
-      if (config.excludePaths.some(exclude => relativeItemPath.includes(exclude))) {
+      if (
+        config.excludePaths.some((exclude) =>
+          relativeItemPath.includes(exclude)
+        )
+      ) {
         skippedFiles++;
         continue;
       }
@@ -603,14 +676,16 @@ async function scanDirectoryRecursive(currentPath, relativePath, templates, conf
           config,
           currentDepth + 1
         );
-        
+
         if (!subResult.success) {
           console.log(`[TEMPLATES] Subdirectory scan failed: ${fullPath}`);
         }
       } else if (item.isFile()) {
         // Vérifier extension
-        const hasValidExtension = config.extensions.some(ext => item.name.endsWith(ext));
-        
+        const hasValidExtension = config.extensions.some((ext) =>
+          item.name.endsWith(ext)
+        );
+
         if (hasValidExtension) {
           try {
             const templateFile = await readPath(fullPath);
@@ -623,20 +698,26 @@ async function scanDirectoryRecursive(currentPath, relativePath, templates, conf
                     filePath: fullPath,
                     relativePath: relativeItemPath,
                     size: templateFile.data.size,
-                    scannedAt: new Date().toISOString()
-                  }
-                })
+                    scannedAt: new Date().toISOString(),
+                  },
+                }),
               };
 
               templates[relativeItemPath] = templateData.content;
-              console.log(`[TEMPLATES] Code template found: ${relativeItemPath}`);
+              console.log(
+                `[TEMPLATES] Code template found: ${relativeItemPath}`
+              );
             } else {
               skippedFiles++;
-              console.log(`[TEMPLATES] Skipped unreadable file: ${relativeItemPath}`);
+              console.log(
+                `[TEMPLATES] Skipped unreadable file: ${relativeItemPath}`
+              );
             }
           } catch (error) {
             skippedFiles++;
-            console.log(`[TEMPLATES] Error reading ${relativeItemPath}: ${error.message}`);
+            console.log(
+              `[TEMPLATES] Error reading ${relativeItemPath}: ${error.message}`
+            );
           }
         } else {
           skippedFiles++;
@@ -649,15 +730,16 @@ async function scanDirectoryRecursive(currentPath, relativePath, templates, conf
       stats: {
         scannedDirectories,
         skippedFiles,
-        totalFound: Object.keys(templates).length
-      }
+        totalFound: Object.keys(templates).length,
+      },
     };
-
   } catch (error) {
-    console.log(`[TEMPLATES] Directory scan failed: ${currentPath} - ${error.message}`);
+    console.log(
+      `[TEMPLATES] Directory scan failed: ${currentPath} - ${error.message}`
+    );
     return {
       success: false,
-      error: `Directory scan failed: ${error.message}`
+      error: `Directory scan failed: ${error.message}`,
     };
   }
 }
@@ -667,27 +749,39 @@ async function scanDirectoryRecursive(currentPath, relativePath, templates, conf
  * @private
  */
 function validateTemplateSchema(templateData, templateType) {
-  if (!templateData || typeof templateData !== 'object') {
-    return { valid: false, error: 'Template data must be an object' };
+  if (!templateData || typeof templateData !== "object") {
+    return { valid: false, error: "Template data must be an object" };
   }
 
   switch (templateType) {
-    case 'project':
+    case "project":
       if (!templateData.project) {
-        return { valid: false, error: 'Project template must have a "project" property' };
+        return {
+          valid: false,
+          error: 'Project template must have a "project" property',
+        };
       }
       if (!templateData.project.id || !templateData.project.name) {
-        return { valid: false, error: 'Project template must have id and name' };
+        return {
+          valid: false,
+          error: "Project template must have id and name",
+        };
       }
       break;
 
-    case 'component':
-    case 'container':
+    case "component":
+    case "container":
       if (!templateData.id || !templateData.type) {
-        return { valid: false, error: `${templateType} template must have id and type` };
+        return {
+          valid: false,
+          error: `${templateType} template must have id and type`,
+        };
       }
       if (!templateData.schema) {
-        return { valid: false, error: `${templateType} template must have schema` };
+        return {
+          valid: false,
+          error: `${templateType} template must have schema`,
+        };
       }
       break;
   }
@@ -720,8 +814,10 @@ function getCachedDiscovery(cacheKey) {
 function setCachedDiscovery(cacheKey, data) {
   discoveryCache.set(cacheKey, {
     data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 }
 
-console.log(`[TEMPLATES] Template loader loaded successfully - PIXEL PERFECT VERSION`);
+console.log(
+  `[TEMPLATES] Template loader loaded successfully - PIXEL PERFECT VERSION`
+);

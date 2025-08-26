@@ -15,11 +15,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use('/projects', projectsRouter);
+// Routes - utilise le router sans préfixe car routes.js définit déjà /projects
+app.use('/', projectsRouter);
 
 // Démarrage serveur
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`BuzzCraft API running on http://localhost:${PORT}`);
 });

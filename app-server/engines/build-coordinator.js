@@ -75,23 +75,24 @@ export async function buildWorkflow(projectId, config = {}) {
 
   // CALL 6: Load code templates (utilise core pur)
   console.log(`[BUILD] CALL 6: Loading code templates...`);
-  const codeTemplates = await readCodeTemplates(projectId);
+  const codeTemplatesResult = await readCodeTemplates(projectId);
 
-  if (!codeTemplates) {
+  if (!codeTemplatesResult.success) {
     return {
       success: false,
-      error: `Failed to load code templates`,
+      error: `Failed to load code templates: ${codeTemplatesResult.error}`,
     };
   }
 
+  const codeTemplates = codeTemplatesResult.data;
   console.log(
     `[BUILD] Code templates loaded: ${Object.keys(codeTemplates).length} templates`
   );
-
   // CALL 7: Generate base variables (utilise core pur)
   console.log(`[BUILD] CALL 7: Generating template variables...`);
   const variablesResult = await generateTemplateVariables(projectData);
   const baseVariables = variablesResult.success ? variablesResult.data : {};
+  // CALL 8: Compile templates (utilise core pur)
   // CALL 8: Compile templates (utilise core pur)
   console.log(`[BUILD] CALL 8: Compiling templates with variables...`);
   const compiledServices = compileTemplates(codeTemplates, baseVariables);
@@ -106,17 +107,35 @@ export async function buildWorkflow(projectId, config = {}) {
   console.log(
     `[BUILD] Templates compiled: ${Object.keys(compiledServices).length} services`
   );
-
   // CALL 9: Build services (utilise core pur)
   console.log(`[BUILD] CALL 9: Building services...`);
-  const services = buildServices(projectData, compiledServices, baseVariables);
+  console.log(`[BUILD] CALL 9: Building services...`);
 
-  if (!services) {
+  let servicesResult;
+  try {
+    console.log("[BUILD] About to call buildServices");
+    servicesResult = buildServices(
+      projectData,
+      compiledServices,
+      baseVariables
+    );
+    console.log("[BUILD] buildServices returned:", typeof servicesResult);
+  } catch (error) {
+    console.error("[BUILD] FATAL ERROR in buildServices:", error.stack);
     return {
       success: false,
-      error: `Failed to build services`,
+      error: `Build services failed: ${error.message}`,
     };
   }
+
+  if (!servicesResult.success) {
+    return {
+      success: false,
+      error: `Failed to build services: ${servicesResult.error}`,
+    };
+  }
+
+  const services = servicesResult.data;
 
   // CALL 10: Validate services (utilise core pur)
   console.log(`[BUILD] CALL 10: Validating built services...`);
