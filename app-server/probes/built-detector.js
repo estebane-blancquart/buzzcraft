@@ -29,7 +29,7 @@ export async function detectBuiltState(projectPath) {
       return {
         success: true,
         data: {
-          state: null, // Pas BUILT si pas de project.json
+          state: null,
           confidence: 0,
           evidence: ['project.json missing'],
           timestamp: new Date().toISOString()
@@ -41,36 +41,33 @@ export async function detectBuiltState(projectPath) {
     confidence += 20;
     console.log(`[BUILT-DETECTOR] Project file exists`);
 
-    // Vérifier app-visitor/ généré (structure finale sans code/)
-    const appVisitorDir = join(projectPath, 'app-visitor');
+    // ✅ FIX: Vérifier code/app-visitor/ au lieu de app-visitor/
+    const appVisitorDir = join(projectPath, 'code', 'app-visitor');
     console.log(`[BUILT-DETECTOR] Checking app-visitor: ${appVisitorDir}`);
     const visitorCheck = await readPath(appVisitorDir);
 
     if (visitorCheck.data.exists && visitorCheck.data.type === 'directory') {
-      evidence.push('app-visitor directory exists');
+      evidence.push('code/app-visitor directory exists');
       confidence += 30;
       console.log(`[BUILT-DETECTOR] App-visitor found = good for BUILT`);
     } else {
       console.log(`[BUILT-DETECTOR] App-visitor missing = not BUILT`);
     }
 
-    // Vérifier server/ généré (structure finale sans code/)
-    const serverDir = join(projectPath, 'server');
+    // ✅ FIX: Vérifier code/server/ au lieu de server/
+    const serverDir = join(projectPath, 'code', 'server');
     console.log(`[BUILT-DETECTOR] Checking server: ${serverDir}`);
     const serverCheck = await readPath(serverDir);
 
     if (serverCheck.data.exists && serverCheck.data.type === 'directory') {
-      evidence.push('server directory exists');
+      evidence.push('code/server directory exists');
       confidence += 30;
       console.log(`[BUILT-DETECTOR] Server found = good for BUILT`);
     } else {
       console.log(`[BUILT-DETECTOR] Server missing = not BUILT`);
     }
 
-    // app-manager n'est plus requis pour BUILT dans cette architecture
-    // On génère seulement app-visitor et server
-    
-    const isBuilt = confidence >= 80; // 20 (project.json) + 30 (app-visitor) + 30 (server) = 80
+    const isBuilt = confidence >= 80; // 20 + 30 + 30 = 80
     const finalState = isBuilt ? 'BUILT' : null;
     
     console.log(`[BUILT-DETECTOR] Final assessment: confidence=${confidence}, state=${finalState}`);

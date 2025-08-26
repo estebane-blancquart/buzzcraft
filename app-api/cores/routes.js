@@ -105,12 +105,16 @@ router.get("/projects", async (req, res) => {
           const content = await readFile(projectFile, "utf8");
           const projectData = JSON.parse(content);
 
+          // ✅ FIX: Extraire depuis la bonne structure
+          // Le fichier contient: { success: true, data: { id, name, state, ... } }
+          const project = projectData.data || projectData;
+
           projects.push({
-            id: projectData.id,
-            name: projectData.name,
-            state: projectData.state,
-            template: projectData.template,
-            created: projectData.created,
+            id: project.id,
+            name: project.name,
+            state: project.state,
+            template: project.template,
+            created: project.created,
           });
         } catch (error) {
           console.error(`Skipping ${folder}: ${error.message}`);

@@ -20,7 +20,7 @@ export async function detectDraftState(projectPath) {
     let confidence = 0;
     
     // Vérifier que project.json existe (condition DRAFT)
-    const projectFile = join(projectPath, 'project.json'); // ✅ Cross-platform path join
+    const projectFile = join(projectPath, 'project.json');
     console.log(`[DRAFT-DETECTOR] Checking project file: ${projectFile}`);
     const projectCheck = await readPath(projectFile);
     
@@ -36,12 +36,11 @@ export async function detectDraftState(projectPath) {
     }
 
     if (!projectCheck.data.exists) {
-      // Pas de project.json = pas DRAFT
       console.log(`[DRAFT-DETECTOR] Project file does not exist = NOT DRAFT`);
       return {
         success: true,
         data: {
-          state: null, // Pas DRAFT
+          state: null,
           confidence: 0,
           evidence: ['project.json does not exist'],
           timestamp: new Date().toISOString()
@@ -53,36 +52,34 @@ export async function detectDraftState(projectPath) {
     confidence += 40;
     console.log(`[DRAFT-DETECTOR] Project file exists`);
 
-    // Vérifier que ce n'est PAS BUILT (pas de services générés)
-    const appVisitorDir = join(projectPath, 'app-visitor'); // ✅ Cross-platform
+    // ✅ FIX: Vérifier code/app-visitor au lieu de app-visitor
+    const appVisitorDir = join(projectPath, 'code', 'app-visitor');
     console.log(`[DRAFT-DETECTOR] Checking app-visitor: ${appVisitorDir}`);
     const visitorCheck = await readPath(appVisitorDir);
 
     if (!visitorCheck.data.exists) {
-      evidence.push('no app-visitor directory (not built)');
+      evidence.push('no code/app-visitor directory (not built)');
       confidence += 30;
-      console.log(`[DRAFT-DETECTOR] No app-visitor = good for DRAFT`);
+      console.log(`[DRAFT-DETECTOR] No code/app-visitor = good for DRAFT`);
     } else {
-      // Si app-visitor existe, c'est plutôt BUILT
-      evidence.push('app-visitor directory exists (possibly built)');
+      evidence.push('code/app-visitor directory exists (possibly built)');
       confidence -= 20;
-      console.log(`[DRAFT-DETECTOR] App-visitor exists = possibly BUILT`);
+      console.log(`[DRAFT-DETECTOR] Code/app-visitor exists = possibly BUILT`);
     }
 
-    // Vérifier que ce n'est PAS BUILT (pas de server/)
-    const serverDir = join(projectPath, 'server'); // ✅ Cross-platform
+    // ✅ FIX: Vérifier code/server au lieu de server
+    const serverDir = join(projectPath, 'code', 'server');
     console.log(`[DRAFT-DETECTOR] Checking server: ${serverDir}`);
     const serverCheck = await readPath(serverDir);
 
     if (!serverCheck.data.exists) {
-      evidence.push('no server directory (not built)');
+      evidence.push('no code/server directory (not built)');
       confidence += 30;
-      console.log(`[DRAFT-DETECTOR] No server = good for DRAFT`);
+      console.log(`[DRAFT-DETECTOR] No code/server = good for DRAFT`);
     } else {
-      // Si server existe, c'est plutôt BUILT
-      evidence.push('server directory exists (possibly built)');
+      evidence.push('code/server directory exists (possibly built)');
       confidence -= 20;
-      console.log(`[DRAFT-DETECTOR] Server exists = possibly BUILT`);
+      console.log(`[DRAFT-DETECTOR] Code/server exists = possibly BUILT`);
     }
 
     // DRAFT = project.json existe + pas de build artifacts

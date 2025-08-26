@@ -165,11 +165,30 @@ export function useWorkflows() {
       try {
         console.log("🆕 CREATING PROJECT:", formData.name);
 
+        // ✅ GÉNÉRATION projectId conforme aux règles serveur
+        const projectId = formData.name
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9\-]/g, "-") // Remplace tout sauf a-z0-9-
+          .replace(/-+/g, "-") // Évite les doubles tirets
+          .replace(/^-+|-+$/g, ""); // Supprime tirets début/fin
+
+        // ✅ Validation côté client avant envoi
+        if (projectId.length < 3) {
+          throw new Error(
+            "Le nom du projet doit faire au moins 3 caractères une fois formaté"
+          );
+        }
+
         const data = await makeApiCall("projects", {
           method: "POST",
           body: JSON.stringify({
-            name: formData.name.trim(),
-            template: formData.template || "basic",
+            projectId: projectId, // ✅ REQUIS par parser
+            config: {
+              // ✅ WRAPPER config requis
+              name: formData.name.trim(),
+              template: formData.template || "basic",
+            },
           }),
         });
 
