@@ -234,6 +234,7 @@ router.patch("/projects/:id", async (req, res) => {
         join(projectPath, "app-manager"),
       ];
 
+      console.log("🔥 DEBUG servicesToClean:", servicesToClean);
       for (const servicePath of servicesToClean) {
         try {
           await rm(servicePath, { recursive: true, force: true });
@@ -300,7 +301,6 @@ router.put("/projects/:id/revert", async (req, res) => {
       join(projectPath, "server"),
       join(projectPath, "app-manager"),
     ];
-
     console.log(`[REVERT] Services to clean:`, servicesToClean);
 
     // Vérifier l'existence avant suppression

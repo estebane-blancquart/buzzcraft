@@ -6,12 +6,12 @@ import ProjectsModule from "@pages/dashboard/projects/ProjectsModule.jsx";
 import TerminalModule from "@pages/dashboard/terminal/TerminalModule.jsx";
 import NewProjectModal from "@pages/dashboard/projects/NewProjectModal.jsx";
 import ConfirmModal from "@pages/dashboard/projects/ConfirmModal.jsx";
+import "./Dashboard.scss";
 
 function Dashboard() {
   // Hooks métier
   const dashboard = useDashboard();
   const workflows = useWorkflows();
-  
 
   // Projets filtrés selon l'état dashboard
   const filteredProjects = useMemo(
