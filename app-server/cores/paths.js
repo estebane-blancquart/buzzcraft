@@ -1,253 +1,169 @@
-import { resolve, dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-import { stat } from 'fs/promises';
-
 /**
- * Résolution sécurisée de paths absolus pour BuzzCraft - VERSION PIXEL PARFAIT
+ * Générateur de chemins système - VERSION PIXEL PARFAIT
  * @module paths
- * @description Gestion centralisée des chemins avec validation et sécurité
+ * @description Génération sécurisée des chemins de fichiers et dossiers
  */
 
-// Résolution du chemin racine
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_ROOT = resolve(__dirname, '../..');
-
-// Paths de base du projet
-const PATHS = {
-  root: PROJECT_ROOT,
-  serverData: resolve(PROJECT_ROOT, 'app-server/data'),
-  inputs: resolve(PROJECT_ROOT, 'app-server/data/inputs'),
-  outputs: resolve(PROJECT_ROOT, 'app-server/data/outputs'),
-  templates: resolve(PROJECT_ROOT, 'app-server/data/inputs/templates'),
-  schemas: resolve(PROJECT_ROOT, 'app-server/data/inputs/schemas')
-};
+import { resolve, join, normalize } from 'path';
+import { PATHS, validateProjectId } from './constants.js';
 
 /**
- * Génère le path absolu vers un projet
- * @param {string} projectId - Identifiant du projet
- * @returns {string} Path absolu vers le dossier projet
+ * Génère le chemin absolu vers le dossier d'un projet
+ * @param {string} projectId - ID du projet
+ * @returns {string} Chemin absolu vers le dossier projet
  * @throws {ValidationError} Si projectId invalide
  * 
  * @example
  * const path = getProjectPath('mon-site');
- * // Returns: '/absolute/path/to/outputs/mon-site'
+ * // Returns: '/absolute/path/to/app-server/data/outputs/mon-site'
  */
 export function getProjectPath(projectId) {
-  console.log(`[PATH-RESOLVER] Resolving project path: ${projectId}`);
+  console.log(`[PATHS] Resolving project path for: ${projectId}`);
   
-  validateProjectId(projectId);
+  // Validation du projectId
+  const validation = validateProjectId(projectId);
+  if (!validation.valid) {
+    throw new Error(`ValidationError: ${validation.error}`);
+  }
   
-  const resolvedPath = resolve(PATHS.outputs, projectId);
-  console.log(`[PATH-RESOLVER] Project path resolved: ${resolvedPath}`);
+  const projectPath = join(PATHS.dataOutputs, projectId);
+  console.log(`[PATHS] Project path resolved: ${projectPath}`);
   
-  return resolvedPath;
+  return projectPath;
 }
 
 /**
- * Génère le path vers un fichier dans un projet
- * @param {string} projectId - Identifiant du projet
- * @param {string} filename - Nom du fichier
- * @returns {string} Path absolu vers le fichier projet
- * @throws {ValidationError} Si paramètres invalides
+ * Génère le chemin absolu vers le fichier project.json d'un projet
+ * @param {string} projectId - ID du projet
+ * @returns {string} Chemin absolu vers project.json
+ * @throws {ValidationError} Si projectId invalide
  * 
  * @example
- * const path = getProjectFilePath('mon-site', 'project.json');
+ * const path = getProjectFilePath('mon-site');
  * // Returns: '/absolute/path/to/outputs/mon-site/project.json'
  */
-export function getProjectFilePath(projectId, filename) {
-  console.log(`[PATH-RESOLVER] Resolving project file: ${projectId}/${filename}`);
+export function getProjectFilePath(projectId) {
+  console.log(`[PATHS] Resolving project file path for: ${projectId}`);
   
-  validateProjectId(projectId);
-  validateFilename(filename);
-  
-  const resolvedPath = resolve(getProjectPath(projectId), filename);
-  console.log(`[PATH-RESOLVER] Project file path resolved: ${resolvedPath}`);
-  
-  return resolvedPath;
-}
-
-/**
- * Génère un path pour un service généré dans un projet
- * @param {string} projectId - Identifiant du projet
- * @param {string} servicePath - Chemin du service (ex: 'app-visitor/package.json')
- * @returns {string} Path absolu vers le service généré
- * @throws {ValidationError} Si paramètres manquants
- * 
- * @example
- * const servicePath = getGeneratedServicePath('mon-site', 'app-visitor/src/App.tsx');
- * // Returns: '/absolute/path/to/outputs/mon-site/app-visitor/src/App.tsx'
- */
-export function getGeneratedServicePath(projectId, servicePath) {
-  console.log(`[PATH-RESOLVER] Resolving generated service: ${projectId}/${servicePath}`);
-  
-  validateProjectId(projectId);
-  validateServicePath(servicePath);
-  
-  const resolvedPath = resolve(getProjectPath(projectId), servicePath);
-  console.log(`[PATH-RESOLVER] Generated service path resolved: ${resolvedPath}`);
-  
-  return resolvedPath;
-}
-
-/**
- * Validation rapide qu'un chemin existe (version optimisée)
- * @param {string} path - Chemin à vérifier
- * @returns {Promise<{success: boolean, data: {exists: boolean}}>} Résultat de vérification
- * 
- * @example
- * const result = await validatePathExists('./project.json');
- * if (result.success && result.data.exists) {
- *   console.log('Path exists!');
- * }
- */
-export async function validatePathExists(path) {
-  console.log(`[PATH-RESOLVER] Validating path existence: ${path}`);
-  
-  try {
-    validatePathString(path);
-    
-    await stat(path);
-    
-    console.log(`[PATH-RESOLVER] Path exists: ${path}`);
-    return {
-      success: true,
-      data: { exists: true }
-    };
-    
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      console.log(`[PATH-RESOLVER] Path does not exist: ${path}`);
-      return {
-        success: true,
-        data: { exists: false }
-      };
-    }
-    
-    console.log(`[PATH-RESOLVER] Path validation failed: ${error.message}`);
-    return {
-      success: false,
-      error: `Path validation failed: ${error.message}`
-    };
+  // Validation du projectId
+  const validation = validateProjectId(projectId);
+  if (!validation.valid) {
+    throw new Error(`ValidationError: ${validation.error}`);
   }
+  
+  const projectPath = getProjectPath(projectId);
+  const projectFilePath = join(projectPath, 'project.json');
+  
+  console.log(`[PATHS] Project file path resolved: ${projectFilePath}`);
+  
+  return projectFilePath;
 }
 
 /**
- * Génère le path vers un template spécifique
- * @param {string} templateType - Type de template ('project', 'component', etc.)
+ * Génère le chemin vers un template de projet
  * @param {string} templateId - ID du template
- * @returns {string} Path absolu vers le template
- * @throws {ValidationError} Si paramètres invalides
+ * @returns {string} Chemin absolu vers le template
+ * @throws {ValidationError} Si templateId invalide
  * 
  * @example
- * const path = getTemplatePath('project', 'basic');
- * // Returns: '/absolute/path/to/templates/project/basic.json'
+ * const path = getProjectTemplatePath('basic');
+ * // Returns: '/absolute/path/to/templates/structure/projects/basic.json'
  */
-export function getTemplatePath(templateType, templateId) {
-  console.log(`[PATH-RESOLVER] Resolving template: ${templateType}/${templateId}`);
+export function getProjectTemplatePath(templateId) {
+  console.log(`[PATHS] Resolving project template path for: ${templateId}`);
   
-  validateTemplateType(templateType);
-  validateTemplateId(templateId);
+  // Validation du templateId
+  if (!templateId || typeof templateId !== 'string') {
+    throw new Error('ValidationError: templateId must be non-empty string');
+  }
   
-  const templatePath = resolve(PATHS.templates, templateType, `${templateId}.json`);
-  console.log(`[PATH-RESOLVER] Template path resolved: ${templatePath}`);
+  if (templateId.trim().length === 0) {
+    throw new Error('ValidationError: templateId cannot be empty or whitespace only');
+  }
+  
+  // Pattern sécurisé pour template ID
+  if (!/^[a-z0-9-_]+$/i.test(templateId)) {
+    throw new Error('ValidationError: templateId must contain only letters, numbers, hyphens and underscores');
+  }
+  
+  const templatePath = join(PATHS.projectTemplates, `${templateId}.json`);
+  console.log(`[PATHS] Project template path resolved: ${templatePath}`);
   
   return templatePath;
 }
 
 /**
- * Génère le path vers un schéma de validation
- * @param {string} schemaId - ID du schéma
- * @returns {string} Path absolu vers le schéma
- * @throws {ValidationError} Si schemaId invalide
+ * Génère le chemin vers un template de container
+ * @param {string} containerType - Type de container (div, list, form)
+ * @returns {string} Chemin absolu vers le template de container
+ * @throws {ValidationError} Si containerType invalide
  * 
  * @example
- * const path = getSchemaPath('project-v1');
- * // Returns: '/absolute/path/to/schemas/project-v1.json'
+ * const path = getContainerTemplatePath('list');
+ * // Returns: '/absolute/path/to/templates/structure/containers/list.json'
  */
-export function getSchemaPath(schemaId) {
-  console.log(`[PATH-RESOLVER] Resolving schema: ${schemaId}`);
+export function getContainerTemplatePath(containerType) {
+  console.log(`[PATHS] Resolving container template path for: ${containerType}`);
   
-  validateSchemaId(schemaId);
+  // Validation du containerType
+  if (!containerType || typeof containerType !== 'string') {
+    throw new Error('ValidationError: containerType must be non-empty string');
+  }
   
-  const schemaPath = resolve(PATHS.schemas, `${schemaId}.json`);
-  console.log(`[PATH-RESOLVER] Schema path resolved: ${schemaPath}`);
+  const validContainerTypes = ['div', 'list', 'form'];
+  if (!validContainerTypes.includes(containerType)) {
+    throw new Error(`ValidationError: containerType must be one of: ${validContainerTypes.join(', ')}`);
+  }
   
-  return schemaPath;
+  const templatePath = join(PATHS.containerTemplates, `${containerType}.json`);
+  console.log(`[PATHS] Container template path resolved: ${templatePath}`);
+  
+  return templatePath;
 }
 
 /**
- * Génère le path vers les templates de code
+ * Génère le chemin vers un template de composant
+ * @param {string} componentType - Type de composant (heading, paragraph, button, etc.)
+ * @returns {string} Chemin absolu vers le template de composant
+ * @throws {ValidationError} Si componentType invalide
+ * 
+ * @example
+ * const path = getComponentTemplatePath('heading');
+ * // Returns: '/absolute/path/to/templates/structure/components/heading.json'
+ */
+export function getComponentTemplatePath(componentType) {
+  console.log(`[PATHS] Resolving component template path for: ${componentType}`);
+  
+  // Validation du componentType
+  if (!componentType || typeof componentType !== 'string') {
+    throw new Error('ValidationError: componentType must be non-empty string');
+  }
+  
+  const validComponentTypes = ['heading', 'paragraph', 'button', 'image', 'video', 'link'];
+  if (!validComponentTypes.includes(componentType)) {
+    throw new Error(`ValidationError: componentType must be one of: ${validComponentTypes.join(', ')}`);
+  }
+  
+  const templatePath = join(PATHS.componentTemplates, `${componentType}.json`);
+  console.log(`[PATHS] Component template path resolved: ${templatePath}`);
+  
+  return templatePath;
+}
+
+/**
+ * Génère le chemin vers un template de code
  * @param {string} relativePath - Chemin relatif dans templates/code
- * @returns {string} Path absolu vers le template de code
+ * @returns {string} Chemin absolu vers le template de code
  * @throws {ValidationError} Si relativePath invalide
  * 
  * @example
- * const path = getCodeTemplatePath('app-visitor/src/App.tsx.hbs');
- * // Returns: '/absolute/path/to/templates/code/app-visitor/src/App.tsx.hbs'
+ * const path = getCodeTemplatePath('app-visitor/package.json.hbs');
+ * // Returns: '/absolute/path/to/templates/code/app-visitor/package.json.hbs'
  */
 export function getCodeTemplatePath(relativePath) {
-  console.log(`[PATH-RESOLVER] Resolving code template: ${relativePath}`);
+  console.log(`[PATHS] Resolving code template path for: ${relativePath}`);
   
-  validateRelativePath(relativePath);
-  
-  const codePath = resolve(PATHS.templates, 'code', relativePath);
-  console.log(`[PATH-RESOLVER] Code template path resolved: ${codePath}`);
-  
-  return codePath;
-}
-
-// === FONCTIONS DE VALIDATION ===
-
-/**
- * Valide un ID de projet
- * @private
- */
-function validateProjectId(projectId) {
-  if (!projectId || typeof projectId !== 'string') {
-    throw new Error('ValidationError: projectId must be non-empty string');
-  }
-  
-  if (projectId.trim().length === 0) {
-    throw new Error('ValidationError: projectId cannot be empty or whitespace only');
-  }
-  
-  // Validation pattern sécurisé
-  if (!/^[a-z0-9-]+$/.test(projectId)) {
-    throw new Error('ValidationError: projectId must contain only lowercase letters, numbers, and hyphens');
-  }
-}
-
-/**
- * Valide un type de template
- * @private
- */
-function validateTemplateType(templateType) {
-  if (!templateType || typeof templateType !== 'string') {
-    throw new Error('ValidationError: templateType must be non-empty string');
-  }
-  
-  const validTypes = ['project', 'component', 'container', 'layout'];
-  if (!validTypes.includes(templateType)) {
-    throw new Error(`ValidationError: templateType must be one of: ${validTypes.join(', ')}`);
-  }
-}
-
-/**
- * Valide un ID de template
- * @private
- */
-function validateTemplateId(templateId) {
-  if (!templateId || typeof templateId !== 'string') {
-    throw new Error('ValidationError: templateId must be non-empty string');
-  }
-}
-
-/**
- * Valide un chemin relatif
- * @private
- */
-function validateRelativePath(relativePath) {
+  // Validation du relativePath
   if (!relativePath || typeof relativePath !== 'string') {
     throw new Error('ValidationError: relativePath must be non-empty string');
   }
@@ -255,13 +171,35 @@ function validateRelativePath(relativePath) {
   if (relativePath.trim().length === 0) {
     throw new Error('ValidationError: relativePath cannot be empty or whitespace only');
   }
+  
+  // Sécurité : pas de traversée de répertoires
+  if (relativePath.includes('..') || relativePath.includes('~')) {
+    throw new Error('ValidationError: relativePath contains unsafe characters');
+  }
+  
+  // Normalisation du chemin relatif
+  const normalizedRelativePath = normalize(relativePath).replace(/\\/g, '/');
+  
+  const templatePath = join(PATHS.codeTemplates, normalizedRelativePath);
+  console.log(`[PATHS] Code template path resolved: ${templatePath}`);
+  
+  return templatePath;
 }
 
 /**
- * Valide un ID de schema
- * @private
+ * Génère le chemin vers un schéma de validation
+ * @param {string} schemaId - ID du schéma
+ * @returns {string} Chemin absolu vers le schéma
+ * @throws {ValidationError} Si schemaId invalide
+ * 
+ * @example
+ * const path = getSchemaPath('project-v1');
+ * // Returns: '/absolute/path/to/schemas/project-v1.json'
  */
-function validateSchemaId(schemaId) {
+export function getSchemaPath(schemaId) {
+  console.log(`[PATHS] Resolving schema path for: ${schemaId}`);
+  
+  // Validation du schemaId
   if (!schemaId || typeof schemaId !== 'string') {
     throw new Error('ValidationError: schemaId must be non-empty string');
   }
@@ -269,65 +207,134 @@ function validateSchemaId(schemaId) {
   if (schemaId.trim().length === 0) {
     throw new Error('ValidationError: schemaId cannot be empty or whitespace only');
   }
-}
-
-/**
- * Valide un nom de fichier
- * @private
- */
-function validateFilename(filename) {
-  if (!filename || typeof filename !== 'string') {
-    throw new Error('ValidationError: filename must be non-empty string');
+  
+  // Pattern sécurisé pour schema ID
+  if (!/^[a-z0-9-_]+$/i.test(schemaId)) {
+    throw new Error('ValidationError: schemaId must contain only letters, numbers, hyphens and underscores');
   }
   
-  if (filename.trim().length === 0) {
-    throw new Error('ValidationError: filename cannot be empty or whitespace only');
-  }
-}
-
-/**
- * Valide un chemin de service
- * @private
- */
-function validateServicePath(servicePath) {
-  if (!servicePath || typeof servicePath !== 'string') {
-    throw new Error('ValidationError: servicePath must be non-empty string');
-  }
+  const schemaPath = join(PATHS.schemas, `${schemaId}.json`);
+  console.log(`[PATHS] Schema path resolved: ${schemaPath}`);
   
-  if (servicePath.trim().length === 0) {
-    throw new Error('ValidationError: servicePath cannot be empty or whitespace only');
-  }
+  return schemaPath;
 }
 
 /**
- * Valide une chaîne de caractères path
- * @private
- */
-function validatePathString(path) {
-  if (!path || typeof path !== 'string') {
-    throw new Error('ValidationError: path must be non-empty string');
-  }
-  
-  if (path.trim().length === 0) {
-    throw new Error('ValidationError: path cannot be empty or whitespace only');
-  }
-}
-
-// === ALIASES UTILITAIRES ===
-
-/**
- * Alias pour getProjectPath (raccourci fréquent)
+ * Génère le chemin vers un fichier de backup
  * @param {string} projectId - ID du projet
- * @returns {string} Path du projet
+ * @param {string} [timestamp] - Timestamp personnalisé (optionnel)
+ * @returns {string} Chemin absolu vers le fichier de backup
+ * @throws {ValidationError} Si projectId invalide
+ * 
+ * @example
+ * const path = getBackupPath('mon-site');
+ * // Returns: '/absolute/path/to/backups/mon-site-20231215143022.backup'
  */
-export const projectPath = getProjectPath;
+export function getBackupPath(projectId, timestamp) {
+  console.log(`[PATHS] Resolving backup path for: ${projectId}`);
+  
+  // Validation du projectId
+  const validation = validateProjectId(projectId);
+  if (!validation.valid) {
+    throw new Error(`ValidationError: ${validation.error}`);
+  }
+  
+  // Génération du timestamp si non fourni
+  const backupTimestamp = timestamp || generateTimestamp();
+  
+  const backupFileName = `${projectId}-${backupTimestamp}.backup`;
+  const backupPath = join(PATHS.backups, backupFileName);
+  
+  console.log(`[PATHS] Backup path resolved: ${backupPath}`);
+  
+  return backupPath;
+}
 
 /**
- * Alias pour getProjectFilePath (raccourci fréquent)
- * @param {string} projectId - ID du projet
- * @param {string} filename - Nom du fichier
- * @returns {string} Path du fichier projet
+ * Génère le chemin vers un fichier de log
+ * @param {string} logType - Type de log (error, access, debug, etc.)
+ * @param {string} [date] - Date au format YYYY-MM-DD (optionnel, défaut: aujourd'hui)
+ * @returns {string} Chemin absolu vers le fichier de log
+ * @throws {ValidationError} Si logType invalide
+ * 
+ * @example
+ * const path = getLogPath('error');
+ * // Returns: '/absolute/path/to/logs/error-2023-12-15.log'
  */
-export const projectFile = getProjectFilePath;
+export function getLogPath(logType, date) {
+  console.log(`[PATHS] Resolving log path for: ${logType}`);
+  
+  // Validation du logType
+  if (!logType || typeof logType !== 'string') {
+    throw new Error('ValidationError: logType must be non-empty string');
+  }
+  
+  const validLogTypes = ['error', 'access', 'debug', 'workflow', 'system'];
+  if (!validLogTypes.includes(logType)) {
+    throw new Error(`ValidationError: logType must be one of: ${validLogTypes.join(', ')}`);
+  }
+  
+  // Génération de la date si non fournie
+  const logDate = date || new Date().toISOString().split('T')[0];
+  
+  const logFileName = `${logType}-${logDate}.log`;
+  const logPath = join(PATHS.logs, logFileName);
+  
+  console.log(`[PATHS] Log path resolved: ${logPath}`);
+  
+  return logPath;
+}
 
-console.log(`[PATH-RESOLVER] Path resolver loaded successfully - PIXEL PERFECT VERSION`);
+/**
+ * Normalise un chemin en sécurisant les caractères dangereux
+ * @param {string} inputPath - Chemin à normaliser
+ * @returns {string} Chemin normalisé et sécurisé
+ * @throws {ValidationError} Si le chemin contient des caractères dangereux
+ * 
+ * @example
+ * const safe = normalizeSafePath('./mon-projet/../autre');
+ * // Throws: ValidationError (traversée de répertoires détectée)
+ */
+export function normalizeSafePath(inputPath) {
+  console.log(`[PATHS] Normalizing path: ${inputPath}`);
+  
+  if (!inputPath || typeof inputPath !== 'string') {
+    throw new Error('ValidationError: inputPath must be non-empty string');
+  }
+  
+  // Détection de caractères dangereux
+  const dangerousPatterns = ['..', '~', '$', '`', '|', ';', '&'];
+  for (const pattern of dangerousPatterns) {
+    if (inputPath.includes(pattern)) {
+      throw new Error(`ValidationError: inputPath contains dangerous pattern: ${pattern}`);
+    }
+  }
+  
+  // Normalisation
+  const normalizedPath = normalize(inputPath).replace(/\\/g, '/');
+  
+  console.log(`[PATHS] Path normalized: ${normalizedPath}`);
+  
+  return normalizedPath;
+}
+
+// === UTILITAIRES PRIVÉS ===
+
+/**
+ * Génère un timestamp pour les noms de fichiers
+ * @returns {string} Timestamp au format YYYYMMDDHHMMSS
+ * @private
+ */
+function generateTimestamp() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  return `${year}${month}${day}${hours}${minutes}${seconds}`;
+}
+
+console.log(`[PATHS] Path generator loaded successfully - PIXEL PERFECT VERSION`);

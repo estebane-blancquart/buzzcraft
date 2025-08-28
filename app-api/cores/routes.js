@@ -11,7 +11,6 @@ import { buildWorkflow } from "../../app-server/engines/build-coordinator.js";
 // import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
 // import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
 // import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
-import { validateProjectSchema } from "../../app-server/cores/schema-validator.js";
 
 /**
  * Routes HTTP pour gestion des projets avec Pattern 13 CALLS
@@ -34,49 +33,47 @@ const WORKFLOW_COORDINATORS = {
  * Gestionnaire générique Pattern 13 CALLS complet
  * @param {express.Request} req - Requête HTTP
  * @param {express.Response} res - Réponse HTTP
- * @returns {Promise<void>}
  */
 async function handleWorkflowRequest(req, res) {
-  console.log(`[ROUTES] Starting Pattern 13 CALLS for ${req.method} ${req.originalUrl}`);
-  
+  console.log(`[ROUTES] Pattern 13 CALLS initiated for ${req.method} ${req.path}`);
+
   try {
     // CALL 1: Request Parser
-    console.log(`[ROUTES] CALL 1: Parsing request...`);
-    const requestResult = await request(req);
-    if (!requestResult.success) {
-      console.log(`[ROUTES] CALL 1 failed: ${requestResult.error}`);
+    console.log(`[ROUTES] CALL 1: Parsing incoming request...`);
+    const parsedRequest = await request(req);
+    if (!parsedRequest.success) {
+      console.log(`[ROUTES] CALL 1 failed: ${parsedRequest.error}`);
       return res.status(400).json({
         success: false,
-        error: requestResult.error
+        error: `Request parsing failed: ${parsedRequest.error}`
       });
     }
 
-    // CALL 2: Request Processor  
-    console.log(`[ROUTES] CALL 2: Processing request data...`);
-    const processedRequest = await processRequest(requestResult.data);
+    // CALL 2: Request Processor
+    console.log(`[ROUTES] CALL 2: Processing parsed request...`);
+    const processedRequest = await processRequest(parsedRequest);
     if (!processedRequest.success) {
       console.log(`[ROUTES] CALL 2 failed: ${processedRequest.error}`);
       return res.status(400).json({
         success: false,
-        error: processedRequest.error
+        error: `Request processing failed: ${processedRequest.error}`
       });
     }
 
-    // CALLS 3-11: Workflow Coordinator (app-server)
+    // CALL 3-10: Workflow Execution (handled by coordinator)
     const { action, projectId, config } = processedRequest.data;
-    console.log(`[ROUTES] CALLS 3-11: Executing ${action} workflow for project ${projectId}`);
+    const coordinator = WORKFLOW_COORDINATORS[action];
     
-    const workflowFn = WORKFLOW_COORDINATORS[action];
-    if (!workflowFn) {
-      const error = `Unknown workflow action: ${action}`;
-      console.log(`[ROUTES] Workflow error: ${error}`);
+    if (!coordinator) {
+      console.log(`[ROUTES] Unknown workflow action: ${action}`);
       return res.status(400).json({
         success: false,
-        error
+        error: `Unsupported workflow action: ${action}`
       });
     }
 
-    const workflowResult = await workflowFn(projectId, config);
+    console.log(`[ROUTES] CALL 3-10: Executing ${action} workflow...`);
+    const workflowResult = await coordinator(projectId, config);
     
     if (!workflowResult.success) {
       console.log(`[ROUTES] Workflow ${action} failed: ${workflowResult.error}`);
@@ -86,22 +83,22 @@ async function handleWorkflowRequest(req, res) {
       });
     }
 
-    // CALL 12: Response Parser
-    console.log(`[ROUTES] CALL 12: Parsing workflow result...`);
+    // CALL 11: Response Parser
+    console.log(`[ROUTES] CALL 11: Parsing workflow result...`);
     const parsedResponse = await response(workflowResult);
     if (!parsedResponse.success) {
-      console.log(`[ROUTES] CALL 12 failed: ${parsedResponse.error}`);
+      console.log(`[ROUTES] CALL 11 failed: ${parsedResponse.error}`);
       return res.status(500).json({
         success: false,
         error: `Response parsing failed: ${parsedResponse.error}`
       });
     }
 
-    // CALL 13: Response Processor
-    console.log(`[ROUTES] CALL 13: Processing final response...`);
+    // CALL 12: Response Processor
+    console.log(`[ROUTES] CALL 12: Processing final response...`);
     const finalResponse = await processResponse(parsedResponse);
     if (!finalResponse.success) {
-      console.log(`[ROUTES] CALL 13 failed: ${finalResponse.error}`);
+      console.log(`[ROUTES] CALL 12 failed: ${finalResponse.error}`);
       return res.status(500).json({
         success: false,
         error: `Response processing failed: ${finalResponse.error}`
@@ -236,19 +233,11 @@ router.get("/projects/:id", async (req, res) => {
       const content = await readFile(projectFile, "utf8");
       const projectData = JSON.parse(content);
 
-      // Validation du schéma
-      const schemaValidation = validateProjectSchema(projectData);
-
       console.log(`[ROUTES] Project ${projectId} loaded successfully`);
       res.json({
         success: true,
         data: {
           project: projectData,
-          validation: {
-            valid: schemaValidation.valid,
-            errors: schemaValidation.errors || [],
-            warnings: schemaValidation.warnings || []
-          },
           timestamp: new Date().toISOString()
         }
       });
@@ -272,7 +261,7 @@ router.get("/projects/:id", async (req, res) => {
 router.post("/projects", handleWorkflowRequest);
 
 /**
- * POST /projects/:id/build - Builder un projet (BUILD workflow)
+ * POST /projects/:id/build - Builder un projet (BUILD workflow)  
  */
 router.post("/projects/:id/build", handleWorkflowRequest);
 
@@ -287,7 +276,7 @@ router.post("/projects/:id/deploy", handleWorkflowRequest);
 router.post("/projects/:id/start", handleWorkflowRequest);
 
 /**
- * POST /projects/:id/stop - Arrêter un projet (STOP workflow)
+ * POST /projects/:id/stop - Arrêter un projet (STOP workflow) 
  */
 router.post("/projects/:id/stop", handleWorkflowRequest);
 
@@ -297,67 +286,10 @@ router.post("/projects/:id/stop", handleWorkflowRequest);
 router.delete("/projects/:id", handleWorkflowRequest);
 
 /**
- * PATCH /projects/:id - Modification partielle d'un projet
- * Note: Cette route ne passe pas par le Pattern 13 CALLS car c'est une opération de lecture/écriture directe
+ * GET /templates - Lister les templates disponibles
  */
-router.patch("/projects/:id", async (req, res) => {
-  const projectId = req.params.id;
-  console.log(`[ROUTES] PATCH /projects/${projectId} - Partial project update`);
-
-  // Validation des paramètres
-  const validation = validateRouteParams(projectId);
-  if (!validation.valid) {
-    return res.status(400).json({
-      success: false,
-      error: validation.error
-    });
-  }
-
-  try {
-    const projectPath = `../app-server/data/outputs/${projectId}`;
-    const projectFile = join(projectPath, "project.json");
-    const updates = req.body;
-
-    // Charger le projet existant
-    const content = await readFile(projectFile, "utf8");
-    const projectData = JSON.parse(content);
-
-    // Merger les modifications
-    const updatedProject = {
-      ...projectData,
-      ...updates,
-      lastModified: new Date().toISOString()
-    };
-
-    // Sauvegarder
-    await writeFile(projectFile, JSON.stringify(updatedProject, null, 2), "utf8");
-
-    console.log(`[ROUTES] Project ${projectId} updated successfully`);
-    res.json({
-      success: true,
-      data: {
-        project: updatedProject,
-        message: `Project ${projectId} updated successfully`
-      }
-    });
-
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      res.status(404).json({
-        success: false,
-        error: `Project ${projectId} not found`
-      });
-    } else {
-      handleRouteError(res, error, `update project ${projectId}`);
-    }
-  }
-});
-
-/**
- * GET /projects/meta/templates - Lister les templates disponibles
- */
-router.get("/projects/meta/templates", async (req, res) => {
-  console.log(`[ROUTES] GET /projects/meta/templates - Loading available templates`);
+router.get("/templates", async (req, res) => {
+  console.log(`[ROUTES] GET /templates - Loading available templates`);
 
   try {
     // Cette route sera implémentée quand les templates seront finalisés
@@ -376,58 +308,6 @@ router.get("/projects/meta/templates", async (req, res) => {
 
   } catch (error) {
     handleRouteError(res, error, "load templates");
-  }
-});
-
-/**
- * POST /projects/:id/validate - Validation d'un projet sans modification
- */
-router.post("/projects/:id/validate", async (req, res) => {
-  const projectId = req.params.id;
-  console.log(`[ROUTES] POST /projects/${projectId}/validate - Validating project schema`);
-
-  // Validation des paramètres
-  const validation = validateRouteParams(projectId);
-  if (!validation.valid) {
-    return res.status(400).json({
-      success: false,
-      error: validation.error
-    });
-  }
-
-  try {
-    const projectPath = `../app-server/data/outputs/${projectId}`;
-    const projectFile = join(projectPath, "project.json");
-
-    const content = await readFile(projectFile, "utf8");
-    const projectData = JSON.parse(content);
-
-    const schemaValidation = validateProjectSchema(projectData);
-
-    console.log(`[ROUTES] Project ${projectId} validation completed`);
-    res.json({
-      success: true,
-      data: {
-        projectId,
-        validation: {
-          valid: schemaValidation.valid,
-          errors: schemaValidation.errors || [],
-          warnings: schemaValidation.warnings || [],
-          score: schemaValidation.score || 0
-        },
-        timestamp: new Date().toISOString()
-      }
-    });
-
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      res.status(404).json({
-        success: false,
-        error: `Project ${projectId} not found`
-      });
-    } else {
-      handleRouteError(res, error, `validate project ${projectId}`);
-    }
   }
 });
 

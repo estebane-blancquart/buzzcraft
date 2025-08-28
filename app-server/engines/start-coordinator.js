@@ -1,29 +1,56 @@
-import { getProjectPath } from '../cores/path-resolver.js';
-
-/*
- * FAIT QUOI : Orchestre workflow START (OFFLINE → ONLINE) - VERSION MIGRÉE
- * REÇOIT : projectId: string, config: object
- * RETOURNE : { success: boolean, data: object }
- * ERREURS : ValidationError si paramètres manquants
+/**
+ * Coordinateur START - Workflow OFFLINE → ONLINE - VERSION MOCK
+ * @module start-coordinator
+ * @description MOCK - Démarrage non implémenté, retourne succès simulé
  */
 
+/**
+ * MOCK - Orchestre le workflow START (OFFLINE → ONLINE)
+ * @param {string} projectId - ID du projet à démarrer
+ * @param {object} [config={}] - Configuration de démarrage
+ * @returns {Promise<{success: boolean, data: object}>} Résultat simulé
+ */
 export async function startWorkflow(projectId, config = {}) {
-  console.log(`[START] CALL 3: startWorkflow called for project: ${projectId}`);
+  console.log(`[START] MOCK: startWorkflow called for project: ${projectId}`);
   
+  // Validation basique
   if (!projectId || typeof projectId !== 'string') {
-    throw new Error('ValidationError: projectId must be non-empty string');
+    return {
+      success: false,
+      error: 'projectId must be non-empty string'
+    };
   }
-
-  const projectPath = getProjectPath(projectId);
-  console.log(`[START] Project path resolved: ${projectPath}`);
-
+  
+  // Simulation d'un délai de démarrage
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  console.log(`[START] MOCK: Start simulated successfully for ${projectId}`);
+  
   return {
     success: true,
     data: {
-      projectId,
-      fromState: 'OFFLINE',
-      toState: 'ONLINE',
-      duration: Math.floor(Math.random() * 30) + 10
+      project: {
+        id: projectId,
+        state: 'ONLINE'
+      },
+      workflow: {
+        action: 'START',
+        projectId,
+        initialState: 'OFFLINE',
+        finalState: 'ONLINE',
+        mock: true,
+        completedAt: new Date().toISOString()
+      },
+      services: [
+        {
+          name: `${projectId}-visitor`,
+          status: 'running',
+          port: 3000,
+          url: `http://localhost:3000`
+        }
+      ]
     }
   };
 }
+
+console.log(`[START] Start coordinator loaded successfully - MOCK VERSION`);

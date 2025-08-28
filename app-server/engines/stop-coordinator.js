@@ -1,29 +1,55 @@
-import { getProjectPath } from '../cores/path-resolver.js';
-
-/*
- * FAIT QUOI : Orchestre workflow STOP (ONLINE → OFFLINE) - VERSION MIGRÉE
- * REÇOIT : projectId: string, config: object
- * RETOURNE : { success: boolean, data: object }
- * ERREURS : ValidationError si paramètres manquants
+/**
+ * Coordinateur STOP - Workflow ONLINE → OFFLINE - VERSION MOCK
+ * @module stop-coordinator
+ * @description MOCK - Arrêt non implémenté, retourne succès simulé
  */
 
+/**
+ * MOCK - Orchestre le workflow STOP (ONLINE → OFFLINE)
+ * @param {string} projectId - ID du projet à arrêter
+ * @param {object} [config={}] - Configuration d'arrêt
+ * @returns {Promise<{success: boolean, data: object}>} Résultat simulé
+ */
 export async function stopWorkflow(projectId, config = {}) {
-  console.log(`[STOP] CALL 3: stopWorkflow called for project: ${projectId}`);
+  console.log(`[STOP] MOCK: stopWorkflow called for project: ${projectId}`);
   
+  // Validation basique
   if (!projectId || typeof projectId !== 'string') {
-    throw new Error('ValidationError: projectId must be non-empty string');
+    return {
+      success: false,
+      error: 'projectId must be non-empty string'
+    };
   }
-
-  const projectPath = getProjectPath(projectId);
-  console.log(`[STOP] Project path resolved: ${projectPath}`);
-
+  
+  // Simulation d'un délai d'arrêt
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  console.log(`[STOP] MOCK: Stop simulated successfully for ${projectId}`);
+  
   return {
     success: true,
     data: {
-      projectId,
-      fromState: 'ONLINE',
-      toState: 'OFFLINE',
-      duration: Math.floor(Math.random() * 20) + 5
+      project: {
+        id: projectId,
+        state: 'OFFLINE'
+      },
+      workflow: {
+        action: 'STOP',
+        projectId,
+        initialState: 'ONLINE',
+        finalState: 'OFFLINE',
+        mock: true,
+        completedAt: new Date().toISOString()
+      },
+      services: [
+        {
+          name: `${projectId}-visitor`,
+          status: 'stopped',
+          previousPort: 3000
+        }
+      ]
     }
   };
 }
+
+console.log(`[STOP] Stop coordinator loaded successfully - MOCK VERSION`);

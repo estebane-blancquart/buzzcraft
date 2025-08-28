@@ -1,175 +1,342 @@
-import { readFile, stat } from "fs/promises";
-import { normalize } from "path";
+/**
+ * Lecture sécurisée de fichiers et dossiers - VERSION PIXEL PARFAIT
+ * @module reader
+ * @description I/O pur pour lecture filesystem avec gestion d'erreurs robuste
+ */
+
+import { readFile, readdir, stat, access } from 'fs/promises';
+import { normalize, resolve } from 'path';
+import { constants } from 'fs';
 
 /**
- * Analyse existence et lit contenu d'un chemin - VERSION PIXEL PARFAIT
- * @param {string} path - Chemin vers fichier/dossier à analyser
- * @param {object} [options={}] - Options de lecture (encoding, etc.)
- * @returns {Promise<{success: boolean, data: object}>} Résultat avec métadonnées
- * @throws {ValidationError} Si path manquant ou invalide
+ * Lit le contenu d'un fichier avec validation et métadonnées
+ * @param {string} path - Chemin vers le fichier à lire
+ * @param {object} [options={}] - Options de lecture
+ * @param {string} [options.encoding='utf8'] - Encodage du fichier
+ * @param {boolean} [options.parseJson=false] - Parser automatiquement le JSON
+ * @param {boolean} [options.includeStats=false] - Inclure stats du fichier
+ * @returns {Promise<{success: boolean, data: object}>} Résultat avec contenu et métadonnées
+ * @throws {ValidationError} Si paramètres manquants ou invalides
  * 
  * @example
- * const result = await readPath('./project.json');
+ * // Lecture simple
+ * const result = await readPath('./config.json');
  * if (result.success && result.data.exists) {
  *   console.log(result.data.content);
  * }
+ * 
+ * // Lecture avec parsing JSON automatique
+ * const json = await readPath('./data.json', { parseJson: true });
+ * console.log(json.data.parsed);
  */
 export async function readPath(path, options = {}) {
-  console.log(`[REAL] readPath called with: ${path}`);
-
-  // CALL: Validation séparée pour SRP parfait
+  console.log(`[READER] Reading path: ${path}`);
+  
+  // Validation des paramètres
   validateReadPathInput(path, options);
 
   try {
-    // Normalisation cross-platform
     const normalizedPath = normalize(path);
-    console.log(`[READER] Normalized path: ${normalizedPath}`);
-
-    // Analyse existence et type
-    const stats = await stat(normalizedPath);
-    console.log(`[READER] File stats: exists=true, isFile=${stats.isFile()}, isDirectory=${stats.isDirectory()}`);
-
-    if (stats.isFile()) {
-      // Lecture fichier avec encoding par défaut
-      const encoding = options.encoding || "utf8";
-      const content = await readFile(normalizedPath, encoding);
-      
-      console.log(`[READER] File read successfully, size: ${content.length} chars`);
-      
-      return {
-        success: true,
-        data: {
-          exists: true,
-          type: "file",
-          content,
-          size: content.length,
-          encoding: encoding,
-          lastAccessed: new Date().toISOString()
-        }
-      };
-      
-    } else if (stats.isDirectory()) {
-      console.log(`[READER] Path is directory`);
-      
-      return {
-        success: true,
-        data: {
-          exists: true,
-          type: "directory",
-          lastAccessed: new Date().toISOString()
-        }
-      };
-      
-    } else {
-      console.log(`[READER] Path is other type (symlink, etc.)`);
-      
-      return {
-        success: true,
-        data: {
-          exists: true,
-          type: "other",
-          lastAccessed: new Date().toISOString()
-        }
-      };
-    }
+    const absolutePath = resolve(normalizedPath);
+    const encoding = options.encoding || 'utf8';
     
-  } catch (error) {
-    return handleReadError(error, path);
-  }
-}
-
-/**
- * Valide les paramètres d'entrée de readPath
- * @private
- * @param {string} path - Chemin à valider
- * @param {object} options - Options à valider
- * @throws {ValidationError} Si paramètres invalides
- */
-function validateReadPathInput(path, options) {
-  if (!path || typeof path !== "string") {
-    throw new Error("ValidationError: path must be non-empty string");
-  }
-  
-  if (path.trim().length === 0) {
-    throw new Error("ValidationError: path cannot be empty or whitespace only");
-  }
-  
-  if (options && typeof options !== "object") {
-    throw new Error("ValidationError: options must be an object");
-  }
-}
-
-/**
- * Gestion centralisée et précise des erreurs de lecture
- * @private
- * @param {Error} error - Erreur capturée
- * @param {string} path - Chemin qui a causé l'erreur
- * @returns {{success: boolean, data: object}} Réponse d'erreur formatée
- */
-function handleReadError(error, path) {
-  console.log(`[READER] Error accessing path: ${error.message} (code: ${error.code})`);
-  
-  // Gestion granulaire des codes d'erreur filesystem
-  switch (error.code) {
-    case "ENOENT":
-      console.log(`[READER] File does not exist`);
+    console.log(`[READER] Normalized path: ${normalizedPath}`);
+    
+    // Vérification existence avec permissions
+    const exists = await checkFileAccess(absolutePath);
+    
+    if (!exists.accessible) {
+      console.log(`[READER] File not accessible: ${exists.reason}`);
       return {
         success: true,
         data: {
           exists: false,
-          errorCode: "ENOENT",
-          reason: "File or directory not found"
+          accessible: false,
+          reason: exists.reason,
+          path: normalizedPath,
+          absolutePath
         }
       };
-      
-    case "EACCES":
-      console.log(`[READER] Permission denied`);
-      return {
-        success: false,
-        error: `Permission denied: ${path}`,
-        errorCode: "EACCES"
-      };
-      
-    case "EISDIR":
-      console.log(`[READER] Expected file but got directory`);
-      return {
-        success: false,
-        error: `Expected file but path is a directory: ${path}`,
-        errorCode: "EISDIR"
-      };
-      
-    case "EMFILE":
-    case "ENFILE":
-      console.log(`[READER] Too many open files`);
-      return {
-        success: false,
-        error: `System limit: too many open files`,
-        errorCode: error.code
-      };
-      
-    default:
-      // Erreurs inattendues
-      console.log(`[READER] Unexpected error: ${error.message}`);
-      return {
-        success: false,
-        error: `Filesystem error: ${error.message}`,
-        errorCode: error.code || "UNKNOWN"
-      };
+    }
+    
+    // Lecture du contenu
+    const content = await readFile(absolutePath, encoding);
+    const contentSize = Buffer.byteLength(content, encoding);
+    
+    console.log(`[READER] File read successfully, size: ${contentSize} bytes`);
+    
+    // Préparation du résultat de base
+    const result = {
+      exists: true,
+      accessible: true,
+      content,
+      size: contentSize,
+      path: normalizedPath,
+      absolutePath,
+      encoding
+    };
+    
+    // Parsing JSON optionnel
+    if (options.parseJson && content.trim()) {
+      try {
+        result.parsed = JSON.parse(content);
+        console.log(`[READER] JSON parsed successfully`);
+      } catch (parseError) {
+        console.log(`[READER] JSON parsing failed: ${parseError.message}`);
+        result.jsonError = parseError.message;
+      }
+    }
+    
+    // Stats du fichier optionnelles
+    if (options.includeStats) {
+      try {
+        const stats = await stat(absolutePath);
+        result.stats = {
+          size: stats.size,
+          created: stats.birthtime,
+          modified: stats.mtime,
+          accessed: stats.atime,
+          isDirectory: stats.isDirectory(),
+          isFile: stats.isFile()
+        };
+      } catch (statsError) {
+        console.log(`[READER] Stats collection failed: ${statsError.message}`);
+        result.statsError = statsError.message;
+      }
+    }
+    
+    return {
+      success: true,
+      data: result
+    };
+    
+  } catch (error) {
+    console.log(`[READER] Read operation failed: ${error.message}`);
+    return {
+      success: false,
+      error: `File read failed: ${error.message}`,
+      errorCode: error.code
+    };
   }
 }
 
 /**
- * Utilitaire pour vérifier rapidement l'existence d'un chemin
- * @param {string} path - Chemin à vérifier
- * @returns {Promise<boolean>} true si le chemin existe
+ * Liste le contenu d'un dossier avec filtrage optionnel
+ * @param {string} directoryPath - Chemin vers le dossier
+ * @param {object} [options={}] - Options de listage
+ * @param {boolean} [options.withFileTypes=true] - Inclure type de fichier
+ * @param {string[]} [options.extensions=[]] - Extensions à filtrer
+ * @param {boolean} [options.includeHidden=false] - Inclure fichiers cachés
+ * @param {boolean} [options.includeStats=false] - Inclure stats des fichiers
+ * @returns {Promise<{success: boolean, data: object}>} Résultat avec liste des éléments
+ * 
+ * @example
+ * const result = await readDirectory('./templates');
+ * result.data.items.forEach(item => {
+ *   console.log(`${item.name} (${item.isDirectory ? 'dir' : 'file'})`);
+ * });
  */
-export async function pathExists(path) {
+export async function readDirectory(directoryPath, options = {}) {
+  console.log(`[READER] Reading directory: ${directoryPath}`);
+  
+  // Validation des paramètres
+  validateReadDirectoryInput(directoryPath, options);
+  
   try {
-    validateReadPathInput(path, {});
-    const result = await readPath(path);
-    return result.success && result.data.exists;
+    const normalizedPath = normalize(directoryPath);
+    const absolutePath = resolve(normalizedPath);
+    
+    console.log(`[READER] Normalized directory path: ${normalizedPath}`);
+    
+    // Vérification existence du dossier
+    const exists = await checkFileAccess(absolutePath);
+    if (!exists.accessible) {
+      console.log(`[READER] Directory not accessible: ${exists.reason}`);
+      return {
+        success: true,
+        data: {
+          exists: false,
+          accessible: false,
+          reason: exists.reason,
+          items: [],
+          count: 0
+        }
+      };
+    }
+    
+    // Configuration des options
+    const config = {
+      withFileTypes: options.withFileTypes !== false,
+      extensions: options.extensions || [],
+      includeHidden: options.includeHidden === true,
+      includeStats: options.includeStats === true
+    };
+    
+    // Lecture du dossier
+    const dirents = await readdir(absolutePath, { withFileTypes: config.withFileTypes });
+    const items = [];
+    
+    for (const dirent of dirents) {
+      // Filtrage fichiers cachés
+      if (!config.includeHidden && dirent.name.startsWith('.')) {
+        continue;
+      }
+      
+      // Filtrage par extensions
+      if (config.extensions.length > 0 && !dirent.isDirectory()) {
+        const hasValidExtension = config.extensions.some(ext => 
+          dirent.name.toLowerCase().endsWith(ext.toLowerCase())
+        );
+        if (!hasValidExtension) {
+          continue;
+        }
+      }
+      
+      const itemData = {
+        name: dirent.name,
+        isDirectory: dirent.isDirectory(),
+        isFile: dirent.isFile(),
+        path: resolve(absolutePath, dirent.name)
+      };
+      
+      // Stats optionnelles
+      if (config.includeStats) {
+        try {
+          const itemStats = await stat(itemData.path);
+          itemData.stats = {
+            size: itemStats.size,
+            created: itemStats.birthtime,
+            modified: itemStats.mtime,
+            isDirectory: itemStats.isDirectory(),
+            isFile: itemStats.isFile()
+          };
+        } catch (statsError) {
+          console.log(`[READER] Stats failed for ${dirent.name}: ${statsError.message}`);
+          itemData.statsError = statsError.message;
+        }
+      }
+      
+      items.push(itemData);
+    }
+    
+    console.log(`[READER] Directory read successfully, found ${items.length} items`);
+    
+    return {
+      success: true,
+      data: {
+        exists: true,
+        accessible: true,
+        items,
+        count: items.length,
+        path: normalizedPath,
+        absolutePath
+      }
+    };
+    
   } catch (error) {
-    return false;
+    console.log(`[READER] Directory read failed: ${error.message}`);
+    return {
+      success: false,
+      error: `Directory read failed: ${error.message}`,
+      errorCode: error.code
+    };
+  }
+}
+
+/**
+ * Vérifie l'accessibilité d'un fichier ou dossier
+ * @param {string} path - Chemin à vérifier
+ * @returns {Promise<{accessible: boolean, reason?: string}>} Résultat de vérification
+ * 
+ * @example
+ * const access = await checkFileAccess('./config.json');
+ * if (access.accessible) {
+ *   console.log('File is accessible');
+ * }
+ */
+export async function checkFileAccess(path) {
+  try {
+    await access(path, constants.F_OK | constants.R_OK);
+    return { accessible: true };
+  } catch (error) {
+    let reason = 'Unknown access error';
+    
+    switch (error.code) {
+      case 'ENOENT':
+        reason = 'File or directory does not exist';
+        break;
+      case 'EACCES':
+        reason = 'Permission denied';
+        break;
+      case 'EISDIR':
+        reason = 'Expected file but found directory';
+        break;
+      case 'ENOTDIR':
+        reason = 'Expected directory but found file';
+        break;
+      default:
+        reason = `Access error: ${error.message}`;
+    }
+    
+    return { 
+      accessible: false, 
+      reason,
+      errorCode: error.code
+    };
+  }
+}
+
+// === FONCTIONS PRIVÉES DE VALIDATION ===
+
+/**
+ * Valide les paramètres de readPath
+ * @private
+ */
+function validateReadPathInput(path, options) {
+  if (!path || typeof path !== 'string') {
+    throw new Error('ValidationError: path must be non-empty string');
+  }
+  
+  if (path.trim().length === 0) {
+    throw new Error('ValidationError: path cannot be empty or whitespace only');
+  }
+  
+  if (options && typeof options !== 'object') {
+    throw new Error('ValidationError: options must be an object');
+  }
+  
+  if (options.encoding && typeof options.encoding !== 'string') {
+    throw new Error('ValidationError: options.encoding must be a string');
+  }
+  
+  if (options.parseJson !== undefined && typeof options.parseJson !== 'boolean') {
+    throw new Error('ValidationError: options.parseJson must be a boolean');
+  }
+  
+  if (options.includeStats !== undefined && typeof options.includeStats !== 'boolean') {
+    throw new Error('ValidationError: options.includeStats must be a boolean');
+  }
+}
+
+/**
+ * Valide les paramètres de readDirectory
+ * @private
+ */
+function validateReadDirectoryInput(directoryPath, options) {
+  if (!directoryPath || typeof directoryPath !== 'string') {
+    throw new Error('ValidationError: directoryPath must be non-empty string');
+  }
+  
+  if (directoryPath.trim().length === 0) {
+    throw new Error('ValidationError: directoryPath cannot be empty or whitespace only');
+  }
+  
+  if (options && typeof options !== 'object') {
+    throw new Error('ValidationError: options must be an object');
+  }
+  
+  if (options.extensions && !Array.isArray(options.extensions)) {
+    throw new Error('ValidationError: options.extensions must be an array');
   }
 }
 
