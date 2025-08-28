@@ -132,7 +132,7 @@ function determineActionAndParams(req, requestData) {
       pattern: /^\/projects\/?$/,
       method: 'POST',
       action: 'CREATE',
-      extractParams: (req) => ({
+      extractParams: (req, match) => ({
         projectId: req.body?.projectId,
         config: {
           name: req.body?.name,
@@ -142,13 +142,13 @@ function determineActionAndParams(req, requestData) {
       })
     },
     
-    // Actions sur projet existant
+    // Actions sur projet existant - FIX ICI
     {
       pattern: /^\/projects\/([^\/]+)\/build\/?$/,
       method: 'POST',
       action: 'BUILD',
-      extractParams: (req) => ({
-        projectId: req.params?.id,
+      extractParams: (req, match) => ({
+        projectId: match[1], // ← UTILISE LE MATCH REGEX au lieu de req.params.id
         config: req.body || {}
       })
     },
@@ -157,8 +157,8 @@ function determineActionAndParams(req, requestData) {
       pattern: /^\/projects\/([^\/]+)\/deploy\/?$/,
       method: 'POST',
       action: 'DEPLOY',
-      extractParams: (req) => ({
-        projectId: req.params?.id,
+      extractParams: (req, match) => ({
+        projectId: match[1], // ← FIX
         config: req.body || {}
       })
     },
@@ -167,8 +167,8 @@ function determineActionAndParams(req, requestData) {
       pattern: /^\/projects\/([^\/]+)\/start\/?$/,
       method: 'POST',
       action: 'START',
-      extractParams: (req) => ({
-        projectId: req.params?.id,
+      extractParams: (req, match) => ({
+        projectId: match[1], // ← FIX
         config: req.body || {}
       })
     },
@@ -177,8 +177,8 @@ function determineActionAndParams(req, requestData) {
       pattern: /^\/projects\/([^\/]+)\/stop\/?$/,
       method: 'POST',
       action: 'STOP',
-      extractParams: (req) => ({
-        projectId: req.params?.id,
+      extractParams: (req, match) => ({
+        projectId: match[1], // ← FIX
         config: req.body || {}
       })
     },
@@ -188,8 +188,8 @@ function determineActionAndParams(req, requestData) {
       pattern: /^\/projects\/([^\/]+)\/?$/,
       method: 'DELETE',
       action: 'DELETE',
-      extractParams: (req) => ({
-        projectId: req.params?.id,
+      extractParams: (req, match) => ({
+        projectId: match[1], // ← FIX
         config: {}
       })
     },
@@ -199,8 +199,8 @@ function determineActionAndParams(req, requestData) {
       pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
       method: 'PUT',
       action: 'REVERT',
-      extractParams: (req) => ({
-        projectId: req.params?.id,
+      extractParams: (req, match) => ({
+        projectId: match[1], // ← FIX
         config: req.body || {}
       })
     }
@@ -208,31 +208,34 @@ function determineActionAndParams(req, requestData) {
   
   // Recherche du pattern correspondant
   for (const routePattern of ROUTE_PATTERNS) {
-    if (routePattern.method === method && routePattern.pattern.test(path)) {
-      try {
-        const extracted = routePattern.extractParams(req);
-        
-        // Validation du projectId pour toutes les actions
-        const projectIdValidation = validateProjectId(extracted.projectId, routePattern.action);
-        if (!projectIdValidation.valid) {
+    if (routePattern.method === method) {
+      const match = routePattern.pattern.exec(path); // ← CAPTURE LE MATCH
+      if (match) {
+        try {
+          const extracted = routePattern.extractParams(req, match); // ← PASSE LE MATCH
+          
+          // Validation du projectId pour toutes les actions
+          const projectIdValidation = validateProjectId(extracted.projectId, routePattern.action);
+          if (!projectIdValidation.valid) {
+            return {
+              success: false,
+              error: projectIdValidation.error
+            };
+          }
+          
+          return {
+            success: true,
+            action: routePattern.action,
+            projectId: extracted.projectId,
+            config: extracted.config
+          };
+          
+        } catch (error) {
           return {
             success: false,
-            error: projectIdValidation.error
+            error: `Parameter extraction failed: ${error.message}`
           };
         }
-        
-        return {
-          success: true,
-          action: routePattern.action,
-          projectId: extracted.projectId,
-          config: extracted.config
-        };
-        
-      } catch (error) {
-        return {
-          success: false,
-          error: `Parameter extraction failed: ${error.message}`
-        };
       }
     }
   }

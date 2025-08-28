@@ -40,9 +40,9 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
       const data = await response.json();
       
       if (data.success) {
-        setTemplates(data.templates);
-        if (data.templates.length > 0) {
-          setFormData(prev => ({ ...prev, template: data.templates[0].id }));
+        setTemplates(data.data.templates);
+        if (data.data.templates.length > 0) {
+          setFormData(prev => ({ ...prev, template: data.data.templates[0].id }));
         }
       } else {
         // FALLBACK : Templates hardcodés

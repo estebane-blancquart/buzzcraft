@@ -4,12 +4,12 @@
  * @description Orchestre la compilation complète d'un projet avec génération de code
  */
 
-import { detectDraftState } from '../../probes/draft-detector.js';
-import { detectBuiltState } from '../../probes/built-detector.js';
-import { getProjectPath, getProjectFilePath } from '../../cores/paths.js';
-import { PATHS } from '../../cores/constants.js';
-import { readPath } from '../../cores/reader.js';
-import { writePath } from '../../cores/writer.js';
+import { detectDraftState } from '../probes/draft-detector.js';
+import { detectBuiltState } from '../probes/built-detector.js';
+import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
+import { PATHS } from '../cores/constants.js';
+import { readPath } from '../cores/reader.js';
+import { writePath } from '../cores/writer.js';
 import { join } from 'path';
 
 /**
@@ -281,7 +281,7 @@ async function loadCodeTemplates(targets) {
     const loadErrors = [];
     
     // Import dynamique pour éviter les dépendances circulaires
-    const { readDirectory } = await import('../../cores/reader.js');
+    const { readDirectory } = await import('../cores/reader.js');
     
     for (const target of targets) {
       const targetPath = join(PATHS.codeTemplates, target);
@@ -334,7 +334,7 @@ async function loadCodeTemplates(targets) {
  */
 async function scanTemplatesRecursive(basePath, relativePath) {
   try {
-    const { readDirectory } = await import('../../cores/reader.js');
+    const { readDirectory } = await import('../cores/reader.js');
     const fullPath = relativePath ? join(basePath, relativePath) : basePath;
     
     const dirResult = await readDirectory(fullPath);

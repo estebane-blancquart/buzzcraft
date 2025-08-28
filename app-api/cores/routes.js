@@ -10,7 +10,7 @@ import { buildWorkflow } from "../../app-server/engines/build-coordinator.js";
 // import { deployWorkflow } from "../../app-server/engines/deploy-coordinator.js";
 // import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
 // import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
-// import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
+import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
 
 /**
  * Routes HTTP pour gestion des projets avec Pattern 13 CALLS
@@ -26,7 +26,7 @@ const WORKFLOW_COORDINATORS = {
   // DEPLOY: deployWorkflow,     // Temporairement désactivé - dépendances cassées
   // START: startWorkflow,       // Temporairement désactivé - dépendances cassées
   // STOP: stopWorkflow,         // Temporairement désactivé - dépendances cassées
-  // DELETE: deleteWorkflow,     // Temporairement désactivé - dépendances cassées
+  DELETE: deleteWorkflow,
 };
 
 /**
@@ -35,7 +35,9 @@ const WORKFLOW_COORDINATORS = {
  * @param {express.Response} res - Réponse HTTP
  */
 async function handleWorkflowRequest(req, res) {
-  console.log(`[ROUTES] Pattern 13 CALLS initiated for ${req.method} ${req.path}`);
+  console.log(
+    `[ROUTES] Pattern 13 CALLS initiated for ${req.method} ${req.path}`
+  );
 
   try {
     // CALL 1: Request Parser
@@ -45,41 +47,43 @@ async function handleWorkflowRequest(req, res) {
       console.log(`[ROUTES] CALL 1 failed: ${parsedRequest.error}`);
       return res.status(400).json({
         success: false,
-        error: `Request parsing failed: ${parsedRequest.error}`
+        error: `Request parsing failed: ${parsedRequest.error}`,
       });
     }
 
     // CALL 2: Request Processor
     console.log(`[ROUTES] CALL 2: Processing parsed request...`);
-    const processedRequest = await processRequest(parsedRequest);
+    const processedRequest = await processRequest(parsedRequest.data);
     if (!processedRequest.success) {
       console.log(`[ROUTES] CALL 2 failed: ${processedRequest.error}`);
       return res.status(400).json({
         success: false,
-        error: `Request processing failed: ${processedRequest.error}`
+        error: `Request processing failed: ${processedRequest.error}`,
       });
     }
 
     // CALL 3-10: Workflow Execution (handled by coordinator)
     const { action, projectId, config } = processedRequest.data;
     const coordinator = WORKFLOW_COORDINATORS[action];
-    
+
     if (!coordinator) {
       console.log(`[ROUTES] Unknown workflow action: ${action}`);
       return res.status(400).json({
         success: false,
-        error: `Unsupported workflow action: ${action}`
+        error: `Unsupported workflow action: ${action}`,
       });
     }
 
     console.log(`[ROUTES] CALL 3-10: Executing ${action} workflow...`);
     const workflowResult = await coordinator(projectId, config);
-    
+
     if (!workflowResult.success) {
-      console.log(`[ROUTES] Workflow ${action} failed: ${workflowResult.error}`);
+      console.log(
+        `[ROUTES] Workflow ${action} failed: ${workflowResult.error}`
+      );
       return res.status(500).json({
         success: false,
-        error: `Workflow ${action} failed: ${workflowResult.error}`
+        error: `Workflow ${action} failed: ${workflowResult.error}`,
       });
     }
 
@@ -90,7 +94,7 @@ async function handleWorkflowRequest(req, res) {
       console.log(`[ROUTES] CALL 11 failed: ${parsedResponse.error}`);
       return res.status(500).json({
         success: false,
-        error: `Response parsing failed: ${parsedResponse.error}`
+        error: `Response parsing failed: ${parsedResponse.error}`,
       });
     }
 
@@ -101,21 +105,24 @@ async function handleWorkflowRequest(req, res) {
       console.log(`[ROUTES] CALL 12 failed: ${finalResponse.error}`);
       return res.status(500).json({
         success: false,
-        error: `Response processing failed: ${finalResponse.error}`
+        error: `Response processing failed: ${finalResponse.error}`,
       });
     }
 
-    console.log(`[ROUTES] Pattern 13 CALLS completed successfully for ${action}`);
+    console.log(
+      `[ROUTES] Pattern 13 CALLS completed successfully for ${action}`
+    );
     res.json({
       success: true,
-      data: finalResponse.data
+      data: finalResponse.data,
     });
-
   } catch (error) {
-    console.log(`[ROUTES] Unexpected error in Pattern 13 CALLS: ${error.message}`);
+    console.log(
+      `[ROUTES] Unexpected error in Pattern 13 CALLS: ${error.message}`
+    );
     res.status(500).json({
       success: false,
-      error: 'Internal server error during workflow execution'
+      error: "Internal server error during workflow execution",
     });
   }
 }
@@ -126,14 +133,21 @@ async function handleWorkflowRequest(req, res) {
  * @returns {{valid: boolean, error?: string}}
  */
 function validateRouteParams(projectId) {
-  if (!projectId || typeof projectId !== 'string') {
-    return { valid: false, error: 'Project ID must be non-empty string' };
+  if (!projectId || typeof projectId !== "string") {
+    return { valid: false, error: "Project ID must be non-empty string" };
   }
   if (projectId.length < 3 || projectId.length > 50) {
-    return { valid: false, error: 'Project ID must be between 3 and 50 characters' };
+    return {
+      valid: false,
+      error: "Project ID must be between 3 and 50 characters",
+    };
   }
   if (!/^[a-zA-Z0-9-_]+$/.test(projectId)) {
-    return { valid: false, error: 'Project ID can only contain letters, numbers, hyphens and underscores' };
+    return {
+      valid: false,
+      error:
+        "Project ID can only contain letters, numbers, hyphens and underscores",
+    };
   }
   return { valid: true };
 }
@@ -148,7 +162,7 @@ function handleRouteError(res, error, operation) {
   console.log(`[ROUTES] Error in ${operation}: ${error.message}`);
   res.status(500).json({
     success: false,
-    error: `Failed to ${operation}`
+    error: `Failed to ${operation}`,
   });
 }
 
@@ -159,7 +173,7 @@ function handleRouteError(res, error, operation) {
  */
 router.get("/projects", async (req, res) => {
   console.log(`[ROUTES] GET /projects - Loading all projects`);
-  
+
   try {
     const projectsDir = "../app-server/data/outputs";
     const projects = [];
@@ -176,21 +190,25 @@ router.get("/projects", async (req, res) => {
 
           // Extraction standardisée des métadonnées projet
           const project = projectData.data || projectData;
-          
+
           projects.push({
             id: project.id,
             name: project.name,
             state: project.state,
             template: project.template,
             created: project.created,
-            lastModified: project.lastModified || project.created
+            lastModified: project.lastModified || project.created,
           });
         } catch (error) {
-          console.log(`[ROUTES] Skipping invalid project folder ${folder}: ${error.message}`);
+          console.log(
+            `[ROUTES] Skipping invalid project folder ${folder}: ${error.message}`
+          );
         }
       }
     } catch (error) {
-      console.log(`[ROUTES] Projects directory not found, returning empty list`);
+      console.log(
+        `[ROUTES] Projects directory not found, returning empty list`
+      );
     }
 
     console.log(`[ROUTES] Successfully loaded ${projects.length} projects`);
@@ -199,10 +217,9 @@ router.get("/projects", async (req, res) => {
       data: {
         projects,
         count: projects.length,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
-
   } catch (error) {
     handleRouteError(res, error, "load projects");
   }
@@ -221,7 +238,7 @@ router.get("/projects/:id", async (req, res) => {
     console.log(`[ROUTES] Invalid project ID: ${validation.error}`);
     return res.status(400).json({
       success: false,
-      error: validation.error
+      error: validation.error,
     });
   }
 
@@ -238,18 +255,16 @@ router.get("/projects/:id", async (req, res) => {
         success: true,
         data: {
           project: projectData,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
-
     } catch (error) {
       console.log(`[ROUTES] Project ${projectId} not found: ${error.message}`);
       res.status(404).json({
         success: false,
-        error: `Project ${projectId} not found`
+        error: `Project ${projectId} not found`,
       });
     }
-
   } catch (error) {
     handleRouteError(res, error, `load project ${projectId}`);
   }
@@ -261,7 +276,7 @@ router.get("/projects/:id", async (req, res) => {
 router.post("/projects", handleWorkflowRequest);
 
 /**
- * POST /projects/:id/build - Builder un projet (BUILD workflow)  
+ * POST /projects/:id/build - Builder un projet (BUILD workflow)
  */
 router.post("/projects/:id/build", handleWorkflowRequest);
 
@@ -276,7 +291,7 @@ router.post("/projects/:id/deploy", handleWorkflowRequest);
 router.post("/projects/:id/start", handleWorkflowRequest);
 
 /**
- * POST /projects/:id/stop - Arrêter un projet (STOP workflow) 
+ * POST /projects/:id/stop - Arrêter un projet (STOP workflow)
  */
 router.post("/projects/:id/stop", handleWorkflowRequest);
 
@@ -285,29 +300,64 @@ router.post("/projects/:id/stop", handleWorkflowRequest);
  */
 router.delete("/projects/:id", handleWorkflowRequest);
 
+
 /**
- * GET /templates - Lister les templates disponibles
+ * GET /projects/meta/templates - Lister les templates disponibles dynamiquement
  */
-router.get("/templates", async (req, res) => {
-  console.log(`[ROUTES] GET /templates - Loading available templates`);
+router.get("/projects/meta/templates", async (req, res) => {
+  console.log(`[ROUTES] GET /projects/meta/templates - Loading available templates dynamically`);
 
   try {
-    // Cette route sera implémentée quand les templates seront finalisés
+    // Import dynamique pour éviter les dépendances circulaires
+    const { PATHS } = await import('../../app-server/cores/constants.js');
+    
+    let templates = [];
+    
+    try {
+      // Lire les fichiers .json du dossier templates
+      const files = await readdir(PATHS.projectTemplates);
+      
+      templates = files
+        .filter(file => file.endsWith('.json'))
+        .map(file => {
+          const id = file.replace('.json', '');
+          return {
+            id: id,
+            name: `${id.charAt(0).toUpperCase() + id.slice(1)} Template`,
+            description: `Template ${id} pour créer votre projet`
+          };
+        });
+      
+      console.log(`[ROUTES] Found ${templates.length} template files: ${templates.map(t => t.id).join(', ')}`);
+      
+    } catch (dirError) {
+      console.log(`[ROUTES] Templates directory not accessible: ${dirError.message}`);
+      
+      // ERREUR : Pas de fallback, on retourne une vraie erreur
+      return res.status(500).json({
+        success: false,
+        error: `Templates directory not found: ${PATHS.projectTemplates}`,
+        details: dirError.message
+      });
+    }
+
     res.json({
       success: true,
       data: {
-        templates: [
-          { id: "basic", name: "Site Basique", description: "Template minimal pour démarrer" },
-          { id: "business", name: "Site Business", description: "Template professionnel avec contact" },
-          { id: "portfolio", name: "Portfolio", description: "Template pour présenter ses réalisations" }
-        ],
-        count: 3,
+        templates,
+        count: templates.length,
         timestamp: new Date().toISOString()
       }
     });
 
   } catch (error) {
-    handleRouteError(res, error, "load templates");
+    console.log(`[ROUTES] Templates loading error: ${error.message}`);
+    
+    // Retourner une vraie erreur, pas de fallback
+    res.status(500).json({
+      success: false,
+      error: `Failed to load templates: ${error.message}`
+    });
   }
 });
 

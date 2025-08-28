@@ -4,8 +4,8 @@
  * @description Orchestre la suppression complète d'un projet
  */
 
-import { getProjectPath, getProjectFilePath } from '../../cores/paths.js';
-import { readPath, checkFileAccess } from '../../cores/reader.js';
+import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
+import { readPath, checkFileAccess } from '../cores/reader.js';
 
 /**
  * Orchestre le workflow complet DELETE (ANY → VOID)
@@ -297,7 +297,7 @@ async function inventoryProjectItems(projectPath, projectId) {
     const projectDirExists = await checkFileAccess(projectPath);
     if (projectDirExists.accessible) {
       // Import dynamique pour éviter les dépendances circulaires
-      const { readDirectory } = await import('../../cores/reader.js');
+      const { readDirectory } = await import('../cores/reader.js');
       
       const dirContent = await readDirectory(projectPath);
       if (dirContent.success) {
@@ -451,7 +451,7 @@ async function verifyVoidState(projectPath) {
   
   try {
     // Import dynamique pour éviter dépendance circulaire
-    const { detectVoidState } = await import('../../probes/void-detector.js');
+    const { detectVoidState } = await import('../probes/void-detector.js');
     
     return await detectVoidState(projectPath);
     

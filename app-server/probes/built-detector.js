@@ -4,8 +4,9 @@
  * @description Détermine si un projet est dans l'état BUILT (compilé, prêt à déployer)
  */
 
-import { readPath, checkFileAccess, readDirectory } from '../../cores/reader.js';
-import { getProjectPath, getProjectFilePath } from '../../cores/paths.js';
+import { readPath, checkFileAccess, readDirectory } from '../cores/reader.js';
+import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
+import { basename } from 'path';
 
 /**
  * Détecte si un projet est dans l'état BUILT
@@ -37,7 +38,7 @@ export async function detectBuiltState(projectPath) {
     let buildArtifacts = [];
     
     // CRITÈRE 1: Le fichier project.json doit exister avec state BUILT
-    const projectId = projectPath.split('/').pop();
+    const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     
     console.log(`[BUILT-DETECTOR] Checking project file: ${projectFilePath}`);
@@ -206,7 +207,7 @@ export async function quickBuiltCheck(projectPath) {
   console.log(`[BUILT-DETECTOR] Quick BUILT check for: ${projectPath}`);
   
   try {
-    const projectId = projectPath.split('/').pop();
+    const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     
     // Check minimal : existence + parsing + state + artifacts

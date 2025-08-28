@@ -4,8 +4,9 @@
  * @description Détermine si un projet est dans l'état DRAFT (créé, éditable)
  */
 
-import { readPath, checkFileAccess } from '../../cores/reader.js';
-import { getProjectPath, getProjectFilePath } from '../../cores/paths.js';
+import { readPath, checkFileAccess } from '../cores/reader.js';
+import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
+import { basename } from 'path';
 
 /**
  * Détecte si un projet est dans l'état DRAFT
@@ -36,7 +37,7 @@ export async function detectDraftState(projectPath) {
     let projectData = null;
     
     // CRITÈRE 1: Le fichier project.json doit exister et être valide
-    const projectId = projectPath.split('/').pop();
+    const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     
     console.log(`[DRAFT-DETECTOR] Checking project file: ${projectFilePath}`);
@@ -182,7 +183,7 @@ export async function quickDraftCheck(projectPath) {
   console.log(`[DRAFT-DETECTOR] Quick DRAFT check for: ${projectPath}`);
   
   try {
-    const projectId = projectPath.split('/').pop();
+    const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     
     // Check minimal : existence + parsing + state
@@ -320,7 +321,7 @@ async function checkBuildArtifacts(projectPath) {
  */
 async function analyzeDraftDirectoryContent(projectPath) {
   try {
-    const { readDirectory } = await import('../../cores/reader.js');
+    const { readDirectory } = await import('../cores/reader.js');
     const dirContent = await readDirectory(projectPath);
     
     if (!dirContent.success) {

@@ -4,8 +4,9 @@
  * @description Détermine si un projet est dans l'état VOID (inexistant)
  */
 
-import { readPath, checkFileAccess } from '../../cores/reader.js';
-import { getProjectPath, getProjectFilePath } from '../../cores/paths.js';
+import { readPath, checkFileAccess } from '../cores/reader.js';
+import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
+import { basename } from 'path';
 
 /**
  * Détecte si un projet est dans l'état VOID
@@ -46,7 +47,7 @@ export async function detectVoidState(projectPath) {
     }
     
     // CRITÈRE 2: Le fichier project.json ne doit pas exister
-    const projectFilePath = getProjectFilePath(projectPath.split('/').pop());
+    const projectFilePath = getProjectFilePath(basename(projectPath));
     const projectFileAccess = await checkFileAccess(projectFilePath);
     
     if (projectFileAccess.accessible) {
@@ -178,7 +179,7 @@ export async function quickVoidCheck(projectPath) {
     }
     
     // Si le dossier existe, vérifier project.json
-    const projectId = projectPath.split('/').pop();
+    const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     const projectFileExists = await checkFileAccess(projectFilePath);
     
