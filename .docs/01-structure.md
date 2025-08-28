@@ -1,11 +1,11 @@
 # 01-structure.md
 
-Architecture mono-repo 3 services avec séparation stricte des responsabilités.
+Architecture monolithe bien structuré avec séparation claire des responsabilités.
 
 ## 📋 Organisation
 ```
 buzzcraft/
-├── app-api/          # Service Express
+├── app-api/          # Serveur Express
 │   ├── requests/
 │   │   ├── parser.js
 │   │   └── processor.js
@@ -17,7 +17,7 @@ buzzcraft/
 │   │   ├── tracker.js
 │   │   └── server.js
 │   └── package.json
-├── app-server/       # Service Node
+├── app-server/       # Librairie utilitaires
 │   ├── engines/
 │   │   └── [ACTION]/
 │   │       └── coordinator.js
@@ -43,7 +43,7 @@ buzzcraft/
 │   │   ├── variable-generator.js
 │   │   └── writer.js
 │   └── package.json
-└── app-client/       # Service React
+└── app-client/       # Interface React
     ├── pages/
     │   ├── dashboard/
     │   │   ├── metrics/
@@ -101,12 +101,49 @@ buzzcraft/
     └── package.json
 ```
 
-## 🔧 Fonctionnement
-```
-CLIENT ←→ API ←→ SERVER 
-```
-CLIENT → API : request
-API → SERVER : HTTP
-SERVER → API : response
-API → CLIENT : HTTP
+**Flux de données :**
+- CLIENT → API : Requêtes HTTP
+- API → app-server : Imports directs des modules
+- API → CLIENT : Réponses HTTP
 
+**Architecture :**
+- **Monolithe structuré** : Un seul processus Node.js
+- **Séparation logique** : Responsabilités claires par dossier
+- **Communication directe** : app-api importe app-server (pas de latence réseau)
+
+## 🎯 Avantages architecturaux
+
+**Simplicité opérationnelle :**
+- Déploiement : Un seul serveur
+- Debugging : Stack trace complète
+- Transactions : ACID native
+
+**Performance :**
+- Pas de latence réseau interne
+- Pas de sérialisation/désérialisation
+- Optimisations compilateur JavaScript
+
+**Maintenabilité :**
+- Structure claire et prévisible
+- Refactoring facile (IDE traverse tout)
+- Tests d'intégration simples
+
+## 📦 Responsabilités par couche
+
+**app-api (Interface HTTP) :**
+- Routes HTTP et middleware Express
+- Parsing/validation des requêtes
+- Formatage des réponses
+- Gestion des erreurs HTTP
+
+**app-server (Logique métier) :**
+- Workflows et coordinateurs d'actions
+- Détection d'états projets
+- Génération de code à partir de templates
+- Utilitaires système (I/O, validation, etc.)
+
+**app-client (Interface utilisateur) :**
+- Interface React responsive
+- Gestion des états UI
+- Communication avec API via HTTP
+- Composants réutilisables

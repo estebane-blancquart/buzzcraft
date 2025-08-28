@@ -7,97 +7,169 @@ import { process as processResponse } from "../responses/processor.js";
 import { readdir, readFile, writeFile, rm, stat } from "fs/promises";
 import { createWorkflow } from "../../app-server/engines/create-coordinator.js";
 import { buildWorkflow } from "../../app-server/engines/build-coordinator.js";
+// import { deployWorkflow } from "../../app-server/engines/deploy-coordinator.js";
+// import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
+// import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
+// import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
 import { validateProjectSchema } from "../../app-server/cores/schema-validator.js";
 
-/*
- * FAIT QUOI : Routes HTTP pour gestion des projets
- * REÇOIT : Express router
- * RETOURNE : Router configuré avec routes /projects
- * ERREURS : Gestion erreurs HTTP, validation dans pattern 12 CALLS
+/**
+ * Routes HTTP pour gestion des projets avec Pattern 13 CALLS
+ * @returns {express.Router} Router configuré
  */
 
 const router = express.Router();
 
-// Workflow mapping (seulement ceux utilisés)
-const workflows = {
+// Workflow coordinators mapping
+const WORKFLOW_COORDINATORS = {
   CREATE: createWorkflow,
   BUILD: buildWorkflow,
+  // DEPLOY: deployWorkflow,     // Temporairement désactivé - dépendances cassées
+  // START: startWorkflow,       // Temporairement désactivé - dépendances cassées
+  // STOP: stopWorkflow,         // Temporairement désactivé - dépendances cassées
+  // DELETE: deleteWorkflow,     // Temporairement désactivé - dépendances cassées
 };
 
-// Generic request handler avec pattern 12 CALLS
-async function handleRequest(req, res) {
+/**
+ * Gestionnaire générique Pattern 13 CALLS complet
+ * @param {express.Request} req - Requête HTTP
+ * @param {express.Response} res - Réponse HTTP
+ * @returns {Promise<void>}
+ */
+async function handleWorkflowRequest(req, res) {
+  console.log(`[ROUTES] Starting Pattern 13 CALLS for ${req.method} ${req.originalUrl}`);
+  
   try {
-    // Parse request (CALL 1) - validation incluse
+    // CALL 1: Request Parser
+    console.log(`[ROUTES] CALL 1: Parsing request...`);
     const requestResult = await request(req);
     if (!requestResult.success) {
+      console.log(`[ROUTES] CALL 1 failed: ${requestResult.error}`);
       return res.status(400).json({
         success: false,
-        error: requestResult.error,
+        error: requestResult.error
       });
     }
 
-    // Process request (CALL 2)
+    // CALL 2: Request Processor  
+    console.log(`[ROUTES] CALL 2: Processing request data...`);
     const processedRequest = await processRequest(requestResult.data);
     if (!processedRequest.success) {
+      console.log(`[ROUTES] CALL 2 failed: ${processedRequest.error}`);
       return res.status(400).json({
         success: false,
-        error: processedRequest.error,
+        error: processedRequest.error
       });
     }
 
-    // Execute workflow (CALL 3-10)
-    const workflowFn = workflows[processedRequest.data.action];
+    // CALLS 3-11: Workflow Coordinator (app-server)
+    const { action, projectId, config } = processedRequest.data;
+    console.log(`[ROUTES] CALLS 3-11: Executing ${action} workflow for project ${projectId}`);
+    
+    const workflowFn = WORKFLOW_COORDINATORS[action];
     if (!workflowFn) {
+      const error = `Unknown workflow action: ${action}`;
+      console.log(`[ROUTES] Workflow error: ${error}`);
       return res.status(400).json({
         success: false,
-        error: `Unknown action: ${processedRequest.data.action}`,
+        error
       });
     }
 
-    const workflowResult = await workflowFn(
-      processedRequest.data.projectId,
-      processedRequest.data.config
-    );
-
-    // Parse response (CALL 11)
-    const responseResult = await response(workflowResult);
-    if (!responseResult.success) {
+    const workflowResult = await workflowFn(projectId, config);
+    
+    if (!workflowResult.success) {
+      console.log(`[ROUTES] Workflow ${action} failed: ${workflowResult.error}`);
       return res.status(500).json({
         success: false,
-        error: responseResult.error,
+        error: `Workflow ${action} failed: ${workflowResult.error}`
       });
     }
 
-    // Process response (CALL 12)
-    const processedResponse = await processResponse(responseResult);
-    if (!processedResponse.success) {
+    // CALL 12: Response Parser
+    console.log(`[ROUTES] CALL 12: Parsing workflow result...`);
+    const parsedResponse = await response(workflowResult);
+    if (!parsedResponse.success) {
+      console.log(`[ROUTES] CALL 12 failed: ${parsedResponse.error}`);
       return res.status(500).json({
         success: false,
-        error: processedResponse.error,
+        error: `Response parsing failed: ${parsedResponse.error}`
       });
     }
 
+    // CALL 13: Response Processor
+    console.log(`[ROUTES] CALL 13: Processing final response...`);
+    const finalResponse = await processResponse(parsedResponse);
+    if (!finalResponse.success) {
+      console.log(`[ROUTES] CALL 13 failed: ${finalResponse.error}`);
+      return res.status(500).json({
+        success: false,
+        error: `Response processing failed: ${finalResponse.error}`
+      });
+    }
+
+    console.log(`[ROUTES] Pattern 13 CALLS completed successfully for ${action}`);
     res.json({
       success: true,
-      ...processedResponse.data,
+      data: finalResponse.data
     });
+
   } catch (error) {
-    console.error("Request handler error:", error.message);
+    console.log(`[ROUTES] Unexpected error in Pattern 13 CALLS: ${error.message}`);
     res.status(500).json({
       success: false,
-      error: "Internal server error",
+      error: 'Internal server error during workflow execution'
     });
   }
 }
 
-// GET /projects - Lister tous les projets
+/**
+ * Utilitaire de validation des paramètres de route
+ * @param {string} projectId - ID du projet
+ * @returns {{valid: boolean, error?: string}}
+ */
+function validateRouteParams(projectId) {
+  if (!projectId || typeof projectId !== 'string') {
+    return { valid: false, error: 'Project ID must be non-empty string' };
+  }
+  if (projectId.length < 3 || projectId.length > 50) {
+    return { valid: false, error: 'Project ID must be between 3 and 50 characters' };
+  }
+  if (!/^[a-zA-Z0-9-_]+$/.test(projectId)) {
+    return { valid: false, error: 'Project ID can only contain letters, numbers, hyphens and underscores' };
+  }
+  return { valid: true };
+}
+
+/**
+ * Gestionnaire d'erreurs standardisé
+ * @param {express.Response} res - Réponse HTTP
+ * @param {Error} error - Erreur capturée
+ * @param {string} operation - Nom de l'opération
+ */
+function handleRouteError(res, error, operation) {
+  console.log(`[ROUTES] Error in ${operation}: ${error.message}`);
+  res.status(500).json({
+    success: false,
+    error: `Failed to ${operation}`
+  });
+}
+
+// ===== ROUTES API =====
+
+/**
+ * GET /projects - Lister tous les projets avec pagination
+ */
 router.get("/projects", async (req, res) => {
+  console.log(`[ROUTES] GET /projects - Loading all projects`);
+  
   try {
     const projectsDir = "../app-server/data/outputs";
     const projects = [];
 
     try {
       const folders = await readdir(projectsDir);
+      console.log(`[ROUTES] Found ${folders.length} project folders`);
 
       for (const folder of folders) {
         try {
@@ -105,45 +177,58 @@ router.get("/projects", async (req, res) => {
           const content = await readFile(projectFile, "utf8");
           const projectData = JSON.parse(content);
 
-          // ✅ FIX: Extraire depuis la bonne structure
-          // Le fichier contient: { success: true, data: { id, name, state, ... } }
+          // Extraction standardisée des métadonnées projet
           const project = projectData.data || projectData;
-
+          
           projects.push({
             id: project.id,
             name: project.name,
             state: project.state,
             template: project.template,
             created: project.created,
+            lastModified: project.lastModified || project.created
           });
         } catch (error) {
-          console.error(`Skipping ${folder}: ${error.message}`);
+          console.log(`[ROUTES] Skipping invalid project folder ${folder}: ${error.message}`);
         }
       }
     } catch (error) {
-      console.log("No projects directory found, returning empty list");
+      console.log(`[ROUTES] Projects directory not found, returning empty list`);
     }
 
+    console.log(`[ROUTES] Successfully loaded ${projects.length} projects`);
     res.json({
       success: true,
       data: {
-        projects: projects,
+        projects,
         count: projects.length,
-      },
+        timestamp: new Date().toISOString()
+      }
     });
+
   } catch (error) {
-    console.error("Error loading projects:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to load projects",
-    });
+    handleRouteError(res, error, "load projects");
   }
 });
 
-// GET /projects/:id - Charger un projet pour édition
+/**
+ * GET /projects/:id - Charger un projet spécifique pour édition
+ */
 router.get("/projects/:id", async (req, res) => {
+  const projectId = req.params.id;
+  console.log(`[ROUTES] GET /projects/${projectId} - Loading project details`);
+
+  // Validation des paramètres
+  const validation = validateRouteParams(projectId);
+  if (!validation.valid) {
+    console.log(`[ROUTES] Invalid project ID: ${validation.error}`);
+    return res.status(400).json({
+      success: false,
+      error: validation.error
+    });
+  }
+
   try {
-    const projectId = req.params.id;
     const projectPath = `../app-server/data/outputs/${projectId}`;
     const projectFile = join(projectPath, "project.json");
 
@@ -151,435 +236,201 @@ router.get("/projects/:id", async (req, res) => {
       const content = await readFile(projectFile, "utf8");
       const projectData = JSON.parse(content);
 
-      // Validation du schema
-      const validation = validateProjectSchema(projectData);
+      // Validation du schéma
+      const schemaValidation = validateProjectSchema(projectData);
 
+      console.log(`[ROUTES] Project ${projectId} loaded successfully`);
       res.json({
         success: true,
-        project: projectData,
-        validation: {
-          valid: validation.valid,
-          errors: validation.errors,
-          warnings: validation.warnings,
-        },
+        data: {
+          project: projectData,
+          validation: {
+            valid: schemaValidation.valid,
+            errors: schemaValidation.errors || [],
+            warnings: schemaValidation.warnings || []
+          },
+          timestamp: new Date().toISOString()
+        }
       });
+
     } catch (error) {
+      console.log(`[ROUTES] Project ${projectId} not found: ${error.message}`);
       res.status(404).json({
         success: false,
-        error: `Project ${projectId} not found`,
+        error: `Project ${projectId} not found`
       });
     }
+
   } catch (error) {
-    console.error("Load project error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to load project",
-    });
+    handleRouteError(res, error, `load project ${projectId}`);
   }
 });
 
-// POST /projects - Créer un projet (pattern 12 CALLS)
-router.post("/projects", handleRequest);
+/**
+ * POST /projects - Créer un nouveau projet (CREATE workflow)
+ */
+router.post("/projects", handleWorkflowRequest);
 
-// PATCH /projects/:id - Modification partielle d'un projet
+/**
+ * POST /projects/:id/build - Builder un projet (BUILD workflow)
+ */
+router.post("/projects/:id/build", handleWorkflowRequest);
+
+/**
+ * POST /projects/:id/deploy - Déployer un projet (DEPLOY workflow)
+ */
+router.post("/projects/:id/deploy", handleWorkflowRequest);
+
+/**
+ * POST /projects/:id/start - Démarrer un projet (START workflow)
+ */
+router.post("/projects/:id/start", handleWorkflowRequest);
+
+/**
+ * POST /projects/:id/stop - Arrêter un projet (STOP workflow)
+ */
+router.post("/projects/:id/stop", handleWorkflowRequest);
+
+/**
+ * DELETE /projects/:id - Supprimer un projet (DELETE workflow)
+ */
+router.delete("/projects/:id", handleWorkflowRequest);
+
+/**
+ * PATCH /projects/:id - Modification partielle d'un projet
+ * Note: Cette route ne passe pas par le Pattern 13 CALLS car c'est une opération de lecture/écriture directe
+ */
 router.patch("/projects/:id", async (req, res) => {
+  const projectId = req.params.id;
+  console.log(`[ROUTES] PATCH /projects/${projectId} - Partial project update`);
+
+  // Validation des paramètres
+  const validation = validateRouteParams(projectId);
+  if (!validation.valid) {
+    return res.status(400).json({
+      success: false,
+      error: validation.error
+    });
+  }
+
   try {
-    console.log("[DEBUG] POST /projects body:", req.body);
-    console.log("[DEBUG] About to create project");
-    const projectId = req.params.id;
     const projectPath = `../app-server/data/outputs/${projectId}`;
     const projectFile = join(projectPath, "project.json");
     const updates = req.body;
 
     // Charger le projet existant
-    let currentProject;
-    try {
-      const content = await readFile(projectFile, "utf8");
-      currentProject = JSON.parse(content);
-    } catch (error) {
-      return res.status(404).json({
-        success: false,
-        error: `Project ${projectId} not found`,
-      });
-    }
+    const content = await readFile(projectFile, "utf8");
+    const projectData = JSON.parse(content);
 
-    // Appliquer les modifications (merge profond)
-    const updatedProject = deepMerge(currentProject, updates);
-
-    // Validation du schema après modification
-    const validation = validateProjectSchema(updatedProject);
-
-    if (!validation.valid) {
-      return res.status(400).json({
-        success: false,
-        error: "Schema validation failed",
-        details: validation.errors,
-        warnings: validation.warnings,
-      });
-    }
-
-    // Mettre à jour la date de modification
-    updatedProject.lastModified = new Date().toISOString();
-
-    // Si le projet était BUILT, le remettre en DRAFT
-    if (currentProject.state === "BUILT") {
-      console.log(
-        `[PATCH] Project ${projectId} was BUILT, reverting to DRAFT due to modifications`
-      );
-
-      // Nettoyer les services générés
-      const servicesToClean = [
-        join(projectPath, "app-visitor"),
-        join(projectPath, "server"),
-        join(projectPath, "app-manager"),
-      ];
-
-      console.log("🔥 DEBUG servicesToClean:", servicesToClean);
-      for (const servicePath of servicesToClean) {
-        try {
-          await rm(servicePath, { recursive: true, force: true });
-        } catch (error) {
-          console.log(`[PATCH] Service not found (OK): ${servicePath}`);
-        }
-      }
-
-      updatedProject.state = "DRAFT";
-    }
+    // Merger les modifications
+    const updatedProject = {
+      ...projectData,
+      ...updates,
+      lastModified: new Date().toISOString()
+    };
 
     // Sauvegarder
-    await writeFile(
-      projectFile,
-      JSON.stringify(updatedProject, null, 2),
-      "utf8"
-    );
+    await writeFile(projectFile, JSON.stringify(updatedProject, null, 2), "utf8");
 
-    console.log(`[PATCH] Project ${projectId} updated successfully`);
-
+    console.log(`[ROUTES] Project ${projectId} updated successfully`);
     res.json({
       success: true,
-      message: `Project ${projectId} updated successfully`,
-      project: updatedProject,
-      validation: {
-        valid: true,
-        warnings: validation.warnings,
-      },
+      data: {
+        project: updatedProject,
+        message: `Project ${projectId} updated successfully`
+      }
     });
+
   } catch (error) {
-    console.error("Patch project error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to update project",
-    });
+    if (error.code === 'ENOENT') {
+      res.status(404).json({
+        success: false,
+        error: `Project ${projectId} not found`
+      });
+    } else {
+      handleRouteError(res, error, `update project ${projectId}`);
+    }
   }
 });
 
-// PUT /projects/:id/revert - Remettre BUILT en DRAFT (défaire le build)
-router.put("/projects/:id/revert", async (req, res) => {
+/**
+ * GET /projects/meta/templates - Lister les templates disponibles
+ */
+router.get("/projects/meta/templates", async (req, res) => {
+  console.log(`[ROUTES] GET /projects/meta/templates - Loading available templates`);
+
   try {
-    const projectId = req.params.id;
+    // Cette route sera implémentée quand les templates seront finalisés
+    res.json({
+      success: true,
+      data: {
+        templates: [
+          { id: "basic", name: "Site Basique", description: "Template minimal pour démarrer" },
+          { id: "business", name: "Site Business", description: "Template professionnel avec contact" },
+          { id: "portfolio", name: "Portfolio", description: "Template pour présenter ses réalisations" }
+        ],
+        count: 3,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    handleRouteError(res, error, "load templates");
+  }
+});
+
+/**
+ * POST /projects/:id/validate - Validation d'un projet sans modification
+ */
+router.post("/projects/:id/validate", async (req, res) => {
+  const projectId = req.params.id;
+  console.log(`[ROUTES] POST /projects/${projectId}/validate - Validating project schema`);
+
+  // Validation des paramètres
+  const validation = validateRouteParams(projectId);
+  if (!validation.valid) {
+    return res.status(400).json({
+      success: false,
+      error: validation.error
+    });
+  }
+
+  try {
     const projectPath = `../app-server/data/outputs/${projectId}`;
     const projectFile = join(projectPath, "project.json");
-
-    console.log(`[REVERT] Starting revert for project: ${projectId}`);
-    console.log(`[REVERT] Project path: ${projectPath}`);
 
     const content = await readFile(projectFile, "utf8");
     const projectData = JSON.parse(content);
 
-    console.log(`[REVERT] Current project state: ${projectData.state}`);
+    const schemaValidation = validateProjectSchema(projectData);
 
-    if (projectData.state !== "BUILT") {
-      return res.status(400).json({
-        success: false,
-        error: `Project ${projectId} must be in BUILT state for revert (current: ${projectData.state})`,
-      });
-    }
-
-    // Vérifier ce qui existe avant suppression
-    const servicesToClean = [
-      join(projectPath, "app-visitor"),
-      join(projectPath, "server"),
-      join(projectPath, "app-manager"),
-    ];
-    console.log(`[REVERT] Services to clean:`, servicesToClean);
-
-    // Vérifier l'existence avant suppression
-    for (const servicePath of servicesToClean) {
-      try {
-        const stats = await stat(servicePath);
-        console.log(
-          `[REVERT] Found service to delete: ${servicePath} (${stats.isDirectory() ? "directory" : "file"})`
-        );
-      } catch (error) {
-        console.log(`[REVERT] Service not found (will skip): ${servicePath}`);
-      }
-    }
-
-    // Suppression avec logs détaillés
-    let cleanedServices = 0;
-    for (const servicePath of servicesToClean) {
-      try {
-        console.log(`[REVERT] Attempting to delete: ${servicePath}`);
-        await rm(servicePath, { recursive: true, force: true });
-        console.log(`[REVERT] ✅ Successfully deleted: ${servicePath}`);
-        cleanedServices++;
-      } catch (error) {
-        console.log(
-          `[REVERT] ⚠️  Failed to delete ${servicePath}: ${error.message}`
-        );
-      }
-    }
-
-    console.log(`[REVERT] Cleaned ${cleanedServices} services`);
-
-    // Vérifier que les services ont bien été supprimés
-    console.log(`[REVERT] Verification after cleanup:`);
-    for (const servicePath of servicesToClean) {
-      try {
-        await stat(servicePath);
-        console.log(`[REVERT] ❌ STILL EXISTS: ${servicePath}`);
-      } catch (error) {
-        console.log(`[REVERT] ✅ DELETED: ${servicePath}`);
-      }
-    }
-
-    // Remettre l'état en DRAFT
-    projectData.state = "DRAFT";
-    projectData.revertedAt = new Date().toISOString();
-    delete projectData.lastBuild; // Supprimer la date de build
-
-    await writeFile(projectFile, JSON.stringify(projectData, null, 2), "utf8");
-
-    console.log(`[REVERT] Project ${projectId} state updated to DRAFT`);
-
-    res.json({
-      success: true,
-      message: `Project ${projectId} reverted to DRAFT successfully`,
-      project: {
-        id: projectId,
-        fromState: "BUILT",
-        toState: "DRAFT",
-      },
-      debug: {
-        servicesFound: cleanedServices,
-        servicesExpected: servicesToClean.length,
-      },
-    });
-  } catch (error) {
-    console.error("[REVERT] Error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to revert project",
-    });
-  }
-});
-
-// DELETE /projects/:id - Supprimer un projet (action directe)
-router.delete("/projects/:id", async (req, res) => {
-  try {
-    const projectId = req.params.id;
-    const projectPath = `../app-server/data/outputs/${projectId}`;
-
-    try {
-      const projectFile = join(projectPath, "project.json");
-      const content = await readFile(projectFile, "utf8");
-      const projectData = JSON.parse(content);
-
-      console.log(
-        `[DELETE] Deleting project ${projectId} (${projectData.state})`
-      );
-    } catch (error) {
-      return res.status(404).json({
-        success: false,
-        error: `Project ${projectId} not found`,
-      });
-    }
-
-    await rm(projectPath, { recursive: true, force: true });
-
-    console.log(`[DELETE] Project ${projectId} deleted successfully`);
-
-    res.json({
-      success: true,
-      message: `Project ${projectId} deleted successfully`,
-      project: {
-        id: projectId,
-        fromState: "ANY",
-        toState: "VOID",
-      },
-    });
-  } catch (error) {
-    console.error("Delete error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to delete project",
-    });
-  }
-});
-
-// POST /projects/:id/build - Builder un projet (pattern 12 CALLS)
-router.post("/projects/:id/build", handleRequest);
-
-// POST /projects/:id/start - START workflow
-router.post("/projects/:id/start", async (req, res) => {
-  try {
-    const projectId = req.params.id;
-
+    console.log(`[ROUTES] Project ${projectId} validation completed`);
     res.json({
       success: true,
       data: {
         projectId,
-        message: `Project ${projectId} started successfully`,
-      },
-    });
-  } catch (error) {
-    console.error("Start error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to start project",
-    });
-  }
-});
-
-// POST /projects/:id/stop - STOP workflow
-router.post("/projects/:id/stop", async (req, res) => {
-  try {
-    const projectId = req.params.id;
-
-    res.json({
-      success: true,
-      data: {
-        projectId,
-        message: `Project ${projectId} stopped successfully`,
-      },
-    });
-  } catch (error) {
-    console.error("Stop error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to stop project",
-    });
-  }
-});
-
-// POST /projects/:id/deploy - DEPLOY workflow
-router.post("/projects/:id/deploy", async (req, res) => {
-  try {
-    const projectId = req.params.id;
-
-    res.json({
-      success: true,
-      data: {
-        projectId,
-        message: `Deploy completed for project ${projectId}`,
-      },
-    });
-  } catch (error) {
-    console.error("Deploy error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to deploy project",
-    });
-  }
-});
-// GET /projects/meta/templates - Lister les templates disponibles
-router.get("/projects/meta/templates", async (req, res) => {
-  try {
-    // 🔧 FIX: Utiliser la bonne fonction discoverTemplates
-    const { discoverTemplates } = await import(
-      "../../app-server/cores/templates.js"
-    );
-    const discovery = await discoverTemplates();
-
-    if (!discovery.success) {
-      return res.status(500).json({
-        success: false,
-        error: "Failed to discover templates",
-      });
-    }
-
-    res.json({
-      success: true,
-      templates: discovery.data.templates || [],
-      count: discovery.data.count || 0,
-    });
-  } catch (error) {
-    console.error("Templates discovery error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to discover templates",
-    });
-  }
-});
-
-// POST /projects/:id/validate - Validation du schema sans sauvegarde
-router.post("/projects/:id/validate", async (req, res) => {
-  try {
-    const projectData = req.body;
-
-    if (!projectData) {
-      return res.status(400).json({
-        success: false,
-        error: "Project data is required",
-      });
-    }
-
-    const validation = validateProjectSchema(projectData);
-
-    res.json({
-      success: true,
-      validation: {
-        valid: validation.valid,
-        errors: validation.errors,
-        warnings: validation.warnings,
-      },
-    });
-  } catch (error) {
-    console.error("Validation error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to validate project",
-    });
-  }
-});
-
-// GET /health - Health check
-router.get("/health", (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-    },
-  });
-});
-
-// Fonction helper pour merge profond
-function deepMerge(target, source) {
-  const result = { ...target };
-
-  for (const key in source) {
-    if (source.hasOwnProperty(key)) {
-      if (
-        source[key] &&
-        typeof source[key] === "object" &&
-        !Array.isArray(source[key])
-      ) {
-        // Merge récursif pour les objets
-        result[key] =
-          result[key] &&
-          typeof result[key] === "object" &&
-          !Array.isArray(result[key])
-            ? deepMerge(result[key], source[key])
-            : source[key];
-      } else {
-        // Remplacement direct pour les primitives et arrays
-        result[key] = source[key];
+        validation: {
+          valid: schemaValidation.valid,
+          errors: schemaValidation.errors || [],
+          warnings: schemaValidation.warnings || [],
+          score: schemaValidation.score || 0
+        },
+        timestamp: new Date().toISOString()
       }
+    });
+
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      res.status(404).json({
+        success: false,
+        error: `Project ${projectId} not found`
+      });
+    } else {
+      handleRouteError(res, error, `validate project ${projectId}`);
     }
   }
+});
 
-  return result;
-}
+console.log(`[ROUTES] Router initialized with Pattern 13 CALLS support`);
 
 export default router;
