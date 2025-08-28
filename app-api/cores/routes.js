@@ -11,6 +11,8 @@ import { buildWorkflow } from "../../app-server/engines/build-coordinator.js";
 // import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
 // import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
 import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
+import { revertWorkflow } from '../../app-server/engines/revert-coordinator.js';
+
 
 /**
  * Routes HTTP pour gestion des projets avec Pattern 13 CALLS
@@ -27,6 +29,7 @@ const WORKFLOW_COORDINATORS = {
   // START: startWorkflow,       // Temporairement désactivé - dépendances cassées
   // STOP: stopWorkflow,         // Temporairement désactivé - dépendances cassées
   DELETE: deleteWorkflow,
+  REVERT: revertWorkflow,
 };
 
 /**
@@ -360,6 +363,12 @@ router.get("/projects/meta/templates", async (req, res) => {
     });
   }
 });
+
+/**
+ * PUT /projects/:id/revert - Revert un projet (REVERT workflow)
+ */
+router.put("/projects/:id/revert", handleWorkflowRequest);
+
 
 console.log(`[ROUTES] Router initialized with Pattern 13 CALLS support`);
 
