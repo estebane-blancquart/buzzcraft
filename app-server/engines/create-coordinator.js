@@ -38,6 +38,15 @@ import { join } from "path";
  * }
  */
 export async function createWorkflow(projectId, config = {}) {
+  console.log("🟢 [SERVER] === DEBUG createWorkflow START ===");
+  console.log("🟢 [SERVER] projectId =", `"${projectId}"`);
+  console.log("🟢 [SERVER] config complet:", JSON.stringify(config, null, 2));
+  console.log("🟢 [SERVER] config.template =", `"${config.template}"`);
+  console.log("🟢 [SERVER] typeof config.template =", typeof config.template);
+  console.log("🟢 [SERVER] config.template length =", config.template?.length);
+  console.log("🟢 [SERVER] config.template === 'empty' ?", config.template === 'empty');
+  console.log("🟢 [SERVER] Boolean(config.template) =", Boolean(config.template));
+
   console.log(
     `[CREATE] CALL 3: createWorkflow called for project: ${projectId}`
   );
@@ -81,13 +90,17 @@ export async function createWorkflow(projectId, config = {}) {
 
     console.log(`[CREATE] Initial state confirmed: VOID`);
 
-    // CALL 5: Chargement du template
-    console.log(
-      `[CREATE] CALL 5: Loading template: ${config.template || "basic"}`
-    );
-    const templateResult = await loadProjectTemplate(
-      config.template || "basic"
-    );
+    // CALL 5: Chargement du template - VERSION DEBUG
+    console.log("🟢 [SERVER] CALL 5: About to determine templateId...");
+    console.log("🟢 [SERVER] config.template before decision =", `"${config.template}"`);
+    
+    // ✅ PAS DE FALLBACK ICI - on passe directement la valeur
+    const templateId = config.template;
+    
+    console.log("🟢 [SERVER] templateId determined =", `"${templateId}"`);
+    console.log("🟢 [SERVER] Calling loadProjectTemplate with:", `"${templateId}"`);
+    
+    const templateResult = await loadProjectTemplate(templateId);
 
     if (!templateResult.success) {
       console.log(`[CREATE] Template loading failed: ${templateResult.error}`);
@@ -223,15 +236,29 @@ export async function createWorkflow(projectId, config = {}) {
 }
 
 /**
- * Charge un template de projet par ID (logique intégrée CREATE)
+ * Charge un template de projet par ID (logique intégrée CREATE) - VERSION DEBUG
  * @param {string} templateId - ID du template à charger
  * @returns {Promise<{success: boolean, data: object}>} Résultat avec template chargé
  * @private
  */
 async function loadProjectTemplate(templateId) {
+  console.log("🔴 [TEMPLATE] === DEBUG loadProjectTemplate START ===");
+  console.log("🔴 [TEMPLATE] templateId received =", `"${templateId}"`);
+  console.log("🔴 [TEMPLATE] typeof templateId =", typeof templateId);
+  console.log("🔴 [TEMPLATE] templateId length =", templateId?.length);
+  console.log("🔴 [TEMPLATE] Boolean(templateId) =", Boolean(templateId));
+
   console.log(`[CREATE] Loading template: ${templateId}`);
 
   try {
+    // Validation et fallback SEULEMENT ici si nécessaire
+    if (!templateId || templateId.trim() === '') {
+      console.log("🔴 [TEMPLATE] templateId is empty/null, using basic fallback");
+      templateId = "basic";
+    }
+    
+    console.log("🔴 [TEMPLATE] Final templateId to use =", `"${templateId}"`);
+
     // Validation du templateId
     if (!templateId || typeof templateId !== "string") {
       return {
@@ -242,7 +269,7 @@ async function loadProjectTemplate(templateId) {
 
     // Construction du chemin vers le template
     const templatePath = join(PATHS.projectTemplates, `${templateId}.json`);
-    console.log(`[CREATE] Template path: ${templatePath}`);
+    console.log("🔴 [TEMPLATE] Template path =", templatePath);
 
     // Lecture du fichier template
     const templateFile = await readPath(templatePath, {
@@ -251,7 +278,7 @@ async function loadProjectTemplate(templateId) {
     });
 
     if (!templateFile.success) {
-      console.log(`[CREATE] Template file read failed: ${templateFile.error}`);
+      console.log("🔴 [TEMPLATE] Template file read FAILED:", templateFile.error);
       return {
         success: false,
         error: `Template file read failed: ${templateFile.error}`,
@@ -259,7 +286,7 @@ async function loadProjectTemplate(templateId) {
     }
 
     if (!templateFile.data.exists) {
-      console.log(`[CREATE] Template not found: ${templateId}`);
+      console.log("🔴 [TEMPLATE] Template file NOT FOUND:", templateId);
       return {
         success: false,
         error: `Template '${templateId}' not found`,
@@ -277,7 +304,8 @@ async function loadProjectTemplate(templateId) {
     }
 
     const templateData = templateFile.data.parsed;
-    console.log(`[CREATE] Template loaded successfully`);
+    console.log("🔴 [TEMPLATE] Template file loaded successfully for:", templateId);
+    console.log("🔴 [TEMPLATE] Template data:", templateFile.data.parsed?.project?.id || 'unknown');
 
     // Validation basique du template
     const validation = validateTemplateForCreate(templateData, templateId);
@@ -301,7 +329,7 @@ async function loadProjectTemplate(templateId) {
       },
     };
   } catch (error) {
-    console.log(`[CREATE] Template loading error: ${error.message}`);
+    console.log("🔴 [TEMPLATE] ERROR:", error.message);
     return {
       success: false,
       error: `Template loading failed: ${error.message}`,
@@ -340,63 +368,39 @@ function buildProjectData(projectId, config, template) {
         version: template.version || "1.0.0",
       },
       metadata: {
-        generator: "BuzzCraft",
-        generatorVersion: "1.0.0",
-        createdBy: "CREATE_ENGINE",
-        ...config.metadata,
+        generator: "create-coordinator",
+        version: "1.0.0",
+        createdWith: template.id,
       },
+      pages: [],
     };
 
     // Intégration des pages du template
     if (template.project && template.project.pages) {
-      projectData.pages = JSON.parse(JSON.stringify(template.project.pages));
+      projectData.pages = template.project.pages.map((page) => ({
+        ...page,
+        id: page.id || `page-${Date.now()}`,
+        name: page.name || "Untitled Page",
+      }));
+
       console.log(
         `[CREATE] Integrated ${projectData.pages.length} pages from template`
       );
     } else {
-      // Création d'une page par défaut
+      // Page par défaut si le template n'en contient pas
       projectData.pages = [
         {
           id: "home",
           name: "Home",
           path: "/",
-          title: config.name || projectId,
-          description: "Welcome to your new website",
+          title: `Welcome to ${projectData.name}`,
           layout: {
-            sections: [
-              {
-                id: "hero-section",
-                name: "Hero Section",
-                divs: [
-                  {
-                    id: "hero-content",
-                    name: "Hero Content",
-                    classname: "hero-container",
-                    components: [
-                      {
-                        id: "hero-title",
-                        type: "heading",
-                        tag: "h1",
-                        content: config.name || "Welcome to Your Site",
-                        classname: "hero-title",
-                      },
-                      {
-                        id: "hero-description",
-                        type: "paragraph",
-                        content:
-                          config.description ||
-                          "This is your new website built with BuzzCraft.",
-                        classname: "hero-description",
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
+            sections: [],
           },
         },
       ];
-      console.log(`[CREATE] Created default page structure`);
+
+      console.log(`[CREATE] Created default home page`);
     }
 
     return {
@@ -407,20 +411,19 @@ function buildProjectData(projectId, config, template) {
     console.log(`[CREATE] Project data building error: ${error.message}`);
     return {
       success: false,
-      error: `Project data building failed: ${error.message}`,
+      error: error.message,
     };
   }
 }
 
 /**
- * Validation des paramètres d'entrée du workflow CREATE
+ * Valide les paramètres d'entrée du workflow CREATE
  * @param {string} projectId - ID du projet
  * @param {object} config - Configuration
  * @returns {{valid: boolean, error?: string}} Résultat de validation
  * @private
  */
 function validateCreateParameters(projectId, config) {
-  // Validation projectId
   if (!projectId || typeof projectId !== "string") {
     return { valid: false, error: "projectId must be non-empty string" };
   }
@@ -432,56 +435,23 @@ function validateCreateParameters(projectId, config) {
     };
   }
 
-  // Validation pattern sécurisé
   if (!/^[a-z0-9-]+$/.test(projectId)) {
     return {
       valid: false,
-      error:
-        "projectId must contain only lowercase letters, numbers, and hyphens",
+      error: "projectId must contain only lowercase letters, numbers, and hyphens",
     };
   }
 
-  if (projectId.length < 3) {
-    return {
-      valid: false,
-      error: "projectId must be at least 3 characters long",
-    };
-  }
-
-  // Validation config
   if (!config || typeof config !== "object") {
     return { valid: false, error: "config must be an object" };
-  }
-
-  // Validation config.name optionnelle
-  if (config.name !== undefined && typeof config.name !== "string") {
-    return { valid: false, error: "config.name must be a string" };
-  }
-
-  // Validation config.template optionnelle
-  if (config.template !== undefined && typeof config.template !== "string") {
-    return { valid: false, error: "config.template must be a string" };
-  }
-
-  // Validation config.description optionnelle
-  if (
-    config.description !== undefined &&
-    typeof config.description !== "string"
-  ) {
-    return { valid: false, error: "config.description must be a string" };
-  }
-
-  // Validation config.metadata optionnelle
-  if (config.metadata !== undefined && typeof config.metadata !== "object") {
-    return { valid: false, error: "config.metadata must be an object" };
   }
 
   return { valid: true };
 }
 
 /**
- * Validation du projet construit avant écriture
- * @param {object} projectData - Données du projet
+ * Valide un projet construit avant écriture sur disque
+ * @param {object} projectData - Données du projet à valider
  * @returns {{valid: boolean, error?: string}} Résultat de validation
  * @private
  */

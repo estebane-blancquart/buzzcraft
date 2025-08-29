@@ -1,72 +1,54 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { apiUrl } from "@config/api.js";
-import {
-  PROJECT_STATES,
-  PROJECT_ACTIONS,
-  MESSAGE_TYPES,
-} from "@config/constants.js";
+import { MESSAGE_TYPES, PROJECT_STATES, PROJECT_ACTIONS } from "@config/constants.js";
 
 /*
- * FAIT QUOI : Gestion workflows et communications API centralisées
+ * FAIT QUOI : Gestion centralisée workflows projets avec optimisations
  * REÇOIT : Rien (hook autonome)
- * RETOURNE : États techniques et fonctions API optimisées
- * ERREURS : Gérées avec states d'erreur + retry logic
+ * RETOURNE : Interface API + états + console
+ * ERREURS : Gestion complète avec messages console + throw pour composants
  */
 
 export function useWorkflows() {
-  const hasLoadedOnce = useRef(false);
-
-  // États techniques API
+  // === ÉTATS CENTRALISÉS ===
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState({}); // { 'project-id-ACTION': boolean }
   const [consoleMessages, setConsoleMessages] = useState([]);
-  const [actionLoading, setActionLoading] = useState({});
 
-  // Configuration console avec limite mémoire
-  const MAX_CONSOLE_MESSAGES = 100;
-
-  // Charger les projets au montage
+  // Chargement initial projets
   useEffect(() => {
-    if (!hasLoadedOnce.current) {
-      loadProjects();
-      hasLoadedOnce.current = true;
-    }
+    console.log("🔄 useWorkflows: Effect triggered");
+    loadProjects();
   }, []);
 
-  // === FONCTIONS UTILITAIRES OPTIMISÉES ===
+  // === CONSOLE FUNCTIONS ===
 
-  // Gestion console avec limite mémoire
-  const addConsoleMessage = useCallback((type, text) => {
-    console.log("📝 ADD MESSAGE:", type, text);
-
-    const message = {
+  // Ajout message console avec horodatage
+  const addConsoleMessage = useCallback((type, message) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const newMessage = {
+      id: Date.now() + Math.random(),
       type,
-      text,
-      timestamp: new Date().toISOString(),
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      message,
+      timestamp,
     };
 
-    setConsoleMessages((prev) => {
-      const updated = [...prev, message];
-      // Limite mémoire : garder seulement les N derniers messages
-      return updated.slice(-MAX_CONSOLE_MESSAGES);
-    });
+    setConsoleMessages((prev) => [...prev, newMessage]);
+    console.log(`[${type.toUpperCase()}] ${message}`);
   }, []);
 
+  // Clear console
   const clearConsole = useCallback(() => {
-    console.log("🗑️ CLEAR CONSOLE");
     setConsoleMessages([]);
+    console.log("🧹 Console cleared");
   }, []);
 
-  // Mise à jour optimiste état projet avec validation
+  // === ÉTAT MUTATIONS ===
+
+  // Mise à jour état projet local (optimistic UI)
   const updateProjectState = useCallback((projectId, newState) => {
-    console.log("🔄 OPTIMISTIC UPDATE:", projectId, "→", newState);
-
-    if (!projectId || !newState) {
-      console.warn("Invalid state update parameters");
-      return;
-    }
-
+    console.log(`🔄 Updating project ${projectId} state to:`, newState);
     setProjects((prev) =>
       prev.map((project) =>
         project.id === projectId ? { ...project, state: newState } : project
@@ -155,15 +137,23 @@ export function useWorkflows() {
     [makeApiCall, addConsoleMessage]
   );
 
-  // Création projet avec validation
+  // Création projet avec validation + DEBUG
   const createProject = useCallback(
     async (formData) => {
+      console.log("🟡 [CLIENT] === DEBUG createProject START ===");
+      console.log("🟡 [CLIENT] formData complet:", JSON.stringify(formData, null, 2));
+      console.log("🟡 [CLIENT] formData.template =", `"${formData.template}"`);
+      console.log("🟡 [CLIENT] typeof formData.template =", typeof formData.template);
+      console.log("🟡 [CLIENT] formData.template length =", formData.template?.length);
+      console.log("🟡 [CLIENT] formData.template === 'empty' ?", formData.template === 'empty');
+      console.log("🟡 [CLIENT] Boolean(formData.template) =", Boolean(formData.template));
+
       if (!formData?.name?.trim()) {
         throw new Error("Le nom du projet est requis");
       }
 
       try {
-        console.log("🆕 CREATING PROJECT:", formData.name);
+        console.log("🟡 [CLIENT] Creating projectId from name...");
 
         // ✅ GÉNÉRATION projectId conforme aux règles serveur
         const projectId = formData.name
@@ -180,16 +170,23 @@ export function useWorkflows() {
           );
         }
 
+        const requestBody = {
+          projectId: projectId, // ✅ REQUIS par parser
+          config: {
+            // ✅ WRAPPER config requis
+            name: formData.name.trim(),
+            template: formData.template, // ✅ PAS DE FALLBACK ICI
+          },
+        };
+
+        console.log("🟡 [CLIENT] Request body créé:");
+        console.log("🟡 [CLIENT]", JSON.stringify(requestBody, null, 2));
+        console.log("🟡 [CLIENT] requestBody.config.template =", `"${requestBody.config.template}"`);
+        console.log("🟡 [CLIENT] Sending to API...");
+
         const data = await makeApiCall("projects", {
           method: "POST",
-          body: JSON.stringify({
-            projectId: projectId, // ✅ REQUIS par parser
-            config: {
-              // ✅ WRAPPER config requis
-              name: formData.name.trim(),
-              template: formData.template || "basic",
-            },
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         if (data) {

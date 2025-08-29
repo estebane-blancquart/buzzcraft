@@ -6,6 +6,15 @@
 
 import { resolve, join } from "path";
 import { existsSync } from "fs";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Obtenir le répertoire du fichier actuel (app-server/cores/)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Racine app-server (remonte d'un niveau depuis app-server/cores/)
+const APP_SERVER_ROOT = resolve(__dirname, '../');
 
 // === CHEMINS SYSTÈME ===
 
@@ -16,24 +25,18 @@ import { existsSync } from "fs";
  */
 export const PATHS = {
   // Racine du système
-  root: resolve("../app-server"),
+  root: APP_SERVER_ROOT,
 
-  // Données d'entrée
-  dataInputs: resolve("../app-server/data/inputs"),
-  projectTemplates: resolve(
-    "../app-server/data/inputs/templates/structure/projects"
-  ),
-  containerTemplates: resolve(
-    "../app-server/data/inputs/templates/structure/containers"
-  ),
-  componentTemplates: resolve(
-    "../app-server/data/inputs/templates/structure/components"
-  ),
-  codeTemplates: resolve("../app-server/data/inputs/templates/code"),
-  schemas: resolve("../app-server/data/inputs/schemas"),
+  // Données d'entrée - CHEMINS FIXES
+  dataInputs: resolve(APP_SERVER_ROOT, "data/inputs"),
+  projectTemplates: resolve(APP_SERVER_ROOT, "data/inputs/templates/structure/projects"),
+  containerTemplates: resolve(APP_SERVER_ROOT, "data/inputs/templates/structure/containers"),
+  componentTemplates: resolve(APP_SERVER_ROOT, "data/inputs/templates/structure/components"),
+  codeTemplates: resolve(APP_SERVER_ROOT, "data/inputs/templates/code"),
+  schemas: resolve(APP_SERVER_ROOT, "data/inputs/schemas"),
 
   // Données de sortie
-  dataOutputs: resolve("../app-server/data/outputs"),
+  dataOutputs: resolve(APP_SERVER_ROOT, "data/outputs"),
 
   // Configuration
   configs: resolve("./configs"),
@@ -71,123 +74,21 @@ export const WORKFLOW_ACTIONS = {
   START: "START", // OFFLINE → ONLINE
   STOP: "STOP", // ONLINE → OFFLINE
   DELETE: "DELETE", // ANY → VOID
-  REVERT: "REVERT", // BUILT/OFFLINE → DRAFT
-  UPDATE: "UPDATE", // ONLINE → ONLINE
+  REVERT: "REVERT", // BUILT/OFFLINE/ONLINE → DRAFT
+  UPDATE: "UPDATE", // DRAFT → DRAFT (save)
 };
 
 /**
- * Transitions autorisées de la machine à états
+ * Transitions d'états autorisées dans la machine à états
  * @type {object}
  * @readonly
  */
-export const STATE_TRANSITIONS = {
-  [WORKFLOW_ACTIONS.CREATE]: {
-    from: PROJECT_STATES.VOID,
-    to: PROJECT_STATES.DRAFT,
-  },
-  [WORKFLOW_ACTIONS.BUILD]: {
-    from: PROJECT_STATES.DRAFT,
-    to: PROJECT_STATES.BUILT,
-  },
-  [WORKFLOW_ACTIONS.DEPLOY]: {
-    from: PROJECT_STATES.BUILT,
-    to: PROJECT_STATES.OFFLINE,
-  },
-  [WORKFLOW_ACTIONS.START]: {
-    from: PROJECT_STATES.OFFLINE,
-    to: PROJECT_STATES.ONLINE,
-  },
-  [WORKFLOW_ACTIONS.STOP]: {
-    from: PROJECT_STATES.ONLINE,
-    to: PROJECT_STATES.OFFLINE,
-  },
-  [WORKFLOW_ACTIONS.DELETE]: {
-    from: "ANY",
-    to: PROJECT_STATES.VOID,
-  },
-  [WORKFLOW_ACTIONS.REVERT]: {
-    from: [PROJECT_STATES.BUILT, PROJECT_STATES.OFFLINE],
-    to: PROJECT_STATES.DRAFT,
-  },
-  [WORKFLOW_ACTIONS.UPDATE]: {
-    from: PROJECT_STATES.ONLINE,
-    to: PROJECT_STATES.ONLINE,
-  },
-};
-
-// === TYPES D'ÉLÉMENTS ===
-
-/**
- * Types de composants supportés
- * @type {object}
- * @readonly
- */
-export const COMPONENT_TYPES = {
-  HEADING: "heading",
-  PARAGRAPH: "paragraph",
-  BUTTON: "button",
-  IMAGE: "image",
-  VIDEO: "video",
-  LINK: "link",
-};
-
-/**
- * Types de containers supportés
- * @type {object}
- * @readonly
- */
-export const CONTAINER_TYPES = {
-  DIV: "div",
-  LIST: "list",
-  FORM: "form",
-};
-
-/**
- * Tous les types d'éléments DOM
- * @type {string[]}
- * @readonly
- */
-export const ALL_ELEMENT_TYPES = [
-  ...Object.values(COMPONENT_TYPES),
-  ...Object.values(CONTAINER_TYPES),
-];
-
-// === EXTENSIONS FICHIERS ===
-
-/**
- * Extensions de fichiers supportées par le système
- * @type {object}
- * @readonly
- */
-export const FILE_EXTENSIONS = {
-  // Données
-  JSON: ".json",
-
-  // Templates
-  HANDLEBARS: ".hbs",
-
-  // Code généré
-  JAVASCRIPT: ".js",
-  JSX: ".jsx",
-  TYPESCRIPT: ".ts",
-  TSX: ".tsx",
-  HTML: ".html",
-  CSS: ".css",
-  SCSS: ".scss",
-
-  // Documentation
-  MARKDOWN: ".md",
-};
-
-/**
- * Extensions spécifiques aux templates
- * @type {object}
- * @readonly
- */
-export const TEMPLATE_EXTENSIONS = {
-  HANDLEBARS: [".hbs", ".handlebars"],
-  PARTIALS: [".partial.hbs"],
-  LAYOUTS: [".layout.hbs"],
+export const VALID_TRANSITIONS = {
+  VOID: ["CREATE"],
+  DRAFT: ["BUILD", "DELETE", "UPDATE"],
+  BUILT: ["DEPLOY", "REVERT", "DELETE"],
+  OFFLINE: ["START", "REVERT", "DELETE"],
+  ONLINE: ["STOP", "DELETE"],
 };
 
 // === MESSAGES D'ERREUR ===
@@ -198,30 +99,20 @@ export const TEMPLATE_EXTENSIONS = {
  * @readonly
  */
 export const ERROR_MESSAGES = {
-  // Validation des paramètres
   MISSING_PROJECT_ID: "Project ID is required",
-  INVALID_PROJECT_ID: "Project ID must be non-empty string matching pattern",
-  MISSING_CONFIG: "Configuration object is required",
-
-  // États et workflows
-  INVALID_STATE: "Invalid project state",
-  WORKFLOW_FORBIDDEN: "Workflow not allowed in current state",
-  STATE_TRANSITION_ERROR: "State transition not permitted",
-
-  // Templates et fichiers
-  TEMPLATE_NOT_FOUND: "Template not found",
-  INVALID_TEMPLATE: "Template format is invalid",
-  FILE_READ_ERROR: "File read operation failed",
-  FILE_WRITE_ERROR: "File write operation failed",
-
-  // Validation
+  INVALID_PROJECT_ID: "Project ID must contain only lowercase letters, numbers, and hyphens",
+  PROJECT_NOT_FOUND: "Project not found",
+  PROJECT_ALREADY_EXISTS: "Project already exists",
+  INVALID_STATE: "Project is not in the correct state for this operation",
+  INVALID_ACTION: "Unknown or invalid action",
+  INVALID_TRANSITION: "State transition not allowed",
   VALIDATION_ERROR: "Data validation failed",
-  SCHEMA_ERROR: "Schema validation failed",
-
-  // Système
-  INTERNAL_ERROR: "Internal system error",
-  TIMEOUT_ERROR: "Operation timeout exceeded",
-  PERMISSION_ERROR: "Insufficient permissions",
+  FILE_NOT_FOUND: "Required file not found",
+  TEMPLATE_NOT_FOUND: "Template not found",
+  PERMISSION_DENIED: "Permission denied",
+  NETWORK_ERROR: "Network communication error",
+  TIMEOUT_ERROR: "Operation timeout",
+  UNKNOWN_ERROR: "An unknown error occurred",
 };
 
 /**
@@ -231,6 +122,7 @@ export const ERROR_MESSAGES = {
  */
 export const SUCCESS_MESSAGES = {
   PROJECT_CREATED: "Project created successfully",
+  PROJECT_UPDATED: "Project updated successfully",
   PROJECT_BUILT: "Project built successfully",
   PROJECT_DEPLOYED: "Project deployed successfully",
   PROJECT_STARTED: "Project started successfully",
@@ -354,35 +246,129 @@ export function validateProjectId(projectId) {
  * if (!result.valid) console.error(result.error);
  */
 export function validateStateTransition(currentState, action) {
-  const transition = STATE_TRANSITIONS[action];
-
-  if (!transition) {
+  if (!currentState || !VALID_TRANSITIONS[currentState]) {
     return {
       valid: false,
-      error: `Unknown action: ${action}`,
+      error: ERROR_MESSAGES.INVALID_STATE,
     };
   }
 
-  // Cas spécial : DELETE autorisé depuis tout état
-  if (action === WORKFLOW_ACTIONS.DELETE) {
-    return { valid: true };
+  if (!VALID_TRANSITIONS[currentState].includes(action)) {
+    return {
+      valid: false,
+      error: ERROR_MESSAGES.INVALID_TRANSITION,
+    };
   }
 
-  // Vérification transition standard
-  if (Array.isArray(transition.from)) {
-    // Transition depuis plusieurs états possibles
-    if (!transition.from.includes(currentState)) {
+  return { valid: true };
+}
+
+/**
+ * Valide une action de workflow
+ * @param {string} action - Action à valider
+ * @returns {{valid: boolean, error?: string}} Résultat de validation
+ *
+ * @example
+ * const result = validateWorkflowAction('BUILD');
+ * if (!result.valid) console.error(result.error);
+ */
+export function validateWorkflowAction(action) {
+  if (!action || typeof action !== "string") {
+    return {
+      valid: false,
+      error: ERROR_MESSAGES.INVALID_ACTION,
+    };
+  }
+
+  const validActions = Object.values(WORKFLOW_ACTIONS);
+  if (!validActions.includes(action.toUpperCase())) {
+    return {
+      valid: false,
+      error: ERROR_MESSAGES.INVALID_ACTION,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Normalise un ID de projet selon les règles
+ * @param {string} input - ID brut à normaliser
+ * @returns {string} ID normalisé
+ *
+ * @example
+ * const normalized = normalizeProjectId('Mon Super Projet!');
+ * // Returns: 'mon-super-projet'
+ */
+export function normalizeProjectId(input) {
+  if (!input || typeof input !== "string") {
+    return "";
+  }
+
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "") // Supprimer caractères invalides
+    .replace(/\s+/g, "-") // Espaces → tirets
+    .replace(/-+/g, "-") // Tirets multiples → tiret unique
+    .replace(/^-+|-+$/g, ""); // Supprimer tirets début/fin
+}
+
+/**
+ * Formate un nom de projet à partir de son ID
+ * @param {string} projectId - ID du projet
+ * @returns {string} Nom formaté
+ *
+ * @example
+ * const name = formatProjectName('mon-super-projet');
+ * // Returns: 'Mon Super Projet'
+ */
+export function formatProjectName(projectId) {
+  if (!projectId || typeof projectId !== "string") {
+    return "Untitled Project";
+  }
+
+  return projectId
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * Génère un horodatage standardisé
+ * @returns {string} Horodatage ISO
+ *
+ * @example
+ * const timestamp = generateTimestamp();
+ * // Returns: '2024-01-15T10:30:45.123Z'
+ */
+export function generateTimestamp() {
+  return new Date().toISOString();
+}
+
+/**
+ * Valide la structure d'un objet de configuration
+ * @param {object} config - Configuration à valider
+ * @param {string[]} requiredFields - Champs obligatoires
+ * @returns {{valid: boolean, error?: string}} Résultat de validation
+ *
+ * @example
+ * const result = validateConfig(config, ['name', 'template']);
+ * if (!result.valid) console.error(result.error);
+ */
+export function validateConfig(config, requiredFields = []) {
+  if (!config || typeof config !== "object") {
+    return {
+      valid: false,
+      error: "Configuration must be an object",
+    };
+  }
+
+  for (const field of requiredFields) {
+    if (!(field in config)) {
       return {
         valid: false,
-        error: `Action ${action} not allowed from state ${currentState}. Allowed from: ${transition.from.join(", ")}`,
-      };
-    }
-  } else {
-    // Transition depuis un seul état
-    if (currentState !== transition.from) {
-      return {
-        valid: false,
-        error: `Action ${action} not allowed from state ${currentState}. Required state: ${transition.from}`,
+        error: `Missing required field: ${field}`,
       };
     }
   }
@@ -390,27 +376,5 @@ export function validateStateTransition(currentState, action) {
   return { valid: true };
 }
 
-/**
- * Utilitaire de debug pour afficher tous les chemins système
- * @returns {void} Affiche les paths dans la console avec leur statut
- *
- * @example
- * debugPaths(); // Affiche tous les chemins avec EXISTS/MISSING
- */
-export function debugPaths() {
-  console.log("\n=== BUZZCRAFT SYSTEM PATHS DEBUG ===");
-
-  Object.entries(PATHS).forEach(([key, path]) => {
-    const exists = existsSync(path);
-    const status = exists ? "✅ EXISTS" : "❌ MISSING";
-    const displayKey = key.padEnd(20);
-
-    console.log(`${displayKey} ${status} ${path}`);
-  });
-
-  console.log("=====================================\n");
-}
-
-console.log(
-  `[CONSTANTS] Constants loaded successfully - PIXEL PERFECT VERSION`
-);
+console.log(`[CONSTANTS] Constants loaded successfully - PIXEL PERFECT VERSION`);
+console.log(`[CONSTANTS] Project templates path: ${PATHS.projectTemplates}`);

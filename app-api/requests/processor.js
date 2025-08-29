@@ -6,6 +6,12 @@
  */
 
 export async function process(requestData) {
+  console.log("🔵 [API] === DEBUG process START ===");
+  console.log("🔵 [API] requestData complet:", JSON.stringify(requestData, null, 2));
+  console.log("🔵 [API] requestData.config =", requestData.config);
+  console.log("🔵 [API] requestData.config.template =", `"${requestData.config?.template}"`);
+  console.log("🔵 [API] typeof requestData.config.template =", typeof requestData.config?.template);
+
   console.log(`[REQUEST-PROCESSOR] CALL 2: Processing request data...`);
   
   // Validation du paramètre d'entrée
@@ -49,6 +55,10 @@ export async function process(requestData) {
   
   // Enrichissement avec données spécifiques au workflow
   enrichDataForWorkflow(processedData, action, config);
+  
+  console.log("🔵 [API] processedData créé:");
+  console.log("🔵 [API]", JSON.stringify(processedData, null, 2));
+  console.log("🔵 [API] processedData.config.template =", `"${processedData.config?.template}"`);
   
   console.log(`[REQUEST-PROCESSOR] Successfully processed ${action} request for project: ${projectId}`);
   return {
@@ -117,67 +127,43 @@ function processActionConfig(action, config, projectId) {
   const baseConfig = {
     timestamp: new Date().toISOString(),
     requestId: generateRequestId(),
-    ...config
+    source: 'request-processor'
   };
   
+  // Merge de la config originale avec les enrichissements
+  const enrichedConfig = {
+    ...config,  // ✅ On préserve TOUTE la config originale (y compris template)
+    ...baseConfig
+  };
+  
+  // Enrichissements spécifiques par action
   switch (action) {
     case 'CREATE':
       return {
-        ...baseConfig,
-        name: config.name || projectId,
-        template: config.template || 'basic',
-        description: config.description || `Project ${projectId}`,
-        generateDefaults: true,
-        validateSchema: true
+        ...enrichedConfig,
+        template: config.template || 'basic',  // Fallback seulement ici si nécessaire
+        generateId: config.generateId !== false,
+        validateTemplate: config.validateTemplate !== false
       };
       
     case 'BUILD':
       return {
-        ...baseConfig,
-        cleanBuild: config.cleanBuild !== false,
-        generateSourceMaps: config.generateSourceMaps !== false,
+        ...enrichedConfig,
+        production: config.production || false,
         minify: config.minify !== false,
-        skipValidation: config.skipValidation === true
-      };
-      
-    case 'DEPLOY':
-      return {
-        ...baseConfig,
-        environment: config.environment || 'development',
-        healthCheck: config.healthCheck !== false,
-        rollbackOnFailure: config.rollbackOnFailure !== false,
-        timeout: config.timeout || 300000 // 5 minutes
-      };
-      
-    case 'START':
-      return {
-        ...baseConfig,
-        port: config.port || 8080,
-        healthCheck: config.healthCheck !== false,
-        waitForReady: config.waitForReady !== false,
-        timeout: config.timeout || 60000 // 1 minute
-      };
-      
-    case 'STOP':
-      return {
-        ...baseConfig,
-        gracefulShutdown: config.gracefulShutdown !== false,
-        timeout: config.timeout || 30000, // 30 secondes
-        forceKill: config.forceKill === true
+        targets: config.targets || ['app-visitor']
       };
       
     case 'DELETE':
       return {
-        ...baseConfig,
+        ...enrichedConfig,
         removeFiles: config.removeFiles !== false,
-        removeContainers: config.removeContainers !== false,
-        backup: config.backup === true,
-        confirmDelete: config.confirmDelete !== false
+        createBackup: config.createBackup !== false
       };
       
     case 'REVERT':
       return {
-        ...baseConfig,
+        ...enrichedConfig,
         targetState: config.targetState || 'DRAFT',
         preserveData: config.preserveData !== false,
         createBackup: config.createBackup !== false
@@ -185,14 +171,14 @@ function processActionConfig(action, config, projectId) {
       
     case 'UPDATE':
       return {
-        ...baseConfig,
+        ...enrichedConfig,
         version: config.version || '1.0.0',
         strategy: config.strategy || 'rolling',
         rollbackOnFailure: config.rollbackOnFailure !== false
       };
       
     default:
-      return baseConfig;
+      return enrichedConfig;
   }
 }
 
@@ -267,103 +253,53 @@ function enrichDataForWorkflow(processedData, action, config) {
     case 'CREATE':
       processedData.workflow = {
         type: 'creation',
-        expectsTemplates: true,
-        createsFiles: true,
-        modifiesState: true,
-        targetState: 'DRAFT'
+        expectedDuration: 5000,
+        rollbackSupported: true,
+        stateTransition: 'VOID -> DRAFT'
       };
       break;
       
     case 'BUILD':
       processedData.workflow = {
         type: 'compilation',
-        expectsTemplates: true,
-        createsFiles: true,
-        modifiesState: true,
-        targetState: 'BUILT'
-      };
-      break;
-      
-    case 'DEPLOY':
-      processedData.workflow = {
-        type: 'deployment',
-        expectsTemplates: false,
-        createsFiles: false,
-        modifiesState: true,
-        targetState: 'OFFLINE'
-      };
-      break;
-      
-    case 'START':
-      processedData.workflow = {
-        type: 'startup',
-        expectsTemplates: false,
-        createsFiles: false,
-        modifiesState: true,
-        targetState: 'ONLINE'
-      };
-      break;
-      
-    case 'STOP':
-      processedData.workflow = {
-        type: 'shutdown',
-        expectsTemplates: false,
-        createsFiles: false,
-        modifiesState: true,
-        targetState: 'OFFLINE'
+        expectedDuration: 30000,
+        rollbackSupported: true,
+        stateTransition: 'DRAFT -> BUILT'
       };
       break;
       
     case 'DELETE':
       processedData.workflow = {
         type: 'destruction',
-        expectsTemplates: false,
-        createsFiles: false,
-        modifiesState: true,
-        targetState: 'VOID'
-      };
-      break;
-      
-    case 'REVERT':
-      processedData.workflow = {
-        type: 'reversion',
-        expectsTemplates: false,
-        createsFiles: false,
-        modifiesState: true,
-        targetState: config.targetState || 'DRAFT'
-      };
-      break;
-      
-    case 'UPDATE':
-      processedData.workflow = {
-        type: 'update',
-        expectsTemplates: true,
-        createsFiles: true,
-        modifiesState: false,
-        targetState: 'SAME'
+        expectedDuration: 2000,
+        rollbackSupported: false,
+        stateTransition: 'ANY -> VOID'
       };
       break;
       
     default:
       processedData.workflow = {
-        type: 'unknown',
-        expectsTemplates: false,
-        createsFiles: false,
-        modifiesState: false,
-        targetState: 'UNKNOWN'
+        type: 'generic',
+        expectedDuration: 10000,
+        rollbackSupported: false,
+        stateTransition: 'UNKNOWN'
       };
   }
   
-  // Ajout de timestamps de traitement
+  // Ajout de métadonnées d'environnement
+  processedData.environment = {
+    nodeVersion: process.version,
+    platform: process.platform,
+    architecture: process.arch,
+    processId: process.pid
+  };
+  
+  // Ajout timestamp de début de traitement
   processedData.processing = {
     startedAt: new Date().toISOString(),
-    callNumber: 2,
-    nextCall: 3,
-    expectedCalls: 13,
-    phase: 'request-processing'
+    requestProcessor: true,
+    nextStage: 'workflow-coordinator'
   };
 }
 
-console.log(`[REQUEST-PROCESSOR] Request processor module loaded`);
-
-export default { process };
+console.log(`[REQUEST-PROCESSOR] Request processor loaded successfully - PIXEL PERFECT VERSION`);
