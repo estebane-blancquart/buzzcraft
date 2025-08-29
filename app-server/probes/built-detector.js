@@ -388,36 +388,42 @@ async function checkBuildArtifacts(projectPath) {
     }
   }
   
-  // Scan du dossier components/ si il existe
+  // CORRECTION PROBLÈME 1: Scan du dossier components/ - COMPTAGE INDIVIDUEL
   const componentsPath = `${projectPath}/components`;
   const componentsExists = await checkFileAccess(componentsPath);
   if (componentsExists.accessible) {
     try {
       const componentsContent = await readDirectory(componentsPath);
       if (componentsContent.success && componentsContent.data.items.length > 0) {
-        foundArtifacts.push({
-          path: `components/ (${componentsContent.data.items.length} items)`,
-          type: 'directory_content',
-          fullPath: componentsPath
-        });
+        // NOUVEAU: Ajouter chaque fichier individuellement au lieu du dossier
+        for (const item of componentsContent.data.items) {
+          foundArtifacts.push({
+            path: `components/${item.name}`,
+            type: 'file',
+            fullPath: `${componentsPath}/${item.name}`
+          });
+        }
       }
     } catch (componentsError) {
       console.log(`[BUILT-DETECTOR] Error scanning components directory: ${componentsError.message}`);
     }
   }
   
-  // Scan du dossier containers/ si il existe
+  // CORRECTION PROBLÈME 1: Scan du dossier containers/ - COMPTAGE INDIVIDUEL  
   const containersPath = `${projectPath}/containers`;
   const containersExists = await checkFileAccess(containersPath);
   if (containersExists.accessible) {
     try {
       const containersContent = await readDirectory(containersPath);
       if (containersContent.success && containersContent.data.items.length > 0) {
-        foundArtifacts.push({
-          path: `containers/ (${containersContent.data.items.length} items)`,
-          type: 'directory_content',
-          fullPath: containersPath
-        });
+        // NOUVEAU: Ajouter chaque fichier individuellement au lieu du dossier
+        for (const item of containersContent.data.items) {
+          foundArtifacts.push({
+            path: `containers/${item.name}`,
+            type: 'file', 
+            fullPath: `${containersPath}/${item.name}`
+          });
+        }
       }
     } catch (containersError) {
       console.log(`[BUILT-DETECTOR] Error scanning containers directory: ${containersError.message}`);

@@ -384,71 +384,68 @@ function prepareBuildConfiguration(projectData, userConfig = {}) {
 }
 
 /**
- * Génère le code du projet
+ * Génère le code du projet AVEC EXTRACTION des composants utilisés - VERSION CORRIGÉE
  * @param {object} projectData - Données du projet
  * @param {object} buildConfig - Configuration de build
  * @returns {Promise<{success: boolean, data: object}>} Résultat de génération
  * @private
  */
 async function generateProjectCode(projectData, buildConfig) {
-  console.log(`[BUILD] 🔧 Starting code generation...`);
-  
+  const usedElements = extractUsedElements(projectData);
+
+  console.log(`[BUILD] Starting code generation...`);
+  console.log(`[BUILD] Extracted elements details:`, JSON.stringify(usedElements, null, 2));
+
   try {
-    // Simulation d'un generateur de code plus sophistiqué
     const generatedFiles = [];
     const buildPath = getProjectPath(projectData.id);
     
-    // 1. Génération des composants
-    console.log(`[BUILD] 📦 Generating components...`);
-    const componentTemplates = [
-      'components/Button.tsx',
-      'components/Heading.tsx', 
-      'components/Image.tsx',
-      'components/Link.tsx',
-      'components/Paragraph.tsx',
-      'components/Video.tsx'
-    ];
+    // CORRECTION: Déclarer et initialiser usedElements au début
+    console.log(`[BUILD] Extracting used elements from project...`);
+    const usedElements = extractUsedElements(projectData);
+    console.log(`[BUILD] Found used elements:`, {
+      components: usedElements.components,
+      containers: usedElements.containers
+    });
     
-    for (const template of componentTemplates) {
-      const filePath = join(buildPath, template);
-      const content = await generateComponentCode(template, projectData, buildConfig);
+    // 1. Génération des composants (SEULEMENT ceux utilisés)
+    console.log(`[BUILD] Generating components...`);
+    for (const componentType of usedElements.components) {
+      const fileName = `components/${componentType.charAt(0).toUpperCase() + componentType.slice(1)}.tsx`;
+      const content = await generateComponentCode(fileName, projectData, buildConfig);
       
+      const filePath = join(buildPath, fileName);
       const writeResult = await writePath(filePath, content);
       if (writeResult.success) {
         generatedFiles.push({
-          path: template,
+          path: fileName,
           size: writeResult.data.size,
           type: 'component'
         });
-        console.log(`[BUILD] ✅ Generated: ${template}`);
+        console.log(`[BUILD] Generated: ${fileName}`);
       }
     }
     
-    // 2. Génération des containers
-    console.log(`[BUILD] 📦 Generating containers...`);
-    const containerTemplates = [
-      'containers/Div.tsx',
-      'containers/Form.tsx',
-      'containers/List.tsx'
-    ];
-    
-    for (const template of containerTemplates) {
-      const filePath = join(buildPath, template);
-      const content = await generateContainerCode(template, projectData, buildConfig);
+    // 2. Génération des containers (SEULEMENT ceux utilisés)
+    console.log(`[BUILD] Generating containers...`);
+    for (const containerType of usedElements.containers) {
+      const fileName = `containers/${containerType.charAt(0).toUpperCase() + containerType.slice(1)}.tsx`;
+      const content = await generateContainerCode(fileName, projectData, buildConfig);
       
+      const filePath = join(buildPath, fileName);
       const writeResult = await writePath(filePath, content);
       if (writeResult.success) {
         generatedFiles.push({
-          path: template,
+          path: fileName,
           size: writeResult.data.size,
           type: 'container'
         });
-        console.log(`[BUILD] ✅ Generated: ${template}`);
+        console.log(`[BUILD] Generated: ${fileName}`);
       }
     }
     
     // 3. Génération du package.json
-    console.log(`[BUILD] 📦 Generating package.json...`);
+    console.log(`[BUILD] Generating package.json...`);
     const packageJson = generatePackageJson(projectData, buildConfig);
     const packagePath = join(buildPath, 'package.json');
     
@@ -459,12 +456,12 @@ async function generateProjectCode(projectData, buildConfig) {
         size: packageResult.data.size,
         type: 'config'
       });
-      console.log(`[BUILD] ✅ Generated: package.json`);
+      console.log(`[BUILD] Generated: package.json`);
     }
     
     // 4. Génération d'un index.js si nécessaire
     if (buildConfig.targets.includes('app-visitor')) {
-      console.log(`[BUILD] 📦 Generating entry point...`);
+      console.log(`[BUILD] Generating entry point...`);
       const indexContent = generateIndexFile(projectData, buildConfig);
       const indexPath = join(buildPath, 'index.js');
       
@@ -475,13 +472,14 @@ async function generateProjectCode(projectData, buildConfig) {
           size: indexResult.data.size,
           type: 'entry'
         });
-        console.log(`[BUILD] ✅ Generated: index.js`);
+        console.log(`[BUILD] Generated: index.js`);
       }
     }
     
     const totalSize = generatedFiles.reduce((sum, file) => sum + file.size, 0);
     
-    console.log(`[BUILD] ✅ Code generation complete: ${generatedFiles.length} files (${totalSize} bytes)`);
+    console.log(`[BUILD] Code generation complete: ${generatedFiles.length} files (${totalSize} bytes)`);
+    console.log(`[BUILD] Generated only used elements: ${usedElements.components.length} components, ${usedElements.containers.length} containers`);
     
     return {
       success: true,
@@ -491,19 +489,19 @@ async function generateProjectCode(projectData, buildConfig) {
         totalSize,
         targets: buildConfig.targets,
         buildVersion: buildConfig.buildVersion,
-        generatedAt: new Date().toISOString()
+        generatedAt: new Date().toISOString(),
+        usedElements // Ajout des éléments utilisés dans la réponse
       }
     };
     
   } catch (error) {
-    console.log(`[BUILD] ❌ Code generation failed: ${error.message}`);
+    console.log(`[BUILD] Code generation failed: ${error.message}`);
     return {
       success: false,
       error: `Code generation failed: ${error.message}`
     };
   }
 }
-
 /**
  * Met à jour les données projet avec les informations de build
  * @param {object} projectData - Données projet originales
@@ -600,7 +598,7 @@ async function updateProjectState(projectId, newState, projectData) {
 }
 
 /**
- * Extrait les éléments (composants/containers) utilisés dans le projet
+ * CORRECTION PROBLÈME 2: Extrait les éléments utilisés dans le projet
  * @param {object} projectData - Données du projet  
  * @returns {{components: string[], containers: string[]}} Éléments utilisés
  * @private
