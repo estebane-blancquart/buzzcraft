@@ -183,6 +183,10 @@ export function useWorkflows() {
         console.log("🟡 [CLIENT]", JSON.stringify(requestBody, null, 2));
         console.log("🟡 [CLIENT] requestBody.config.template =", `"${requestBody.config.template}"`);
         console.log("🟡 [CLIENT] Sending to API...");
+        console.log("🟡 [CLIENT] === DEBUG CLIENT START ===");
+console.log("🟡 [CLIENT] formData.template ORIGINAL =", `"${formData.template}"`);
+console.log("🟡 [CLIENT] requestBody.config.template =", `"${requestBody.config.template}"`);
+console.log("🟡 [CLIENT] Sending to API...");
 
         const data = await makeApiCall("projects", {
           method: "POST",

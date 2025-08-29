@@ -252,10 +252,13 @@ async function loadProjectTemplate(templateId) {
 
   try {
     // Validation et fallback SEULEMENT ici si nécessaire
-    if (!templateId || templateId.trim() === '') {
-      console.log("🔴 [TEMPLATE] templateId is empty/null, using basic fallback");
-      templateId = "basic";
-    }
+if (!templateId || templateId.trim() === '') {
+  console.log("🔴 [TEMPLATE] CRITICAL: templateId is empty/null!");
+  return {
+    success: false,
+    error: `CRITICAL: templateId is empty or null. Received: "${templateId}"`
+  };
+}
     
     console.log("🔴 [TEMPLATE] Final templateId to use =", `"${templateId}"`);
 

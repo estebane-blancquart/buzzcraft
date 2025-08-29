@@ -2,24 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { apiUrl } from '@config/api.js';
 
 /*
- * FAIT QUOI : Modal création nouveau projet (CLEAN VERSION)
+ * FAIT QUOI : Modal création nouveau projet (NO FALLBACK VERSION)
  * REÇOIT : isOpen, onClose, onSubmit
- * RETOURNE : Modal avec formulaire création + fallback templates
- * ERREURS : Validation inline + fallback automatique si API fail
+ * RETOURNE : Modal avec formulaire création STRICT - aucun fallback
+ * ERREURS : Validation stricte, pas de masquage
  */
 
 function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => {} }) {
   const [formData, setFormData] = useState({
     projectId: '',
     name: '',
-    template: 'basic'
+    template: ''  // ❌ PLUS DE 'basic' par défaut !
   });
   
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
-
 
   useEffect(() => {
     if (isOpen) {
@@ -41,30 +40,28 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
       
       if (data.success) {
         setTemplates(data.data.templates);
-        if (data.data.templates.length > 0) {
-          setFormData(prev => ({ ...prev, template: data.data.templates[0].id }));
-        }
+        // ❌ PLUS DE SÉLECTION AUTOMATIQUE !
+        // if (data.data.templates.length > 0) {
+        //   setFormData(prev => ({ ...prev, template: data.data.templates[0].id }));
+        // }
+        
+        console.log("🟡 [CLIENT] Templates loaded:", data.data.templates.map(t => t.id));
       } else {
-        // FALLBACK : Templates hardcodés
-        const fallbackTemplates = [
-          { id: 'basic', name: 'Basic Project Template' },
-          { id: 'restaurant', name: 'Restaurant Template' },
-          { id: 'contact', name: 'Contact Form Template' }
-        ];
-        setTemplates(fallbackTemplates);
-        setFormData(prev => ({ ...prev, template: 'basic' }));
+        // ❌ PLUS DE FALLBACK - ERREUR STRICTE
+        console.error('CRITICAL: Server returned templates failure');
+        setErrors({ 
+          templates: 'Le serveur ne peut pas fournir les templates. Impossible de créer un projet.' 
+        });
+        setTemplates([]);
       }
     } catch (error) {
-      console.error('Templates load error:', error);
+      console.error('CRITICAL: Templates load error:', error);
       
-      // FALLBACK : Templates hardcodés
-      const fallbackTemplates = [
-        { id: 'basic', name: 'Basic Project Template' },
-        { id: 'restaurant', name: 'Restaurant Template' },
-        { id: 'contact', name: 'Contact Form Template' }
-      ];
-      setTemplates(fallbackTemplates);
-      setFormData(prev => ({ ...prev, template: 'basic' }));
+      // ❌ PLUS DE FALLBACK - ERREUR STRICTE
+      setErrors({
+        templates: `Impossible de charger les templates: ${error.message}. Vérifiez que le serveur est démarré.`
+      });
+      setTemplates([]);
     } finally {
       setTemplatesLoading(false);
     }
@@ -87,8 +84,9 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
       newErrors.name = 'Au moins 2 caractères';
     }
 
-    if (!formData.template) {
-      newErrors.template = 'Template requis';
+    // ❌ VALIDATION STRICTE DU TEMPLATE
+    if (!formData.template || formData.template.trim() === '') {
+      newErrors.template = 'Template requis - vous devez en sélectionner un';
     }
 
     setErrors(newErrors);
@@ -98,12 +96,17 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Debug : tracer ce qui est envoyé
+    console.log("🟡 [CLIENT] === SUBMIT DEBUG ===");
+    console.log("🟡 [CLIENT] formData.template =", `"${formData.template}"`);
+    
     if (!validateForm()) return;
     
     setLoading(true);
     try {
       await onSubmit(formData);
-      setFormData({ projectId: '', name: '', template: templates[0]?.id || 'basic' });
+      // ❌ PLUS DE FALLBACK dans le reset
+      setFormData({ projectId: '', name: '', template: '' });
       // onClose sera appelé par le parent après succès
     } catch (error) {
       setErrors({ submit: error.message });
@@ -125,12 +128,18 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
         .replace(/-{2,}/g, '-');
     }
 
+    // Debug : tracer les changements de template
+    if (name === 'template') {
+      console.log("🟡 [CLIENT] Template changed to:", `"${value}"`);
+    }
+
     setFormData(prev => ({ ...prev, [name]: processedValue }));
   };
 
   const handleClose = () => {
     if (!loading) {
-      setFormData({ projectId: '', name: '', template: templates[0]?.id || 'basic' });
+      // ❌ PLUS DE FALLBACK dans le reset
+      setFormData({ projectId: '', name: '', template: '' });
       setErrors({});
       onClose();
     }
@@ -152,7 +161,12 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
           </div>
         )}
 
-        {/* Zone de debug supprimée - modal propre */}
+        {/* Affichage erreur templates */}
+        {errors.templates && (
+          <div className="error-banner">
+            🚨 {errors.templates}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-field">
@@ -185,11 +199,13 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
             <label>Template *</label>
             {templatesLoading ? (
               <div className="loading-templates">Chargement templates...</div>
+            ) : templates.length === 0 ? (
+              <div className="error">❌ Aucun template disponible. Impossible de créer un projet.</div>
             ) : (
               <select
                 value={formData.template}
                 onChange={(e) => handleInputChange('template', e.target.value)}
-                disabled={loading || templates.length === 0}
+                disabled={loading}
               >
                 <option value="">-- Sélectionnez un template --</option>
                 {templates.map(template => (
@@ -208,7 +224,7 @@ function NewProjectModal({ isOpen = false, onClose = () => {}, onSubmit = () => 
             </button>
             <button 
               type="submit" 
-              disabled={loading || templatesLoading || templates.length === 0}
+              disabled={loading || templatesLoading || templates.length === 0 || !formData.template}
             >
               {loading ? 'Création...' : 'Créer Projet'}
             </button>
