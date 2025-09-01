@@ -7,125 +7,198 @@ import { process as processResponse } from "../responses/processor.js";
 import { readdir, readFile, writeFile, rm, stat } from "fs/promises";
 import { createWorkflow } from "../../app-server/engines/create-coordinator.js";
 import { buildWorkflow } from "../../app-server/engines/build-coordinator.js";
-// import { deployWorkflow } from "../../app-server/engines/deploy-coordinator.js";
-// import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
-// import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
+import { deployWorkflow } from "../../app-server/engines/deploy-coordinator.js";
+import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
+import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
 import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
 import { revertWorkflow } from '../../app-server/engines/revert-coordinator.js';
-
+import { generateWorkflowId, logCall, logWorkflow, logError } from "./enhanced-logger.js";
 
 /**
  * Routes HTTP pour gestion des projets avec Pattern 13 CALLS
  * @returns {express.Router} Router configuré
  */
-
 const router = express.Router();
 
 // Workflow coordinators mapping
 const WORKFLOW_COORDINATORS = {
   CREATE: createWorkflow,
   BUILD: buildWorkflow,
-  // DEPLOY: deployWorkflow,     // Temporairement désactivé - dépendances cassées
-  // START: startWorkflow,       // Temporairement désactivé - dépendances cassées
-  // STOP: stopWorkflow,         // Temporairement désactivé - dépendances cassées
+  DEPLOY: deployWorkflow,
+  START: startWorkflow,
+  STOP: stopWorkflow,
   DELETE: deleteWorkflow,
   REVERT: revertWorkflow,
 };
 
 /**
- * Gestionnaire générique Pattern 13 CALLS complet
+ * Gestionnaire générique Pattern 13 CALLS avec logs enrichis
  * @param {express.Request} req - Requête HTTP
  * @param {express.Response} res - Réponse HTTP
  */
 async function handleWorkflowRequest(req, res) {
-  console.log(
-    `[ROUTES] Pattern 13 CALLS initiated for ${req.method} ${req.path}`
-  );
+  const startTime = Date.now();
+  const workflowId = generateWorkflowId();
+  
+  logCall('ROUTES', 0, 'Workflow initiated', 'STARTED', {
+    workflowId,
+    method: req.method,
+    path: req.path
+  });
 
   try {
     // CALL 1: Request Parser
-    console.log(`[ROUTES] CALL 1: Parsing incoming request...`);
+    logCall('ROUTES', 1, 'Request parsing', 'STARTED', { workflowId });
     const parsedRequest = await request(req);
+    
     if (!parsedRequest.success) {
-      console.log(`[ROUTES] CALL 1 failed: ${parsedRequest.error}`);
+      logCall('ROUTES', 1, 'Request parsing', 'FAILED', {
+        workflowId,
+        error: parsedRequest.error
+      });
       return res.status(400).json({
         success: false,
-        error: `Request parsing failed: ${parsedRequest.error}`,
+        error: parsedRequest.error,
+        workflowId,
+        failedAt: 'CALL_1_REQUEST_PARSER'
       });
     }
+    
+    logCall('ROUTES', 1, 'Request parsing', 'SUCCESS', { workflowId });
 
-    // CALL 2: Request Processor
-    console.log(`[ROUTES] CALL 2: Processing parsed request...`);
+    // CALL 2: Request Processor  
+    logCall('ROUTES', 2, 'Request processing', 'STARTED', { workflowId });
     const processedRequest = await processRequest(parsedRequest.data);
+    
     if (!processedRequest.success) {
-      console.log(`[ROUTES] CALL 2 failed: ${processedRequest.error}`);
+      logCall('ROUTES', 2, 'Request processing', 'FAILED', {
+        workflowId,
+        error: processedRequest.error
+      });
       return res.status(400).json({
         success: false,
-        error: `Request processing failed: ${processedRequest.error}`,
+        error: processedRequest.error,
+        workflowId,
+        failedAt: 'CALL_2_REQUEST_PROCESSOR'
       });
     }
+    
+    logCall('ROUTES', 2, 'Request processing', 'SUCCESS', { workflowId });
 
-    // CALL 3-10: Workflow Execution (handled by coordinator)
+    // CALL 3-10: Workflow Execution
     const { action, projectId, config } = processedRequest.data;
     const coordinator = WORKFLOW_COORDINATORS[action];
 
     if (!coordinator) {
-      console.log(`[ROUTES] Unknown workflow action: ${action}`);
+      logError('ROUTES', `Unknown action: ${action}`, {
+        workflowId,
+        projectId,
+        availableActions: Object.keys(WORKFLOW_COORDINATORS)
+      });
       return res.status(400).json({
         success: false,
-        error: `Unsupported workflow action: ${action}`,
+        error: `UNSUPPORTED_ACTION: ${action}`,
+        workflowId,
+        failedAt: 'CALL_3_COORDINATOR_LOOKUP',
+        availableActions: Object.keys(WORKFLOW_COORDINATORS)
       });
     }
 
-    console.log(`[ROUTES] CALL 3-10: Executing ${action} workflow...`);
+    logWorkflow(action, 'STARTED', { workflowId, projectId });
     const workflowResult = await coordinator(projectId, config);
 
     if (!workflowResult.success) {
-      console.log(
-        `[ROUTES] Workflow ${action} failed: ${workflowResult.error}`
-      );
-      return res.status(500).json({
+      const duration = Date.now() - startTime;
+      logWorkflow(action, 'FAILED', {
+        workflowId,
+        projectId,
+        duration,
+        error: workflowResult.error
+      });
+      
+      return res.status(workflowResult.error === 'NOT_IMPLEMENTED' ? 501 : 500).json({
         success: false,
-        error: `Workflow ${action} failed: ${workflowResult.error}`,
+        error: workflowResult.error,
+        message: workflowResult.message,
+        details: workflowResult.details,
+        workflowId,
+        failedAt: `CALL_${action}_COORDINATOR`,
+        duration
       });
     }
+    
+    logWorkflow(action, 'SUCCESS', { workflowId, projectId });
 
     // CALL 11: Response Parser
-    console.log(`[ROUTES] CALL 11: Parsing workflow result...`);
+    logCall('ROUTES', 11, 'Response parsing', 'STARTED', { workflowId });
     const parsedResponse = await response(workflowResult);
+    
     if (!parsedResponse.success) {
-      console.log(`[ROUTES] CALL 11 failed: ${parsedResponse.error}`);
+      logCall('ROUTES', 11, 'Response parsing', 'FAILED', {
+        workflowId,
+        error: parsedResponse.error
+      });
       return res.status(500).json({
         success: false,
-        error: `Response parsing failed: ${parsedResponse.error}`,
+        error: parsedResponse.error,
+        workflowId,
+        failedAt: 'CALL_11_RESPONSE_PARSER'
       });
     }
+    
+    logCall('ROUTES', 11, 'Response parsing', 'SUCCESS', { workflowId });
 
     // CALL 12: Response Processor
-    console.log(`[ROUTES] CALL 12: Processing final response...`);
+    logCall('ROUTES', 12, 'Response processing', 'STARTED', { workflowId });
     const finalResponse = await processResponse(parsedResponse);
+    
     if (!finalResponse.success) {
-      console.log(`[ROUTES] CALL 12 failed: ${finalResponse.error}`);
+      logCall('ROUTES', 12, 'Response processing', 'FAILED', {
+        workflowId,
+        error: finalResponse.error
+      });
       return res.status(500).json({
         success: false,
-        error: `Response processing failed: ${finalResponse.error}`,
+        error: finalResponse.error,
+        workflowId,
+        failedAt: 'CALL_12_RESPONSE_PROCESSOR'
       });
     }
-
-    console.log(
-      `[ROUTES] Pattern 13 CALLS completed successfully for ${action}`
-    );
+    
+    const duration = Date.now() - startTime;
+    logCall('ROUTES', 12, 'Response processing', 'SUCCESS', {
+      workflowId,
+      duration
+    });
+    
+    logWorkflow(action, 'COMPLETED', {
+      workflowId,
+      projectId,
+      duration
+    });
+    
     res.json({
       success: true,
       data: finalResponse.data,
+      workflowId,
+      duration,
+      action
     });
+    
   } catch (error) {
-    console.log(
-      `[ROUTES] Unexpected error in Pattern 13 CALLS: ${error.message}`
-    );
+    const duration = Date.now() - startTime;
+    logError('ROUTES', error.message, {
+      workflowId,
+      duration,
+      stack: error.stack
+    });
+    
     res.status(500).json({
       success: false,
-      error: "Internal server error during workflow execution",
+      error: "INTERNAL_SERVER_ERROR",
+      message: "Unexpected error during workflow execution",
+      workflowId,
+      duration
     });
   }
 }
@@ -133,46 +206,60 @@ async function handleWorkflowRequest(req, res) {
 /**
  * Utilitaire de validation des paramètres de route
  * @param {string} projectId - ID du projet
- * @returns {{valid: boolean, error?: string}}
+ * @returns {{valid: boolean, error?: string}} Résultat validation
  */
 function validateRouteParams(projectId) {
   if (!projectId || typeof projectId !== "string") {
-    return { valid: false, error: "Project ID must be non-empty string" };
+    return {
+      valid: false,
+      error: "Project ID is required and must be a string",
+    };
   }
+
   if (projectId.length < 3 || projectId.length > 50) {
     return {
       valid: false,
       error: "Project ID must be between 3 and 50 characters",
     };
   }
-  if (!/^[a-zA-Z0-9-_]+$/.test(projectId)) {
+
+  if (!/^[a-z0-9-]+$/.test(projectId)) {
     return {
       valid: false,
-      error:
-        "Project ID can only contain letters, numbers, hyphens and underscores",
+      error: "Project ID must contain only lowercase letters, numbers, and hyphens",
     };
   }
+
   return { valid: true };
 }
 
 /**
- * Gestionnaire d'erreurs standardisé
+ * Gestionnaire d'erreur pour les routes
  * @param {express.Response} res - Réponse HTTP
  * @param {Error} error - Erreur capturée
- * @param {string} operation - Nom de l'opération
+ * @param {string} operation - Description de l'opération
  */
 function handleRouteError(res, error, operation) {
-  console.log(`[ROUTES] Error in ${operation}: ${error.message}`);
+  const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  
+  logError('ROUTES', `${operation} failed: ${error.message}`, {
+    errorId,
+    operation,
+    stack: error.stack
+  });
+  
   res.status(500).json({
     success: false,
-    error: `Failed to ${operation}`,
+    error: "Internal server error",
+    errorId,
+    operation,
   });
 }
 
-// ===== ROUTES API =====
+// ===== ROUTES GET =====
 
 /**
- * GET /projects - Lister tous les projets avec pagination
+ * GET /projects - Lister tous les projets
  */
 router.get("/projects", async (req, res) => {
   console.log(`[ROUTES] GET /projects - Loading all projects`);
@@ -191,7 +278,6 @@ router.get("/projects", async (req, res) => {
           const content = await readFile(projectFile, "utf8");
           const projectData = JSON.parse(content);
 
-          // Extraction standardisée des métadonnées projet
           const project = projectData.data || projectData;
 
           projects.push({
@@ -229,13 +315,12 @@ router.get("/projects", async (req, res) => {
 });
 
 /**
- * GET /projects/:id - Charger un projet spécifique pour édition
+ * GET /projects/:id - Charger un projet spécifique
  */
 router.get("/projects/:id", async (req, res) => {
   const projectId = req.params.id;
   console.log(`[ROUTES] GET /projects/${projectId} - Loading project details`);
 
-  // Validation des paramètres
   const validation = validateRouteParams(projectId);
   if (!validation.valid) {
     console.log(`[ROUTES] Invalid project ID: ${validation.error}`);
@@ -274,6 +359,64 @@ router.get("/projects/:id", async (req, res) => {
 });
 
 /**
+ * GET /projects/meta/templates - Lister les templates disponibles
+ */
+router.get("/projects/meta/templates", async (req, res) => {
+  console.log(`[ROUTES] GET /projects/meta/templates - Loading available templates`);
+
+  try {
+    const { PATHS } = await import('../../app-server/cores/constants.js');
+    
+    let templates = [];
+    
+    try {
+      const files = await readdir(PATHS.projectTemplates);
+      
+      templates = files
+        .filter(file => file.endsWith('.json'))
+        .map(file => {
+          const id = file.replace('.json', '');
+          return {
+            id: id,
+            name: `${id.charAt(0).toUpperCase() + id.slice(1)} Template`,
+            description: `Template ${id} pour créer votre projet`
+          };
+        });
+      
+      console.log(`[ROUTES] Found ${templates.length} template files: ${templates.map(t => t.id).join(', ')}`);
+      
+    } catch (dirError) {
+      console.log(`[ROUTES] Templates directory not accessible: ${dirError.message}`);
+      
+      return res.status(500).json({
+        success: false,
+        error: `Templates directory not found: ${PATHS.projectTemplates}`,
+        details: dirError.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        templates,
+        count: templates.length,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.log(`[ROUTES] Templates loading error: ${error.message}`);
+    
+    res.status(500).json({
+      success: false,
+      error: `Failed to load templates: ${error.message}`
+    });
+  }
+});
+
+// ===== ROUTES POST/DELETE =====
+
+/**
  * POST /projects - Créer un nouveau projet (CREATE workflow)
  */
 router.post("/projects", handleWorkflowRequest);
@@ -303,73 +446,15 @@ router.post("/projects/:id/stop", handleWorkflowRequest);
  */
 router.delete("/projects/:id", handleWorkflowRequest);
 
-
-/**
- * GET /projects/meta/templates - Lister les templates disponibles dynamiquement
- */
-router.get("/projects/meta/templates", async (req, res) => {
-  console.log(`[ROUTES] GET /projects/meta/templates - Loading available templates dynamically`);
-
-  try {
-    // Import dynamique pour éviter les dépendances circulaires
-    const { PATHS } = await import('../../app-server/cores/constants.js');
-    
-    let templates = [];
-    
-    try {
-      // Lire les fichiers .json du dossier templates
-      const files = await readdir(PATHS.projectTemplates);
-      
-      templates = files
-        .filter(file => file.endsWith('.json'))
-        .map(file => {
-          const id = file.replace('.json', '');
-          return {
-            id: id,
-            name: `${id.charAt(0).toUpperCase() + id.slice(1)} Template`,
-            description: `Template ${id} pour créer votre projet`
-          };
-        });
-      
-      console.log(`[ROUTES] Found ${templates.length} template files: ${templates.map(t => t.id).join(', ')}`);
-      
-    } catch (dirError) {
-      console.log(`[ROUTES] Templates directory not accessible: ${dirError.message}`);
-      
-      // ERREUR : Pas de fallback, on retourne une vraie erreur
-      return res.status(500).json({
-        success: false,
-        error: `Templates directory not found: ${PATHS.projectTemplates}`,
-        details: dirError.message
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        templates,
-        count: templates.length,
-        timestamp: new Date().toISOString()
-      }
-    });
-
-  } catch (error) {
-    console.log(`[ROUTES] Templates loading error: ${error.message}`);
-    
-    // Retourner une vraie erreur, pas de fallback
-    res.status(500).json({
-      success: false,
-      error: `Failed to load templates: ${error.message}`
-    });
-  }
-});
-
 /**
  * PUT /projects/:id/revert - Revert un projet (REVERT workflow)
  */
 router.put("/projects/:id/revert", handleWorkflowRequest);
 
+/**
+ * POST /projects/:id/revert - Revert un projet (REVERT workflow - alternative)
+ */
+router.post("/projects/:id/revert", handleWorkflowRequest);
 
-console.log(`[ROUTES] Router initialized with Pattern 13 CALLS support`);
-
+console.log(`[ROUTES] Enhanced router with unified logging initialized`);
 export default router;

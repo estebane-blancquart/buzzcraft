@@ -1,81 +1,70 @@
 /**
- * CALL 1: Request Parser - Parse requêtes HTTP en structure standardisée
- * @param {express.Request} req - Requête HTTP Express
- * @returns {Promise<{success: boolean, data: object}>} Données parsées pour processor
- * @throws {Error} ValidationError si requête invalide
+ * Request Parser - Parse et valide les requêtes HTTP
+ * @description Pattern 13 CALLS - CALL 1 - Parse les requêtes entrantes
  */
 
+/**
+ * Parse une requête HTTP entrante et extrait les données structurées
+ * @param {express.Request} req - Requête Express
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
 export async function request(req) {
-  console.log(
-    `[REQUEST-PARSER] CALL 1: Parsing ${req.method} ${req.originalUrl}...`
-  );
+  console.log(`[REQUEST-PARSER] CALL 1: Parsing ${req.method} ${req.path}...`);
 
   try {
-    // Validation de base de la requête
-    const validation = validateHttpRequest(req);
-    if (!validation.valid) {
-      console.log(
-        `[REQUEST-PARSER] Request validation failed: ${validation.error}`
-      );
-      throw new Error(`ValidationError: ${validation.error}`);
-    }
-
     // Extraction des données de base
-    const requestData = extractBasicRequestData(req);
+    const requestData = {
+      method: req.method,
+      path: req.path,
+      params: req.params || {},
+      query: req.query || {},
+      body: req.body || {},
+      headers: req.headers || {},
+      ip: req.ip || req.connection?.remoteAddress || "127.0.0.1",
+    };
 
     // Détermination de l'action et extraction des paramètres
     const actionResult = determineActionAndParams(req, requestData);
+    
     if (!actionResult.success) {
-      console.log(
-        `[REQUEST-PARSER] Action determination failed: ${actionResult.error}`
-      );
+      console.log(`[REQUEST-PARSER] Action determination failed: ${actionResult.error}`);
       return {
         success: false,
         error: actionResult.error,
       };
     }
 
-    // Construction des données parsées
+    const { action, projectId, config } = actionResult;
+
+    // Construction de l'objet de données final
     const parsedData = {
-      action: actionResult.action,
-      projectId: actionResult.projectId,
-      config: actionResult.config || {},
+      action,
+      projectId,
+      config,
       metadata: {
         timestamp: new Date().toISOString(),
         method: req.method,
-        path: req.originalUrl,
-        userAgent: req.headers["user-agent"] || "unknown",
-        contentType: req.headers["content-type"] || "none",
+        path: req.path,
+        userAgent: req.headers["user-agent"] || "Unknown",
+        contentType: req.headers["content-type"] || "application/json",
         parsedBy: "request-parser",
       },
       rawRequest: {
-        headers: sanitizeHeaders(req.headers),
-        query: req.query || {},
-        ip: req.ip || req.connection?.remoteAddress || "unknown",
+        headers: req.headers,
+        query: req.query,
+        ip: requestData.ip,
       },
     };
 
-    // Validation finale des données parsées
-    const finalValidation = validateParsedData(parsedData);
-    if (!finalValidation.valid) {
-      console.log(
-        `[REQUEST-PARSER] Parsed data validation failed: ${finalValidation.error}`
-      );
-      return {
-        success: false,
-        error: finalValidation.error,
-      };
-    }
-
-    console.log(
-      `[REQUEST-PARSER] Successfully parsed ${actionResult.action} request for project: ${actionResult.projectId}`
-    );
+    console.log(`[REQUEST-PARSER] Successfully parsed ${action} request for project: ${projectId || 'new'}`);
+    
     return {
       success: true,
       data: parsedData,
     };
+
   } catch (error) {
-    console.log(`[REQUEST-PARSER] Unexpected error: ${error.message}`);
+    console.log(`[REQUEST-PARSER] Parse error: ${error.message}`);
     return {
       success: false,
       error: `Request parsing failed: ${error.message}`,
@@ -84,53 +73,8 @@ export async function request(req) {
 }
 
 /**
- * Valide la structure de base de la requête HTTP
- * @param {express.Request} req - Requête à valider
- * @returns {{valid: boolean, error?: string}}
- */
-function validateHttpRequest(req) {
-  if (!req) {
-    return { valid: false, error: "Request object is required" };
-  }
-
-  if (!req.method || typeof req.method !== "string") {
-    return {
-      valid: false,
-      error: "Request method is required and must be string",
-    };
-  }
-
-  if (!req.originalUrl && !req.path) {
-    return { valid: false, error: "Request path is required" };
-  }
-
-  const allowedMethods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
-  if (!allowedMethods.includes(req.method)) {
-    return { valid: false, error: `Unsupported HTTP method: ${req.method}` };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Extrait les données de base de la requête
- * @param {express.Request} req - Requête source
- * @returns {object} Données de base extraites
- */
-function extractBasicRequestData(req) {
-  return {
-    method: req.method,
-    path: req.originalUrl || req.path,
-    params: req.params || {},
-    body: req.body || {},
-    query: req.query || {},
-    headers: req.headers || {},
-  };
-}
-
-/**
- * Détermine l'action et extrait les paramètres correspondants
- * @param {express.Request} req - Requête HTTP
+ * Détermine l'action et extrait les paramètres selon la route
+ * @param {express.Request} req - Requête Express
  * @param {object} requestData - Données de base extraites
  * @returns {{success: boolean, action?: string, projectId?: string, config?: object, error?: string}}
  */
@@ -148,19 +92,19 @@ function determineActionAndParams(req, requestData) {
         projectId: req.body?.projectId,
         config: {
           name: req.body?.config?.name,
-          template: req.body?.config?.template, // Pas de fallback !
+          template: req.body?.config?.template,
           description: req.body?.config?.description || "",
         },
       }),
     },
 
-    // Actions sur projet existant - FIX ICI
+    // Actions sur projet existant
     {
       pattern: /^\/projects\/([^\/]+)\/build\/?$/,
       method: "POST",
       action: "BUILD",
       extractParams: (req, match) => ({
-        projectId: match[1], // ← UTILISE LE MATCH REGEX au lieu de req.params.id
+        projectId: match[1],
         config: req.body || {},
       }),
     },
@@ -170,7 +114,7 @@ function determineActionAndParams(req, requestData) {
       method: "POST",
       action: "DEPLOY",
       extractParams: (req, match) => ({
-        projectId: match[1], // ← FIX
+        projectId: match[1],
         config: req.body || {},
       }),
     },
@@ -180,7 +124,7 @@ function determineActionAndParams(req, requestData) {
       method: "POST",
       action: "START",
       extractParams: (req, match) => ({
-        projectId: match[1], // ← FIX
+        projectId: match[1],
         config: req.body || {},
       }),
     },
@@ -190,7 +134,7 @@ function determineActionAndParams(req, requestData) {
       method: "POST",
       action: "STOP",
       extractParams: (req, match) => ({
-        projectId: match[1], // ← FIX
+        projectId: match[1],
         config: req.body || {},
       }),
     },
@@ -201,18 +145,29 @@ function determineActionAndParams(req, requestData) {
       method: "DELETE",
       action: "DELETE",
       extractParams: (req, match) => ({
-        projectId: match[1], // ← FIX
+        projectId: match[1],
         config: {},
       }),
     },
 
-    // Mise à jour (revert)
+    // REVERT - POST version
+    {
+      pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
+      method: "POST",
+      action: "REVERT",
+      extractParams: (req, match) => ({
+        projectId: match[1],
+        config: req.body || {},
+      }),
+    },
+
+    // REVERT - PUT version
     {
       pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
       method: "PUT",
       action: "REVERT",
       extractParams: (req, match) => ({
-        projectId: match[1], // ← FIX
+        projectId: match[1],
         config: req.body || {},
       }),
     },
@@ -221,10 +176,10 @@ function determineActionAndParams(req, requestData) {
   // Recherche du pattern correspondant
   for (const routePattern of ROUTE_PATTERNS) {
     if (routePattern.method === method) {
-      const match = routePattern.pattern.exec(path); // ← CAPTURE LE MATCH
+      const match = routePattern.pattern.exec(path);
       if (match) {
         try {
-          const extracted = routePattern.extractParams(req, match); // ← PASSE LE MATCH
+          const extracted = routePattern.extractParams(req, match);
 
           // Validation du projectId pour toutes les actions
           const projectIdValidation = validateProjectId(
@@ -268,6 +223,12 @@ function determineActionAndParams(req, requestData) {
  * @returns {{valid: boolean, error?: string}}
  */
 function validateProjectId(projectId, action) {
+  // Pour CREATE, le projectId peut être undefined (généré plus tard)
+  if (action === "CREATE") {
+    return { valid: true };
+  }
+
+  // Pour toutes les autres actions, projectId obligatoire
   if (!projectId || typeof projectId !== "string") {
     return {
       valid: false,
@@ -275,110 +236,22 @@ function validateProjectId(projectId, action) {
     };
   }
 
-  if (projectId.length < 3) {
+  // Validation du format
+  if (projectId.length < 3 || projectId.length > 50) {
     return {
       valid: false,
-      error: "Project ID must be at least 3 characters long",
+      error: "Project ID must be between 3 and 50 characters",
     };
   }
 
-  if (projectId.length > 50) {
+  if (!/^[a-z0-9-]+$/.test(projectId)) {
     return {
       valid: false,
-      error: "Project ID must be at most 50 characters long",
-    };
-  }
-
-  // Pattern strict : lettres minuscules, chiffres, tirets et underscores
-  if (!/^[a-z0-9_-]+$/.test(projectId)) {
-    return {
-      valid: false,
-      error:
-        "Project ID can only contain lowercase letters, numbers, hyphens and underscores",
-    };
-  }
-
-  // Ne peut pas commencer ou finir par un tiret/underscore
-  if (/^[-_]|[-_]$/.test(projectId)) {
-    return {
-      valid: false,
-      error: "Project ID cannot start or end with hyphens or underscores",
-    };
-  }
-
-  // Mots réservés
-  const RESERVED_WORDS = [
-    "api",
-    "admin",
-    "root",
-    "system",
-    "null",
-    "undefined",
-    "test",
-  ];
-  if (RESERVED_WORDS.includes(projectId)) {
-    return {
-      valid: false,
-      error: `Project ID '${projectId}' is reserved and cannot be used`,
+      error: "Project ID must contain only lowercase letters, numbers, and hyphens",
     };
   }
 
   return { valid: true };
-}
-
-/**
- * Valide la structure des données parsées
- * @param {object} parsedData - Données à valider
- * @returns {{valid: boolean, error?: string}}
- */
-function validateParsedData(parsedData) {
-  const requiredFields = ["action", "projectId", "config", "metadata"];
-
-  for (const field of requiredFields) {
-    if (!parsedData[field]) {
-      return { valid: false, error: `Missing required field: ${field}` };
-    }
-  }
-
-  if (typeof parsedData.config !== "object") {
-    return { valid: false, error: "Config must be an object" };
-  }
-
-  if (!parsedData.metadata.timestamp || !parsedData.metadata.method) {
-    return {
-      valid: false,
-      error: "Metadata must contain timestamp and method",
-    };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Sanitise les headers pour le logging (retire les données sensibles)
- * @param {object} headers - Headers à sanitiser
- * @returns {object} Headers sanitisés
- */
-function sanitizeHeaders(headers) {
-  const sanitized = { ...headers };
-
-  // Supprimer ou masquer les headers sensibles
-  const SENSITIVE_HEADERS = [
-    "authorization",
-    "cookie",
-    "x-api-key",
-    "x-auth-token",
-  ];
-
-  SENSITIVE_HEADERS.forEach((header) => {
-    if (sanitized[header]) {
-      sanitized[header] = "[REDACTED]";
-    }
-  });
-
-  return sanitized;
 }
 
 console.log(`[REQUEST-PARSER] Request parser module loaded`);
-
-export default { request };

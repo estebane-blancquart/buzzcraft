@@ -1,55 +1,34 @@
 /**
- * Coordinateur STOP - Workflow ONLINE → OFFLINE - VERSION MOCK
- * @module stop-coordinator
- * @description MOCK - Arrêt non implémenté, retourne succès simulé
- */
-
-/**
- * MOCK - Orchestre le workflow STOP (ONLINE → OFFLINE)
- * @param {string} projectId - ID du projet à arrêter
- * @param {object} [config={}] - Configuration d'arrêt
- * @returns {Promise<{success: boolean, data: object}>} Résultat simulé
+ * Coordinateur STOP - MOCK HONNÊTE - En attente d'implémentation
  */
 export async function stopWorkflow(projectId, config = {}) {
-  console.log(`[STOP] MOCK: stopWorkflow called for project: ${projectId}`);
+  console.log(`[STOP] Mock coordinator called for project: ${projectId}`);
   
-  // Validation basique
   if (!projectId || typeof projectId !== 'string') {
     return {
       success: false,
-      error: 'projectId must be non-empty string'
+      error: 'VALIDATION_ERROR',
+      message: 'projectId must be non-empty string'
     };
   }
   
-  // Simulation d'un délai d'arrêt
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  console.log(`[STOP] MOCK: Stop simulated successfully for ${projectId}`);
-  
   return {
-    success: true,
-    data: {
-      project: {
-        id: projectId,
-        state: 'OFFLINE'
-      },
-      workflow: {
-        action: 'STOP',
-        projectId,
-        initialState: 'ONLINE',
-        finalState: 'OFFLINE',
-        mock: true,
-        completedAt: new Date().toISOString()
-      },
-      services: [
-        {
-          name: `${projectId}-visitor`,
-          status: 'stopped',
-          previousPort: 3000
-        }
-      ]
+    success: false,
+    error: 'NOT_IMPLEMENTED',
+    message: 'Stop workflow is mocked - implementation planned for v2.0', 
+    details: {
+      projectId,
+      plannedFeatures: [
+        'Graceful container shutdown',
+        'Connection draining',
+        'State persistence', 
+        'Resource cleanup'
+      ],
+      availableActions: ['CREATE', 'BUILD', 'DELETE', 'REVERT'],
+      implementationStatus: 'PLANNED',
+      version: 'v2.0'
     }
   };
 }
 
-console.log(`[STOP] Stop coordinator loaded successfully - MOCK VERSION`);
+console.log(`[STOP] Stop coordinator loaded - MOCK HONNÊTE`);

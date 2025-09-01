@@ -1,56 +1,34 @@
 /**
- * Coordinateur START - Workflow OFFLINE → ONLINE - VERSION MOCK
- * @module start-coordinator
- * @description MOCK - Démarrage non implémenté, retourne succès simulé
- */
-
-/**
- * MOCK - Orchestre le workflow START (OFFLINE → ONLINE)
- * @param {string} projectId - ID du projet à démarrer
- * @param {object} [config={}] - Configuration de démarrage
- * @returns {Promise<{success: boolean, data: object}>} Résultat simulé
+ * Coordinateur START - MOCK HONNÊTE - En attente d'implémentation
  */
 export async function startWorkflow(projectId, config = {}) {
-  console.log(`[START] MOCK: startWorkflow called for project: ${projectId}`);
+  console.log(`[START] Mock coordinator called for project: ${projectId}`);
   
-  // Validation basique
   if (!projectId || typeof projectId !== 'string') {
     return {
       success: false,
-      error: 'projectId must be non-empty string'
+      error: 'VALIDATION_ERROR',
+      message: 'projectId must be non-empty string'
     };
   }
   
-  // Simulation d'un délai de démarrage
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  console.log(`[START] MOCK: Start simulated successfully for ${projectId}`);
-  
   return {
-    success: true,
-    data: {
-      project: {
-        id: projectId,
-        state: 'ONLINE'
-      },
-      workflow: {
-        action: 'START',
-        projectId,
-        initialState: 'OFFLINE',
-        finalState: 'ONLINE',
-        mock: true,
-        completedAt: new Date().toISOString()
-      },
-      services: [
-        {
-          name: `${projectId}-visitor`,
-          status: 'running',
-          port: 3000,
-          url: `http://localhost:3000`
-        }
-      ]
+    success: false,
+    error: 'NOT_IMPLEMENTED', 
+    message: 'Start workflow is mocked - implementation planned for v2.0',
+    details: {
+      projectId,
+      plannedFeatures: [
+        'Docker container start',
+        'Port mapping',
+        'Health monitoring',
+        'Load balancer registration'
+      ],
+      availableActions: ['CREATE', 'BUILD', 'DELETE', 'REVERT'],
+      implementationStatus: 'PLANNED',
+      version: 'v2.0'
     }
   };
 }
 
-console.log(`[START] Start coordinator loaded successfully - MOCK VERSION`);
+console.log(`[START] Start coordinator loaded - MOCK HONNÊTE`);
