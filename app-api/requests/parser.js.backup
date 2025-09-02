@@ -52,8 +52,6 @@ export async function request(req) {
       rawRequest: {
         headers: req.headers,
         query: req.query,
-        body: req.body || {},  // í´§ FIX PRINCIPAL : Inclure le body !
-        params: req.params || {},
         ip: requestData.ip,
       },
     };
@@ -93,9 +91,9 @@ function determineActionAndParams(req, requestData) {
       extractParams: (req, match) => ({
         projectId: req.body?.projectId,
         config: {
-          name: req.body?.name,
-          template: req.body?.template,
-          description: req.body?.description || "",
+          name: req.body?.config?.name,
+          template: req.body?.config?.template,
+          description: req.body?.config?.description || "",
         },
       }),
     },

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
 /**
- * Hook useWorkflows avec logs debug pour diagnostiquer le chargement
+ * Hook useWorkflows avec logs unifi√©s et gestion loading/polling corrig√©e
  */
 export function useWorkflows() {
   const [projects, setProjects] = useState([]);
@@ -36,43 +36,6 @@ export function useWorkflows() {
   }, []);
 
   /**
-   * Charge la liste des projets - VERSION DEBUG
-   */
-  const loadProjects = useCallback(async () => {
-    if (!isComponentMountedRef.current) return;
-    
-    console.log('Ì¥ç [DEBUG] loadProjects called');
-    addConsoleMessage('info', '[API] Loading projects...');
-    
-    try {
-      console.log('Ì¥ç [DEBUG] Fetching http://localhost:3000/projects');
-      const response = await fetch('http://localhost:3000/projects');
-      console.log('Ì¥ç [DEBUG] Response status:', response.status, response.statusText);
-      
-      const result = await response.json();
-      console.log('Ì¥ç [DEBUG] Response data:', result);
-      
-      if (result.success && isComponentMountedRef.current) {
-        console.log('Ì¥ç [DEBUG] Projects found:', result.data.projects.length);
-        console.log('Ì¥ç [DEBUG] Projects list:', result.data.projects);
-        
-        setProjects(result.data.projects || []);
-        addConsoleMessage('success', `[API] Loaded ${result.data.projects.length} projects`);
-      } else if (isComponentMountedRef.current) {
-        console.log('Ì¥ç [DEBUG] API returned failure:', result.error);
-        addConsoleMessage('error', `[API] Failed to load projects: ${result.error}`);
-        setProjects([]);
-      }
-    } catch (error) {
-      console.error('Ì¥ç [DEBUG] Fetch error:', error);
-      if (isComponentMountedRef.current) {
-        addConsoleMessage('error', `[API] Network error loading projects: ${error.message}`);
-        setProjects([]);
-      }
-    }
-  }, [addConsoleMessage]);
-
-  /**
    * Execute une action de projet avec gestion loading corrig√©e
    */
   const executeProjectAction = useCallback(async (projectId, action, config = {}) => {
@@ -89,18 +52,20 @@ export function useWorkflows() {
 
       const endpoint = getActionEndpoint(projectId, action);
       
-      // Gestion sp√©cifique pour CREATE
+      // Ì¥ß FIX PRINCIPAL : Gestion sp√©cifique pour CREATE
       let requestBody = {};
       
       if (action === 'CREATE') {
+        // Pour CREATE, on transforme formData en format serveur
         requestBody = {
-          projectId: config.projectId,
+          projectId: config.projectId,  // Inclure projectId explicitement
           name: config.name,
           template: config.template,
           description: config.description || ''
         };
         console.log('Ìø° [CLIENT] CREATE body:', JSON.stringify(requestBody, null, 2));
       } else {
+        // Pour autres actions, config direct
         requestBody = config;
       }
 
@@ -149,13 +114,12 @@ export function useWorkflows() {
         }
       }
 
-      // Refresh projects apr√®s action
+      // Refresh projects apr√®s action - avec d√©lai pour laisser le serveur se stabiliser
       setTimeout(async () => {
         if (isComponentMountedRef.current) {
-          console.log('Ì¥ç [DEBUG] Refreshing projects after action');
           await loadProjects();
         }
-      }, 1000);
+      }, 1000); // Wait 1s before refresh
       
       return result;
       
@@ -167,11 +131,34 @@ export function useWorkflows() {
       );
       throw error;
     } finally {
+      // CRITIQUE: Toujours d√©sactiver loading, m√™me en cas d'erreur
       if (isComponentMountedRef.current) {
         setLoading(false);
       }
     }
-  }, [addConsoleMessage, loading, loadProjects]);
+  }, [addConsoleMessage, loading]);
+
+  /**
+   * Charge la liste des projets
+   */
+  const loadProjects = useCallback(async () => {
+    if (!isComponentMountedRef.current) return;
+    
+    try {
+      const response = await fetch('http://localhost:3000/projects');
+      const result = await response.json();
+      
+      if (result.success && isComponentMountedRef.current) {
+        setProjects(result.data.projects || []);
+      } else if (isComponentMountedRef.current) {
+        addConsoleMessage('error', `[API] Failed to load projects: ${result.error}`);
+      }
+    } catch (error) {
+      if (isComponentMountedRef.current) {
+        addConsoleMessage('error', `[API] Network error loading projects: ${error.message}`);
+      }
+    }
+  }, [addConsoleMessage]);
 
   /**
    * Actions sp√©cifiques
@@ -197,13 +184,13 @@ export function useWorkflows() {
    * Polling des projets
    */
   const startPolling = useCallback(() => {
-    if (pollingIntervalRef.current) return;
+    if (pollingIntervalRef.current) return; // D√©j√† en cours
     
     pollingIntervalRef.current = setInterval(() => {
       if (isComponentMountedRef.current) {
         loadProjects();
       }
-    }, 5000);
+    }, 5000); // Poll toutes les 5 secondes
   }, [loadProjects]);
 
   const stopPolling = useCallback(() => {
@@ -213,19 +200,17 @@ export function useWorkflows() {
     }
   }, []);
 
-  // Chargement initial et polling - VERSION DEBUG
+  // Chargement initial et polling
   useEffect(() => {
-    console.log('Ì¥ç [DEBUG] useWorkflows useEffect called');
     const startPollingTimer = setTimeout(() => {
-      console.log('Ì¥ç [DEBUG] Starting initial load and polling');
       if (isComponentMountedRef.current) {
         loadProjects();
         startPolling();
       }
-    }, 100);
+    }, 100); // D√©lai pour √©viter double-fetch au montage
 
+    // Cleanup au d√©montage
     return () => {
-      console.log('Ì¥ç [DEBUG] useWorkflows cleanup');
       isComponentMountedRef.current = false;
       clearTimeout(startPollingTimer);
       
@@ -234,9 +219,7 @@ export function useWorkflows() {
         pollingIntervalRef.current = null;
       }
     };
-  }, [loadProjects, startPolling]);
-
-  console.log('Ì¥ç [DEBUG] useWorkflows render - projects count:', projects.length);
+  }, []); // D√©pendances vides pour ne d√©clencher qu'au montage
 
   return {
     projects,
@@ -281,8 +264,8 @@ function getActionEndpoint(projectId, action) {
 
 function getActionMethod(action) {
   if (action === 'DELETE') return 'DELETE';
-  if (action === 'REVERT') return 'POST';
+  if (action === 'REVERT') return 'POST'; // Utiliser POST pour REVERT
   return 'POST';
 }
 
-console.log('[useWorkflows] Debug version loaded with extensive logging');
+console.log('[useWorkflows] Enhanced workflows hook loaded with fixed loading/polling');
