@@ -53,6 +53,7 @@
   display: flex;
   align-items: center;
   flex: 1;
+  min-width: 0; // IMPORTANT : permet à l'ellipsis de fonctionner
 }
 
 .tree-indent {
@@ -83,6 +84,7 @@
   color: var(--color-text-secondary);
   font-size: 8px;
   cursor: pointer;
+  flex-shrink: 0;
 
   &.expanded::before {
     content: '▽';
@@ -105,6 +107,7 @@
   text-overflow: ellipsis;
   font-size: var(--size-sm);
   font-weight: 500;
+  min-width: 0; // CRUCIAL pour que l'ellipsis fonctionne dans flex
 }
 
 .tree-type {
@@ -113,8 +116,10 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--color-text-secondary);
-  margin-right: 12px;
-  margin-left: 12px;
+  margin-left: 8px;
+  margin-right: 8px;
+  flex-shrink: 0; // Ne permet pas au type de rétrécir
+  white-space: nowrap; // Empêche le retour à la ligne
 }
 
 .tree-add-btn {
@@ -130,6 +135,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.1s ease;
+  flex-shrink: 0; // Ne permet pas au bouton de rétrécir
 
   &:hover {
     background: var(--color-success);
