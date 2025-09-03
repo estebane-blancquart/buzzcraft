@@ -9,8 +9,6 @@
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export async function request(req) {
-  console.log(`[REQUEST-PARSER] CALL 1: Parsing ${req.method} ${req.path}...`);
-
   try {
     // Extraction des données de base
     const requestData = {
@@ -52,13 +50,9 @@ export async function request(req) {
       rawRequest: {
         headers: req.headers,
         query: req.query,
-        body: req.body || {},  // ��� FIX PRINCIPAL : Inclure le body !
-        params: req.params || {},
         ip: requestData.ip,
       },
     };
-
-    console.log(`[REQUEST-PARSER] Successfully parsed ${action} request for project: ${projectId || 'new'}`);
     
     return {
       success: true,
@@ -79,105 +73,107 @@ export async function request(req) {
  * @param {express.Request} req - Requête Express
  * @param {object} requestData - Données de base extraites
  * @returns {{success: boolean, action?: string, projectId?: string, config?: object, error?: string}}
+ * @private
  */
 function determineActionAndParams(req, requestData) {
-  const { method, path, params, body, query } = requestData;
+  try {
+    const { method, path, params, body, query } = requestData;
 
-  // Table de mapping des routes vers les actions
-  const ROUTE_PATTERNS = [
-    // Création de projet
-    {
-      pattern: /^\/projects\/?$/,
-      method: "POST",
-      action: "CREATE",
-      extractParams: (req, match) => ({
-        projectId: req.body?.projectId,
-        config: {
-          name: req.body?.name,
-          template: req.body?.template,
-          description: req.body?.description || "",
-        },
-      }),
-    },
+    // Routes patterns pour chaque action
+    const routePatterns = [
+      // CREATE: POST /projects
+      {
+        pattern: /^\/projects\/?$/,
+        method: 'POST',
+        action: 'CREATE',
+        extractParams: (req, match) => ({
+          projectId: generateProjectIdFromBody(req.body),
+          config: req.body || {}
+        })
+      },
 
-    // Actions sur projet existant
-    {
-      pattern: /^\/projects\/([^\/]+)\/build\/?$/,
-      method: "POST",
-      action: "BUILD",
-      extractParams: (req, match) => ({
-        projectId: match[1],
-        config: req.body || {},
-      }),
-    },
+      // BUILD: POST /projects/:id/build
+      {
+        pattern: /^\/projects\/([^\/]+)\/build\/?$/,
+        method: 'POST',
+        action: 'BUILD',
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {}
+        })
+      },
 
-    {
-      pattern: /^\/projects\/([^\/]+)\/deploy\/?$/,
-      method: "POST",
-      action: "DEPLOY",
-      extractParams: (req, match) => ({
-        projectId: match[1],
-        config: req.body || {},
-      }),
-    },
+      // DEPLOY: POST /projects/:id/deploy
+      {
+        pattern: /^\/projects\/([^\/]+)\/deploy\/?$/,
+        method: 'POST',
+        action: 'DEPLOY',
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {}
+        })
+      },
 
-    {
-      pattern: /^\/projects\/([^\/]+)\/start\/?$/,
-      method: "POST",
-      action: "START",
-      extractParams: (req, match) => ({
-        projectId: match[1],
-        config: req.body || {},
-      }),
-    },
+      // START: POST /projects/:id/start
+      {
+        pattern: /^\/projects\/([^\/]+)\/start\/?$/,
+        method: 'POST',
+        action: 'START',
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {}
+        })
+      },
 
-    {
-      pattern: /^\/projects\/([^\/]+)\/stop\/?$/,
-      method: "POST",
-      action: "STOP",
-      extractParams: (req, match) => ({
-        projectId: match[1],
-        config: req.body || {},
-      }),
-    },
+      // STOP: POST /projects/:id/stop
+      {
+        pattern: /^\/projects\/([^\/]+)\/stop\/?$/,
+        method: 'POST',
+        action: 'STOP',
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {}
+        })
+      },
 
-    // Suppression
-    {
-      pattern: /^\/projects\/([^\/]+)\/?$/,
-      method: "DELETE",
-      action: "DELETE",
-      extractParams: (req, match) => ({
-        projectId: match[1],
-        config: {},
-      }),
-    },
+      // DELETE: DELETE /projects/:id
+      {
+        pattern: /^\/projects\/([^\/]+)\/?$/,
+        method: 'DELETE',
+        action: 'DELETE',
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {}
+        })
+      },
 
-    // REVERT - POST version
-    {
-      pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
-      method: "POST",
-      action: "REVERT",
-      extractParams: (req, match) => ({
-        projectId: match[1],
-        config: req.body || {},
-      }),
-    },
+      // REVERT: PUT /projects/:id/revert
+      {
+        pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
+        method: 'PUT',
+        action: 'REVERT',
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {}
+        })
+      },
 
-    // REVERT - PUT version
-    {
-      pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
-      method: "PUT",
-      action: "REVERT",
-      extractParams: (req, match) => ({
-        projectId: match[1],
-        config: req.body || {},
-      }),
-    },
-  ];
+      // REVERT: POST /projects/:id/revert (alternative)
+      {
+        pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
+        method: 'POST',
+        action: 'REVERT',
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {}
+        })
+      }
+    ];
 
-  // Recherche du pattern correspondant
-  for (const routePattern of ROUTE_PATTERNS) {
-    if (routePattern.method === method) {
+    // Recherche du pattern correspondant
+    for (const routePattern of routePatterns) {
+      if (routePattern.method !== method) continue;
+      
       const match = routePattern.pattern.exec(path);
       if (match) {
         try {
@@ -209,13 +205,49 @@ function determineActionAndParams(req, requestData) {
         }
       }
     }
+
+    // Aucun pattern correspondant trouvé
+    return {
+      success: false,
+      error: `Unsupported route: ${method} ${path}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Route analysis failed: ${error.message}`,
+    };
+  }
+}
+
+/**
+ * Génère un projectId à partir du body de la requête CREATE
+ * @param {object} body - Corps de la requête
+ * @returns {string|null} Project ID généré ou null
+ * @private
+ */
+function generateProjectIdFromBody(body) {
+  if (!body) return null;
+
+  // Si un projectId est explicitement fourni
+  if (body.projectId && typeof body.projectId === 'string') {
+    return body.projectId.trim();
   }
 
-  // Aucun pattern correspondant trouvé
-  return {
-    success: false,
-    error: `Unsupported route: ${method} ${path}`,
-  };
+  // Générer à partir du nom
+  if (body.name && typeof body.name === 'string') {
+    return body.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  // Générer un ID aléatoire si aucune base
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substr(2, 5);
+  return `project-${timestamp}-${random}`;
 }
 
 /**
@@ -223,6 +255,7 @@ function determineActionAndParams(req, requestData) {
  * @param {string} projectId - ID à valider
  * @param {string} action - Action concernée
  * @returns {{valid: boolean, error?: string}}
+ * @private
  */
 function validateProjectId(projectId, action) {
   // Pour CREATE, le projectId peut être undefined (généré plus tard)
@@ -255,5 +288,3 @@ function validateProjectId(projectId, action) {
 
   return { valid: true };
 }
-
-console.log(`[REQUEST-PARSER] Request parser module loaded`);

@@ -31,4 +31,3 @@ export async function stopWorkflow(projectId, config = {}) {
   };
 }
 
-console.log(`[STOP] Stop coordinator loaded - MOCK HONNÊTE`);

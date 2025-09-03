@@ -15,9 +15,6 @@ import { basename } from 'path';
  * @returns {Promise<{success: boolean, data: object}>} Résultat de détection
  */
 export async function detectBuiltState(projectPath) {
-  // 1. DÉBUT
-  console.log(`${LOG_COLORS.BUILT}[BUILT-DETECTOR] Detecting BUILT state for ${basename(projectPath)}${LOG_COLORS.reset}`);
-  
   // Validation des paramètres
   const validation = validateBuiltDetectionInput(projectPath);
   if (!validation.valid) {
@@ -106,15 +103,6 @@ export async function detectBuiltState(projectPath) {
     confidence = Math.max(0, confidence - (criticalConflicts.length * 30));
     const isBuilt = confidence >= 75 && hasProjectFile && hasValidJson && hasBuiltState;
     
-    // 2. RÉSULTAT (succès ou échec)
-    if (isBuilt) {
-      console.log(`${LOG_COLORS.success}[BUILT-DETECTOR] BUILT confirmed (${confidence}% confidence)${LOG_COLORS.reset}`);
-    } else if (conflicts.length > 0) {
-      console.log(`${LOG_COLORS.error}[BUILT-DETECTOR] Not BUILT: ${conflicts[0]}${LOG_COLORS.reset}`);
-    } else {
-      console.log(`${LOG_COLORS.warning}[BUILT-DETECTOR] Not BUILT (${confidence}% confidence)${LOG_COLORS.reset}`);
-    }
-    
     const result = {
       isBuilt,
       confidence,
@@ -183,6 +171,7 @@ export async function detectBuiltState(projectPath) {
  */
 export async function detectBuiltStateById(projectId) {
   if (!projectId || typeof projectId !== 'string') {
+    console.log(`${LOG_COLORS.error}[BUILT-DETECTOR] Invalid project ID: must be non-empty string${LOG_COLORS.reset}`);
     return {
       success: false,
       error: 'projectId must be non-empty string'
@@ -194,36 +183,51 @@ export async function detectBuiltStateById(projectId) {
 }
 
 /**
- * Vérification rapide BUILT (version performance)
+ * Analyse rapide BUILT (version allégée pour performance)
  * @param {string} projectPath - Chemin vers le projet
  * @returns {Promise<{success: boolean, data: {isBuilt: boolean}}>} Résultat simplifié
  */
 export async function quickBuiltCheck(projectPath) {
   try {
+    // Check minimal : project.json + état BUILT
     const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     
-    const projectFile = await readPath(projectFilePath, { 
-      parseJson: true, 
-      required: false 
-    });
+    const projectFile = await readPath(projectFilePath, { parseJson: true });
     
-    if (!projectFile.success || !projectFile.data.exists || projectFile.data.jsonError) {
-      return { success: true, data: { isBuilt: false } };
+    if (!projectFile.success || !projectFile.data.exists) {
+      return {
+        success: true,
+        data: {
+          isBuilt: false,
+          reason: 'Project file does not exist'
+        }
+      };
+    }
+    
+    if (projectFile.data.jsonError) {
+      return {
+        success: true,
+        data: {
+          isBuilt: false,
+          reason: 'Invalid project JSON'
+        }
+      };
     }
     
     const projectData = projectFile.data.parsed;
-    const stateIsBuilt = projectData.state === 'BUILT';
-    const hasArtifacts = await quickArtifactsCheck(projectPath);
+    const isBuilt = projectData.state === 'BUILT';
     
     return {
       success: true,
       data: {
-        isBuilt: stateIsBuilt && hasArtifacts
+        isBuilt,
+        reason: isBuilt ? 'Project state is BUILT' : `Project state is ${projectData.state}`
       }
     };
     
   } catch (error) {
+    console.log(`${LOG_COLORS.error}[BUILT-DETECTOR] Quick check failed: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `Quick BUILT check failed: ${error.message}`
@@ -232,109 +236,97 @@ export async function quickBuiltCheck(projectPath) {
 }
 
 /**
- * Recherche les artifacts de build dans le projet
+ * Recherche des artifacts de build dans le projet
  * @param {string} projectPath - Chemin du projet
  * @returns {Promise<{hasArtifacts: boolean, foundArtifacts: Array}>} Résultat de scan
  * @private
  */
 async function scanForBuildArtifacts(projectPath) {
-  const foundArtifacts = [];
-  
   try {
-    // Services possibles générés par le build
-    const possibleServices = ['front', 'api', 'back', 'database', 'admin'];
+    const buildIndicators = [
+      'index.html',
+      'package.json',
+      'dist/',
+      'build/',
+      'app-visitor/',
+      'app-server/',
+      'front/',
+      'api/',
+      'back/'
+    ];
     
-    for (const service of possibleServices) {
-      const servicePath = `${projectPath}/${service}`;
+    const foundArtifacts = [];
+    
+    for (const indicator of buildIndicators) {
+      const indicatorPath = `${projectPath}/${indicator}`;
+      const exists = await checkFileAccess(indicatorPath);
       
-      try {
-        const serviceExists = await checkFileAccess(servicePath);
-        if (!serviceExists.accessible) continue;
-        
-        // Scanner le service
-        const serviceContent = await readDirectory(servicePath);
-        if (serviceContent.success) {
-          // Ajouter tous les fichiers du service
-          for (const item of serviceContent.data.items) {
-            foundArtifacts.push({
-              path: `${service}/${item.name}`,
-              type: item.isDirectory ? 'directory' : 'file',
-              fullPath: `${servicePath}/${item.name}`
-            });
-          }
-          
-          // Scanner les sous-dossiers
-          const subDirs = serviceContent.data.items.filter(item => item.isDirectory);
-          for (const subDir of subDirs) {
-            const subDirPath = `${servicePath}/${subDir.name}`;
-            try {
-              const subDirContent = await readDirectory(subDirPath);
-              if (subDirContent.success) {
-                for (const subItem of subDirContent.data.items) {
-                  foundArtifacts.push({
-                    path: `${service}/${subDir.name}/${subItem.name}`,
-                    type: 'file',
-                    fullPath: `${subDirPath}/${subItem.name}`
-                  });
-                }
-              }
-            } catch (error) {
-              // Ignorer les erreurs de sous-dossiers
-            }
-          }
-        }
-      } catch (error) {
-        // Ignorer les erreurs de services
+      if (exists.accessible) {
+        foundArtifacts.push({
+          name: indicator,
+          path: indicatorPath,
+          type: indicator.endsWith('/') ? 'directory' : 'file'
+        });
       }
     }
+    
+    return {
+      hasArtifacts: foundArtifacts.length > 0,
+      foundArtifacts
+    };
+    
   } catch (error) {
-    // Ignorer les erreurs générales
+    return {
+      hasArtifacts: false,
+      foundArtifacts: [],
+      error: error.message
+    };
   }
-  
-  return {
-    hasArtifacts: foundArtifacts.length > 0,
-    foundArtifacts
-  };
 }
 
 /**
- * Analyse la structure de répertoire pour détecter un état BUILT
+ * Analyse la structure du répertoire pour déterminer si elle ressemble à un projet BUILT
  * @param {string} projectPath - Chemin du projet
- * @returns {Promise<{isBuiltLike: boolean, reason: string}>} Analyse
+ * @returns {Promise<{isBuiltLike: boolean, reason?: string}>} Résultat d'analyse
  * @private
  */
 async function analyzeBuiltDirectoryStructure(projectPath) {
   try {
-    const dirContent = await readDirectory(projectPath);
+    const directoryContent = await readDirectory(projectPath, {
+      includeStats: false,
+      recursive: false
+    });
     
-    if (!dirContent.success) {
+    if (!directoryContent.success) {
       return {
         isBuiltLike: false,
-        reason: 'Directory not readable'
+        reason: 'Directory not accessible'
       };
     }
     
-    const files = dirContent.data.items.filter(item => item.isFile);
-    const dirs = dirContent.data.items.filter(item => item.isDirectory);
+    const files = directoryContent.data.files || [];
     
-    // Doit avoir project.json
-    const hasProjectFile = files.some(file => file.name === 'project.json');
+    // Rechercher des services générés typiques
+    const servicePatterns = ['app-visitor', 'app-server', 'front', 'api', 'back'];
+    const foundServices = [];
     
-    if (!hasProjectFile) {
-      return {
-        isBuiltLike: false,
-        reason: 'Missing project.json file'
-      };
+    for (const file of files) {
+      for (const pattern of servicePatterns) {
+        if (file.name === pattern && file.type === 'directory') {
+          foundServices.push({
+            name: pattern,
+            type: 'service'
+          });
+        }
+      }
     }
     
-    // Chercher les services générés
-    const serviceDirectories = ['front', 'api', 'back', 'database', 'admin'];
-    const foundServices = dirs.filter(dir => serviceDirectories.includes(dir.name));
+    const hasProjectFile = files.some(f => f.name === 'project.json');
     
     if (foundServices.length > 0) {
       return {
         isBuiltLike: true,
-        reason: `Contains ${foundServices.length} generated service(s): ${foundServices.map(s => s.name).join(', ')}`
+        reason: `Found ${foundServices.length} generated service(s): ${foundServices.map(s => s.name).join(', ')}`
       };
     }
     
@@ -401,5 +393,3 @@ function validateBuiltDetectionInput(projectPath) {
   
   return { valid: true };
 }
-
-console.log(`${LOG_COLORS.BUILT}[BUILT-DETECTOR] BUILT detector loaded${LOG_COLORS.reset}`);

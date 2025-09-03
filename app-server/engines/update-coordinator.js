@@ -14,10 +14,9 @@
  * @returns {Promise<{success: boolean, data: object}>} Résultat simulé
  */
 export async function updateWorkflow(projectId, config = {}) {
-  console.log(`[UPDATE] MOCK: updateWorkflow called for project: ${projectId}`);
-  
   // Validation basique
   if (!projectId || typeof projectId !== 'string') {
+    console.log(`[UPDATE] Invalid project ID: ${projectId}`);
     return {
       success: false,
       error: 'projectId must be non-empty string'
@@ -29,13 +28,12 @@ export async function updateWorkflow(projectId, config = {}) {
   const strategy = config.strategy || 'rolling';
   
   if (!validStrategies.includes(strategy)) {
+    console.log(`[UPDATE] Invalid strategy: ${strategy}`);
     return {
       success: false,
       error: `Invalid strategy: ${strategy}. Valid strategies: ${validStrategies.join(', ')}`
     };
   }
-  
-  console.log(`[UPDATE] MOCK: Using ${strategy} deployment strategy`);
   
   // Simulation des étapes de mise à jour
   const steps = [
@@ -48,22 +46,19 @@ export async function updateWorkflow(projectId, config = {}) {
     'Finalizing deployment'
   ];
   
-  console.log(`[UPDATE] MOCK: Starting ${strategy} update...`);
-  
   // Simulation du processus (avec délais)
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    console.log(`[UPDATE] MOCK: Step ${i + 1}/${steps.length}: ${step}`);
     
     // Simulation d'un délai pour chaque étape
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
     
     // 5% de chance d'échec sur certaines étapes critiques
     if ((i === 3 || i === 5) && Math.random() < 0.05) {
-      console.log(`[UPDATE] MOCK: Step failed: ${step}`);
+      console.log(`[UPDATE] Step failed: ${step}`);
       
       if (config.rollbackOnFailure !== false) {
-        console.log(`[UPDATE] MOCK: Initiating automatic rollback...`);
+        console.log(`[UPDATE] Initiating automatic rollback`);
         await new Promise(resolve => setTimeout(resolve, 500));
         
         return {
@@ -90,7 +85,7 @@ export async function updateWorkflow(projectId, config = {}) {
     }
   }
   
-  console.log(`[UPDATE] MOCK: Update completed successfully for ${projectId}`);
+  console.log(`[UPDATE] Update completed successfully for ${projectId}`);
   
   // Génération d'une nouvelle version
   const now = new Date();
@@ -153,5 +148,3 @@ export async function updateWorkflow(projectId, config = {}) {
     }
   };
 }
-
-console.log(`[UPDATE] Update coordinator loaded successfully - MOCK VERSION`);

@@ -219,5 +219,3 @@ function validateWritePathInput(path, data, options) {
   
   return { valid: true };
 }
-
-console.log(`${LOG_COLORS.info}[WRITER] Writer core loaded${LOG_COLORS.reset}`);

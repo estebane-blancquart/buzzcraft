@@ -31,4 +31,4 @@ export async function startWorkflow(projectId, config = {}) {
   };
 }
 
-console.log(`[START] Start coordinator loaded - MOCK HONNÊTE`);
+

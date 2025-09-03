@@ -56,5 +56,3 @@ export const TIMEOUTS = {
   WORKFLOW: 30000,
   POLLING: 2000
 };
-
-console.log('[CONSTANTS] Client constants loaded');

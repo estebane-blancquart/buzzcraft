@@ -6,8 +6,6 @@
  */
 
 export async function process(responseData) {
-  console.log(`[RESPONSE-PROCESSOR] CALL 13: Processing final response...`);
-  
   // Validation du paramètre d'entrée
   const validation = validateResponseData(responseData);
   if (!validation.valid) {
@@ -24,7 +22,6 @@ export async function process(responseData) {
   }
 
   const { action, message, project, metadata } = responseData.data;
-  console.log(`[RESPONSE-PROCESSOR] Processing action: ${action} for project: ${project.id}`);
   
   // Structure de réponse finale standardisée
   const finalResponse = {
@@ -56,7 +53,6 @@ export async function process(responseData) {
   // Ajout des données additionnelles préservées
   addAdditionalData(finalResponse, responseData.data);
 
-  console.log(`[RESPONSE-PROCESSOR] Final response processed successfully for action: ${action}`);
   return {
     success: true,
     data: finalResponse
@@ -67,185 +63,227 @@ export async function process(responseData) {
  * Valide la structure des données reçues du parser
  * @param {object} responseData - Données à valider
  * @returns {{valid: boolean, error?: string}}
+ * @private
  */
 function validateResponseData(responseData) {
   if (!responseData) {
     return { valid: false, error: 'responseData is required' };
   }
-  
+
   if (typeof responseData !== 'object') {
     return { valid: false, error: 'responseData must be an object' };
   }
-  
-  if (typeof responseData.success !== 'boolean') {
-    return { valid: false, error: 'responseData.success must be boolean' };
-  }
-  
-  if (!responseData.success) {
-    // En cas d'échec du parsing, on valide juste que error existe
+
+  // Pour les réponses échouées
+  if (responseData.success === false) {
     if (!responseData.error) {
-      return { valid: false, error: 'responseData.error is required when success is false' };
+      return { valid: false, error: 'Failed response must have error field' };
     }
     return { valid: true };
   }
-  
-  // Validation pour les cas de succès
+
+  // Pour les réponses réussies
+  if (responseData.success !== true) {
+    return { valid: false, error: 'responseData.success must be boolean' };
+  }
+
   if (!responseData.data) {
-    return { valid: false, error: 'responseData.data is required when success is true' };
+    return { valid: false, error: 'Successful response must have data field' };
   }
-  
-  const { action, message, project, metadata } = responseData.data;
-  
-  if (!action || typeof action !== 'string') {
-    return { valid: false, error: 'responseData.data.action must be non-empty string' };
+
+  // Validation des champs requis
+  const requiredFields = ['action', 'message', 'project', 'metadata'];
+  for (const field of requiredFields) {
+    if (!responseData.data[field]) {
+      return { valid: false, error: `Missing required data field: ${field}` };
+    }
   }
-  
-  if (!message || typeof message !== 'string') {
-    return { valid: false, error: 'responseData.data.message must be non-empty string' };
+
+  // Validation de la structure project
+  const projectRequiredFields = ['id', 'fromState', 'toState'];
+  for (const field of projectRequiredFields) {
+    if (!responseData.data.project[field]) {
+      return { valid: false, error: `Missing required project field: ${field}` };
+    }
   }
-  
-  if (!project || typeof project !== 'object') {
-    return { valid: false, error: 'responseData.data.project must be object' };
-  }
-  
-  if (!project.id || typeof project.id !== 'string') {
-    return { valid: false, error: 'responseData.data.project.id must be non-empty string' };
-  }
-  
-  if (!metadata || typeof metadata !== 'object') {
-    return { valid: false, error: 'responseData.data.metadata must be object' };
-  }
-  
+
   return { valid: true };
 }
 
 /**
  * Enrichit la réponse avec des données spécifiques à l'action
- * @param {object} finalResponse - Réponse à enrichir (modifiée en place)
- * @param {string} action - Action exécutée
- * @param {object} responseData - Données source du parser
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {string} action - Action effectuée
+ * @param {object} responseData - Données source
+ * @private
  */
 function enrichResponseByAction(finalResponse, action, responseData) {
   switch (action) {
     case 'CREATE':
-      finalResponse.creation = {
-        template: responseData.templateUsed || 'basic',
-        fallbackUsed: responseData.fallbackUsed || false,
-        artifactsCreated: responseData.artifacts?.length || 0
-      };
+      enrichCreateResponse(finalResponse, responseData);
       break;
-      
     case 'BUILD':
-      finalResponse.build = {
-        servicesGenerated: responseData.servicesGenerated || 0,
-        templatesProcessed: responseData.templatesUsed || 0,
-        buildStats: responseData.buildStats || null
-      };
+      enrichBuildResponse(finalResponse, responseData);
       break;
-      
     case 'DEPLOY':
-      finalResponse.deployment = {
-        containersCreated: responseData.containersCreated || 0,
-        networkConfigured: responseData.networkConfigured || false,
-        healthCheckPassed: responseData.healthCheckPassed || false
-      };
+      enrichDeployResponse(finalResponse, responseData);
       break;
-      
-    case 'START':
-      finalResponse.startup = {
-        servicesStarted: responseData.servicesStarted || 0,
-        healthStatus: responseData.healthStatus || 'unknown',
-        accessUrl: responseData.accessUrl || null
-      };
-      break;
-      
-    case 'STOP':
-      finalResponse.shutdown = {
-        servicesStopped: responseData.servicesStopped || 0,
-        cleanupCompleted: responseData.cleanupCompleted || false,
-        resourcesFreed: responseData.resourcesFreed || []
-      };
-      break;
-      
     case 'DELETE':
-      finalResponse.deletion = {
-        artifactsRemoved: responseData.artifactsRemoved || 0,
-        cleanupCompleted: responseData.cleanupCompleted || false,
-        storageFreed: responseData.storageFreed || '0MB'
-      };
+      enrichDeleteResponse(finalResponse, responseData);
       break;
-      
-    case 'UPDATE':
-      finalResponse.update = {
-        componentsUpdated: responseData.componentsUpdated || 0,
-        migrationApplied: responseData.migrationApplied || false,
-        rollbackAvailable: responseData.rollbackAvailable || false
-      };
-      break;
-      
     case 'REVERT':
-      finalResponse.reversion = {
-        stateReverted: true,
-        artifactsRemoved: responseData.artifactsRemoved || 0,
-        backupRestored: responseData.backupRestored || false
-      };
+      enrichRevertResponse(finalResponse, responseData);
       break;
-      
     default:
-      // Pour les actions inconnues, on ajoute une section générique
-      finalResponse.operation = {
-        type: action,
-        completed: true,
-        details: 'Operation completed successfully'
-      };
+      enrichGenericResponse(finalResponse, responseData);
   }
 }
 
 /**
- * Ajoute les données additionnelles préservées du workflow
- * @param {object} finalResponse - Réponse à enrichir (modifiée en place)
- * @param {object} responseData - Données source du parser
+ * Enrichissement spécifique pour CREATE
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {object} responseData - Données source
+ * @private
+ */
+function enrichCreateResponse(finalResponse, responseData) {
+  if (responseData.projectDetails) {
+    finalResponse.project.name = responseData.projectDetails.name;
+    finalResponse.project.description = responseData.projectDetails.description;
+    finalResponse.project.pages = responseData.projectDetails.pages?.length || 0;
+  }
+
+  if (responseData.templateUsed) {
+    finalResponse.template = {
+      id: responseData.templateUsed,
+      name: `${responseData.templateUsed.charAt(0).toUpperCase() + responseData.templateUsed.slice(1)} Template`
+    };
+  }
+
+  if (responseData.filesInfo) {
+    finalResponse.files = responseData.filesInfo;
+  }
+}
+
+/**
+ * Enrichissement spécifique pour BUILD
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {object} responseData - Données source
+ * @private
+ */
+function enrichBuildResponse(finalResponse, responseData) {
+  if (responseData.buildInfo) {
+    finalResponse.build = {
+      generatedFiles: responseData.buildInfo.generatedFiles,
+      totalSize: responseData.buildInfo.totalSize,
+      targets: responseData.buildInfo.targets,
+      builtAt: responseData.buildInfo.builtAt
+    };
+  }
+
+  if (responseData.workflowInfo) {
+    finalResponse.workflow = responseData.workflowInfo;
+  }
+}
+
+/**
+ * Enrichissement spécifique pour DEPLOY
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {object} responseData - Données source
+ * @private
+ */
+function enrichDeployResponse(finalResponse, responseData) {
+  if (responseData.deploymentInfo) {
+    finalResponse.deployment = responseData.deploymentInfo;
+  }
+
+  if (responseData.deployedAt) {
+    finalResponse.deployedAt = responseData.deployedAt;
+  }
+}
+
+/**
+ * Enrichissement spécifique pour DELETE
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {object} responseData - Données source
+ * @private
+ */
+function enrichDeleteResponse(finalResponse, responseData) {
+  if (responseData.deletionInfo) {
+    finalResponse.deletion = {
+      deletedItems: responseData.deletionInfo.deletedItems?.length || 0,
+      deletedCount: responseData.deletionInfo.deletedCount
+    };
+  }
+
+  if (responseData.backupInfo) {
+    finalResponse.backup = {
+      created: true,
+      path: responseData.backupInfo.path,
+      size: responseData.backupInfo.size
+    };
+  }
+}
+
+/**
+ * Enrichissement spécifique pour REVERT
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {object} responseData - Données source
+ * @private
+ */
+function enrichRevertResponse(finalResponse, responseData) {
+  if (responseData.workflowInfo) {
+    finalResponse.revert = responseData.workflowInfo;
+  }
+
+  if (responseData.cleanup) {
+    finalResponse.cleanup = responseData.cleanup;
+  }
+}
+
+/**
+ * Enrichissement générique
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {object} responseData - Données source
+ * @private
+ */
+function enrichGenericResponse(finalResponse, responseData) {
+  // Ajout de toute information utile disponible
+  if (responseData.workflowInfo) {
+    finalResponse.workflow = responseData.workflowInfo;
+  }
+}
+
+/**
+ * Ajoute les données additionnelles préservées
+ * @param {object} finalResponse - Réponse à enrichir
+ * @param {object} responseData - Données source
+ * @private
  */
 function addAdditionalData(finalResponse, responseData) {
-  // Données optionnelles à préserver dans la réponse finale
-  const OPTIONAL_FIELDS = [
-    'templateUsed',
-    'fallbackUsed', 
-    'artifacts',
-    'fileWritten',
-    'buildMetadata',
-    'deploymentMetadata',
-    'errorDetails'
-  ];
+  // Préservation des timestamps
+  const timestamps = {};
+  if (responseData.createdAt) timestamps.created = responseData.createdAt;
+  if (responseData.builtAt) timestamps.built = responseData.builtAt;
+  if (responseData.deployedAt) timestamps.deployed = responseData.deployedAt;
   
-  const additionalData = {};
-  
-  OPTIONAL_FIELDS.forEach(field => {
-    if (responseData[field] !== undefined) {
-      additionalData[field] = responseData[field];
+  if (Object.keys(timestamps).length > 0) {
+    finalResponse.timestamps = timestamps;
+  }
+
+  // Préservation des métadonnées utiles
+  if (responseData.metadata && responseData.metadata.workflowSuccess !== undefined) {
+    finalResponse.processing.workflowSuccess = responseData.metadata.workflowSuccess;
+  }
+
+  // Ajout d'informations de debug en mode développement
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+      finalResponse.debug = {
+        parsedBy: responseData.metadata?.parsedBy,
+        originalDataKeys: Object.keys(responseData).filter(key => !['action', 'message', 'project', 'metadata'].includes(key))
+      };
     }
-  });
-  
-  // Ajouter les données additionnelles seulement si il y en a
-  if (Object.keys(additionalData).length > 0) {
-    finalResponse.additional = additionalData;
+  } catch (error) {
+    // Ignore debug errors silently
   }
 }
-
-/**
- * Génère des statistiques sur la réponse finale
- * @param {object} finalResponse - Réponse finale
- * @returns {object} Statistiques de réponse
- */
-function generateResponseStats(finalResponse) {
-  return {
-    responseSize: JSON.stringify(finalResponse).length,
-    fieldsCount: Object.keys(finalResponse).length,
-    hasAdditionalData: !!finalResponse.additional,
-    processingAction: finalResponse.processing?.action || 'unknown'
-  };
-}
-
-console.log(`[RESPONSE-PROCESSOR] Response processor module loaded`);
-
-export default { process };

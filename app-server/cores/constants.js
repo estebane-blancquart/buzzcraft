@@ -394,6 +394,3 @@ export const LOG_COLORS = {
   info: '\x1b[36m',       // Cyan
   debug: '\x1b[90m'       // Gris
 };
-
-console.log(`[CONSTANTS] Constants loaded successfully - PIXEL PERFECT VERSION`);
-console.log(`[CONSTANTS] Project templates path: ${PATHS.projectTemplates}`);

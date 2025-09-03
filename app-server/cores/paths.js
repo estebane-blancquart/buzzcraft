@@ -276,5 +276,3 @@ function generateTimestamp() {
   
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
-
-console.log(`[PATHS] Path generator loaded`);

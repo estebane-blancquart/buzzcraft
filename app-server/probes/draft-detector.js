@@ -16,7 +16,6 @@ import { basename } from 'path';
  */
 export async function detectDraftState(projectPath) {
   // 1. DÉBUT
-  console.log(`${LOG_COLORS.DRAFT}[DRAFT-DETECTOR] Detecting DRAFT state for ${basename(projectPath)}${LOG_COLORS.reset}`);
   
   // Validation des paramètres
   const validation = validateDraftDetectionInput(projectPath);
@@ -96,15 +95,7 @@ export async function detectDraftState(projectPath) {
     
     confidence = Math.max(0, confidence - (criticalConflicts.length * 30));
     const isDraft = confidence >= 75 && hasProjectFile && hasValidJson && hasDraftState;
-    
-    // 2. RÉSULTAT (succès ou échec)
-    if (isDraft) {
-      console.log(`${LOG_COLORS.success}[DRAFT-DETECTOR] DRAFT confirmed (${confidence}% confidence)${LOG_COLORS.reset}`);
-    } else if (conflicts.length > 0) {
-      console.log(`${LOG_COLORS.error}[DRAFT-DETECTOR] Not DRAFT: ${conflicts[0]}${LOG_COLORS.reset}`);
-    } else {
-      console.log(`${LOG_COLORS.warning}[DRAFT-DETECTOR] Not DRAFT (${confidence}% confidence)${LOG_COLORS.reset}`);
-    }
+  
     
     const result = {
       isDraft,
@@ -300,5 +291,3 @@ function validateDraftDetectionInput(projectPath) {
   
   return { valid: true };
 }
-
-console.log(`${LOG_COLORS.DRAFT}[DRAFT-DETECTOR] DRAFT detector loaded${LOG_COLORS.reset}`);

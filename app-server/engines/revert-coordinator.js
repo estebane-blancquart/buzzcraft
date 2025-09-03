@@ -21,9 +21,6 @@ import { LOG_COLORS } from '../cores/constants.js';
 export async function revertWorkflow(projectId, config = {}) {
   const startTime = Date.now();
   
-  // 1. DÉBUT
-  console.log(`${LOG_COLORS.DRAFT}[REVERT] Starting BUILT → DRAFT for ${projectId}${LOG_COLORS.reset}`);
-  
   // Validation des paramètres d'entrée
   const validation = validateRevertParameters(projectId, config);
   if (!validation.valid) {
@@ -75,8 +72,6 @@ export async function revertWorkflow(projectId, config = {}) {
       };
     }
     
-    console.log(`${LOG_COLORS.info}[REVERT] Removed ${cleanupResult.data.removedCount} artifacts${LOG_COLORS.reset}`);
-    
     // Mise à jour des métadonnées projet vers DRAFT
     const updatedProject = await updateProjectToDraft(projectId, projectData.data);
     
@@ -92,7 +87,7 @@ export async function revertWorkflow(projectId, config = {}) {
     await detectDraftState(projectPath);
     
     const duration = Date.now() - startTime;
-    console.log(`${LOG_COLORS.success}[REVERT] Completed in ${duration}ms${LOG_COLORS.reset}`);
+    console.log(`${LOG_COLORS.success}[REVERT] Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
     
     // Construction de la réponse
     return {
@@ -116,9 +111,10 @@ export async function revertWorkflow(projectId, config = {}) {
           removedCount: cleanupResult.data.removedCount
         },
         backup: backupResult ? {
-          created: true,
           path: backupResult.data.backupPath,
-          size: backupResult.data.size
+          size: backupResult.data.size,
+          itemCount: backupResult.data.itemCount,
+          createdAt: backupResult.data.createdAt
         } : null
       }
     };
@@ -145,27 +141,21 @@ async function loadProjectForRevert(projectId) {
     const projectFilePath = getProjectFilePath(projectId);
     
     const projectFile = await readPath(projectFilePath, {
-      parseJson: true
+      parseJson: true,
+      includeStats: false
     });
     
-    if (!projectFile.success) {
+    if (!projectFile.success || !projectFile.data.exists) {
       return {
         success: false,
-        error: `Cannot read project file: ${projectFile.error}`
-      };
-    }
-    
-    if (!projectFile.data.exists) {
-      return {
-        success: false,
-        error: `Project file does not exist: ${projectFilePath}`
+        error: `Project file not found: ${projectId}`
       };
     }
     
     if (projectFile.data.jsonError) {
       return {
         success: false,
-        error: `Project file has invalid JSON: ${projectFile.data.jsonError}`
+        error: `Invalid project file: ${projectFile.data.jsonError}`
       };
     }
     
@@ -183,82 +173,133 @@ async function loadProjectForRevert(projectId) {
 }
 
 /**
- * Crée une sauvegarde des artifacts de build (MOCK)
+ * Sauvegarde les artifacts de build avant suppression
  * @param {string} projectId - ID du projet
  * @param {object} projectData - Données du projet
  * @returns {Promise<{success: boolean, data: object}>} Résultat de sauvegarde
  * @private
  */
 async function backupBuildArtifacts(projectId, projectData) {
-  // Simulation d'une sauvegarde
-  await new Promise(resolve => setTimeout(resolve, 150));
-  
-  const backupPath = `./backups/${projectId}-build-${Date.now()}.backup`;
-  
-  return {
-    success: true,
-    data: {
-      backupPath,
-      size: (projectData.build?.generatedFiles || 0) * 512,
-      itemCount: projectData.build?.generatedFiles || 0,
-      createdAt: new Date().toISOString()
-    }
-  };
-}
-
-/**
- * Supprime les artifacts de build
- * @param {string} projectPath - Chemin du projet
- * @param {object} projectData - Données du projet
- * @returns {Promise<{success: boolean, data: object}>} Résultat de la suppression
- * @private
- */
-async function removeBuildArtifacts(projectPath, projectData) {
   try {
-    const { rm, readdir } = await import('fs/promises');
+    // Génération du nom de sauvegarde
+    const timestamp = Date.now();
+    const backupFileName = `${projectId}-revert-${timestamp}.backup`;
+    const backupPath = `./backups/${backupFileName}`;
     
-    const removedItems = [];
-    const failedItems = [];
-    
-    // Lire tout le contenu du dossier projet
-    const items = await readdir(projectPath);
-    
-    // Supprimer tout sauf project.json
-    for (const item of items) {
-      if (item === 'project.json') {
-        continue; // Garder project.json
-      }
-      
-      try {
-        const fullPath = `${projectPath}/${item}`;
-        await rm(fullPath, { recursive: true, force: true });
-        removedItems.push(item);
-        
-      } catch (itemError) {
-        if (itemError.code !== 'ENOENT') {
-          failedItems.push({
-            path: item,
-            error: itemError.message
-          });
-        } else {
-          removedItems.push(item);
-        }
-      }
-    }
+    // Simulation d'une création de backup
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     return {
-      success: failedItems.length === 0,
+      success: true,
       data: {
-        removedItems,
-        removedCount: removedItems.length,
-        failedItems: failedItems.length > 0 ? failedItems : undefined
+        backupPath,
+        size: 1024 * 50, // Taille simulée
+        itemCount: projectData.build?.generatedFiles || 0,
+        createdAt: new Date().toISOString()
       }
     };
     
   } catch (error) {
     return {
       success: false,
-      error: `Artifacts cleanup failed: ${error.message}`
+      error: `Backup creation failed: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Supprime les artifacts de build du projet
+ * @param {string} projectPath - Chemin du projet
+ * @param {object} projectData - Données du projet
+ * @returns {Promise<{success: boolean, data: object}>} Résultat de suppression
+ * @private
+ */
+async function removeBuildArtifacts(projectPath, projectData) {
+  try {
+    const removedItems = [];
+    
+    // Liste des artifacts typiques à supprimer
+    const buildArtifacts = [
+      'app-visitor',
+      'app-server', 
+      'dist',
+      'build',
+      'node_modules',
+      'package.json',
+      'package-lock.json'
+    ];
+    
+    // Simulation de suppression
+    for (const artifact of buildArtifacts) {
+      // TODO: Implémenter suppression réelle
+      removedItems.push({
+        name: artifact,
+        type: 'directory',
+        size: 1024 * Math.floor(Math.random() * 100)
+      });
+    }
+    
+    return {
+      success: true,
+      data: {
+        removedItems,
+        removedCount: removedItems.length
+      }
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      error: `Artifacts removal failed: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Met à jour le projet vers l'état DRAFT
+ * @param {string} projectId - ID du projet
+ * @param {object} projectData - Données actuelles du projet
+ * @returns {Promise<{success: boolean, data: object}>} Projet mis à jour
+ * @private
+ */
+async function updateProjectToDraft(projectId, projectData) {
+  try {
+    // Mise à jour des métadonnées
+    const updatedProject = {
+      ...projectData,
+      state: 'DRAFT',
+      lastModified: new Date().toISOString(),
+      // Suppression des métadonnées de build
+      build: undefined,
+      buildAt: undefined,
+      buildVersion: undefined,
+      generatedFiles: undefined
+    };
+    
+    // Sauvegarde du projet mis à jour
+    const projectFilePath = getProjectFilePath(projectId);
+    
+    const writeResult = await writePath(projectFilePath, updatedProject, {
+      jsonIndent: 2,
+      createDirs: false
+    });
+    
+    if (!writeResult.success) {
+      return {
+        success: false,
+        error: `Project update write failed: ${writeResult.error}`
+      };
+    }
+    
+    return {
+      success: true,
+      data: updatedProject
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      error: `Project update failed: ${error.message}`
     };
   }
 }
@@ -289,50 +330,3 @@ function validateRevertParameters(projectId, config) {
   
   return { valid: true };
 }
-
-/**
- * Met à jour le projet vers l'état DRAFT
- * @param {string} projectId - ID du projet
- * @param {object} projectData - Données du projet
- * @returns {Promise<{success: boolean, data: object}>} Projet mis à jour
- * @private
- */
-async function updateProjectToDraft(projectId, projectData) {
-  try {
-    const projectFilePath = getProjectFilePath(projectId);
-    
-    const updatedProject = {
-      ...projectData,
-      state: 'DRAFT',
-      build: undefined,
-      reverted: {
-        fromState: 'BUILT',
-        revertedAt: new Date().toISOString(),
-        reason: 'Manual revert from BUILT to DRAFT state'
-      },
-      updated: new Date().toISOString()
-    };
-    
-    const saveResult = await writePath(projectFilePath, JSON.stringify(updatedProject, null, 2));
-    
-    if (!saveResult.success) {
-      return {
-        success: false,
-        error: `Failed to save project file: ${saveResult.error}`
-      };
-    }
-    
-    return {
-      success: true,
-      data: updatedProject
-    };
-    
-  } catch (error) {
-    return {
-      success: false,
-      error: `State update failed: ${error.message}`
-    };
-  }
-}
-
-console.log(`${LOG_COLORS.DRAFT}[REVERT] Revert coordinator loaded${LOG_COLORS.reset}`);

@@ -10,7 +10,7 @@ import {
 } from "../probes/void-detector.js";
 import { detectDraftState } from "../probes/draft-detector.js";
 import { getProjectPath, getProjectFilePath } from "../cores/paths.js";
-import { PATHS } from "../cores/constants.js";
+import { PATHS, LOG_COLORS } from "../cores/constants.js";
 import { writePath } from "../cores/writer.js";
 import { readPath } from "../cores/reader.js";
 import { join } from "path";
@@ -38,23 +38,10 @@ import { join } from "path";
  * }
  */
 export async function createWorkflow(projectId, config = {}) {
-  console.log("🟢 [SERVER] === DEBUG createWorkflow START ===");
-  console.log("🟢 [SERVER] projectId =", `"${projectId}"`);
-  console.log("🟢 [SERVER] config complet:", JSON.stringify(config, null, 2));
-  console.log("🟢 [SERVER] config.template =", `"${config.template}"`);
-  console.log("🟢 [SERVER] typeof config.template =", typeof config.template);
-  console.log("🟢 [SERVER] config.template length =", config.template?.length);
-  console.log("🟢 [SERVER] config.template === 'empty' ?", config.template === 'empty');
-  console.log("🟢 [SERVER] Boolean(config.template) =", Boolean(config.template));
-
-  console.log(
-    `[CREATE] CALL 3: createWorkflow called for project: ${projectId}`
-  );
-
-  // CALL 1: Validation des paramètres d'entrée
+  // Validation des paramètres d'entrée
   const validation = validateCreateParameters(projectId, config);
   if (!validation.valid) {
-    console.log(`[CREATE] Parameter validation failed: ${validation.error}`);
+    console.log(`${LOG_COLORS.error}[CREATE] Parameter validation failed: ${validation.error}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `Parameter validation failed: ${validation.error}`,
@@ -64,16 +51,11 @@ export async function createWorkflow(projectId, config = {}) {
   const projectPath = getProjectPath(projectId);
   const startTime = Date.now();
 
-  console.log(`[CREATE] Project path resolved: ${projectPath}`);
-
   try {
-    // CALL 4: Détection état initial (doit être VOID)
-    console.log(`[CREATE] CALL 4: Detecting initial state...`);
+    // Détection état initial (doit être VOID)
     const initialState = await detectVoidStateById(projectId);
     if (!initialState.success) {
-      console.log(
-        `[CREATE] Initial state detection failed: ${initialState.error}`
-      );
+      console.log(`${LOG_COLORS.error}[CREATE] State detection failed: ${initialState.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `State detection failed: ${initialState.error}`,
@@ -81,41 +63,26 @@ export async function createWorkflow(projectId, config = {}) {
     }
 
     if (!initialState.data.isVoid) {
-      console.log(`[CREATE] Project already exists or invalid state`);
+      console.log(`${LOG_COLORS.error}[CREATE] Project already exists or invalid state${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Project already exists. Current evidence: ${initialState.data.evidence.join(", ")}`,
       };
     }
 
-    console.log(`[CREATE] Initial state confirmed: VOID`);
-
-    // CALL 5: Chargement du template - VERSION DEBUG
-    console.log("🟢 [SERVER] CALL 5: About to determine templateId...");
-    console.log("🟢 [SERVER] config.template before decision =", `"${config.template}"`);
-    
-    // ✅ PAS DE FALLBACK ICI - on passe directement la valeur
+    // Chargement du template
     const templateId = config.template;
-    
-    console.log("🟢 [SERVER] templateId determined =", `"${templateId}"`);
-    console.log("🟢 [SERVER] Calling loadProjectTemplate with:", `"${templateId}"`);
-    
     const templateResult = await loadProjectTemplate(templateId);
 
     if (!templateResult.success) {
-      console.log(`[CREATE] Template loading failed: ${templateResult.error}`);
+      console.log(`${LOG_COLORS.error}[CREATE] Template loading failed: ${templateResult.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Template loading failed: ${templateResult.error}`,
       };
     }
 
-    console.log(
-      `[CREATE] Template loaded successfully: ${templateResult.data.template.name}`
-    );
-
-    // CALL 6: Construction des données projet
-    console.log(`[CREATE] CALL 6: Building project data...`);
+    // Construction des données projet
     const projectData = buildProjectData(
       projectId,
       config,
@@ -123,36 +90,26 @@ export async function createWorkflow(projectId, config = {}) {
     );
 
     if (!projectData.success) {
-      console.log(
-        `[CREATE] Project data building failed: ${projectData.error}`
-      );
+      console.log(`${LOG_COLORS.error}[CREATE] Project data building failed: ${projectData.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Project data building failed: ${projectData.error}`,
       };
     }
 
-    console.log(`[CREATE] Project data built successfully`);
-
-    // CALL 7: Validation du projet construit
-    console.log(`[CREATE] CALL 7: Validating built project...`);
+    // Validation du projet construit
     const projectValidation = validateBuiltProject(projectData.data);
 
     if (!projectValidation.valid) {
-      console.log(
-        `[CREATE] Project validation failed: ${projectValidation.error}`
-      );
+      console.log(`${LOG_COLORS.error}[CREATE] Project validation failed: ${projectValidation.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Project validation failed: ${projectValidation.error}`,
       };
     }
 
-    console.log(`[CREATE] Project validation passed`);
-
-    // CALL 8: Écriture du fichier project.json
+    // Écriture du fichier project.json
     const projectFilePath = getProjectFilePath(projectId);
-    console.log(`[CREATE] CALL 8: Writing project.json to: ${projectFilePath}`);
 
     const writeResult = await writePath(projectFilePath, projectData.data, {
       jsonIndent: 2,
@@ -160,32 +117,25 @@ export async function createWorkflow(projectId, config = {}) {
     });
 
     if (!writeResult.success) {
-      console.log(`[CREATE] Project file write failed: ${writeResult.error}`);
+      console.log(`${LOG_COLORS.error}[CREATE] Project file write failed: ${writeResult.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Project file write failed: ${writeResult.error}`,
       };
     }
 
-    console.log(`[CREATE] Project file written successfully`);
-
-    // CALL 9: Vérification état final (doit être DRAFT)
-    console.log(`[CREATE] CALL 9: Verifying final state...`);
+    // Vérification état final (doit être DRAFT)
     const finalState = await detectDraftState(projectPath);
 
     if (!finalState.success || !finalState.data.isDraft) {
-      console.log(
-        `[CREATE] Final state verification failed, initiating rollback`
-      );
+      console.log(`${LOG_COLORS.error}[CREATE] Final state verification failed, initiating rollback${LOG_COLORS.reset}`);
 
       // Rollback: suppression du fichier créé
       try {
         const rollbackResult = await rollbackCreate(projectFilePath);
-        console.log(
-          `[CREATE] Rollback ${rollbackResult.success ? "completed" : "failed"}`
-        );
+        console.log(`${LOG_COLORS.warning}[CREATE] Rollback ${rollbackResult.success ? "completed" : "failed"}${LOG_COLORS.reset}`);
       } catch (rollbackError) {
-        console.log(`[CREATE] Rollback error: ${rollbackError.message}`);
+        console.log(`${LOG_COLORS.error}[CREATE] Rollback error: ${rollbackError.message}${LOG_COLORS.reset}`);
       }
 
       return {
@@ -195,9 +145,9 @@ export async function createWorkflow(projectId, config = {}) {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[CREATE] Workflow completed successfully in ${duration}ms`);
+    console.log(`${LOG_COLORS.success}[CREATE] Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
 
-    // CALL 10: Construction de la réponse
+    // Construction de la réponse
     return {
       success: true,
       data: {
@@ -214,17 +164,15 @@ export async function createWorkflow(projectId, config = {}) {
       },
     };
   } catch (error) {
-    console.log(`[CREATE] Unexpected workflow error: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[CREATE] Unexpected workflow error: ${error.message}${LOG_COLORS.reset}`);
 
     // Tentative de rollback en cas d'erreur inattendue
     try {
       const projectFilePath = getProjectFilePath(projectId);
       await rollbackCreate(projectFilePath);
-      console.log(`[CREATE] Emergency rollback completed`);
+      console.log(`${LOG_COLORS.warning}[CREATE] Emergency rollback completed${LOG_COLORS.reset}`);
     } catch (rollbackError) {
-      console.log(
-        `[CREATE] Emergency rollback failed: ${rollbackError.message}`
-      );
+      console.log(`${LOG_COLORS.error}[CREATE] Emergency rollback failed: ${rollbackError.message}${LOG_COLORS.reset}`);
     }
 
     return {
@@ -236,31 +184,20 @@ export async function createWorkflow(projectId, config = {}) {
 }
 
 /**
- * Charge un template de projet par ID (logique intégrée CREATE) - VERSION DEBUG
+ * Charge un template de projet par ID (logique intégrée CREATE)
  * @param {string} templateId - ID du template à charger
  * @returns {Promise<{success: boolean, data: object}>} Résultat avec template chargé
  * @private
  */
 async function loadProjectTemplate(templateId) {
-  console.log("🔴 [TEMPLATE] === DEBUG loadProjectTemplate START ===");
-  console.log("🔴 [TEMPLATE] templateId received =", `"${templateId}"`);
-  console.log("🔴 [TEMPLATE] typeof templateId =", typeof templateId);
-  console.log("🔴 [TEMPLATE] templateId length =", templateId?.length);
-  console.log("🔴 [TEMPLATE] Boolean(templateId) =", Boolean(templateId));
-
-  console.log(`[CREATE] Loading template: ${templateId}`);
-
   try {
     // Validation et fallback SEULEMENT ici si nécessaire
-if (!templateId || templateId.trim() === '') {
-  console.log("🔴 [TEMPLATE] CRITICAL: templateId is empty/null!");
-  return {
-    success: false,
-    error: `CRITICAL: templateId is empty or null. Received: "${templateId}"`
-  };
-}
-    
-    console.log("🔴 [TEMPLATE] Final templateId to use =", `"${templateId}"`);
+    if (!templateId || templateId.trim() === '') {
+      return {
+        success: false,
+        error: `CRITICAL: templateId is empty or null. Received: "${templateId}"`
+      };
+    }
 
     // Validation du templateId
     if (!templateId || typeof templateId !== "string") {
@@ -272,7 +209,6 @@ if (!templateId || templateId.trim() === '') {
 
     // Construction du chemin vers le template
     const templatePath = join(PATHS.projectTemplates, `${templateId}.json`);
-    console.log("🔴 [TEMPLATE] Template path =", templatePath);
 
     // Lecture du fichier template
     const templateFile = await readPath(templatePath, {
@@ -281,7 +217,7 @@ if (!templateId || templateId.trim() === '') {
     });
 
     if (!templateFile.success) {
-      console.log("🔴 [TEMPLATE] Template file read FAILED:", templateFile.error);
+      console.log(`${LOG_COLORS.error}[CREATE] Template file read failed: ${templateFile.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Template file read failed: ${templateFile.error}`,
@@ -289,7 +225,7 @@ if (!templateId || templateId.trim() === '') {
     }
 
     if (!templateFile.data.exists) {
-      console.log("🔴 [TEMPLATE] Template file NOT FOUND:", templateId);
+      console.log(`${LOG_COLORS.error}[CREATE] Template file not found: ${templateId}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Template '${templateId}' not found`,
@@ -297,9 +233,7 @@ if (!templateId || templateId.trim() === '') {
     }
 
     if (templateFile.data.jsonError) {
-      console.log(
-        `[CREATE] Template JSON error: ${templateFile.data.jsonError}`
-      );
+      console.log(`${LOG_COLORS.error}[CREATE] Template JSON error: ${templateFile.data.jsonError}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Template JSON parsing failed: ${templateFile.data.jsonError}`,
@@ -307,13 +241,11 @@ if (!templateId || templateId.trim() === '') {
     }
 
     const templateData = templateFile.data.parsed;
-    console.log("🔴 [TEMPLATE] Template file loaded successfully for:", templateId);
-    console.log("🔴 [TEMPLATE] Template data:", templateFile.data.parsed?.project?.id || 'unknown');
 
     // Validation basique du template
     const validation = validateTemplateForCreate(templateData, templateId);
     if (!validation.valid) {
-      console.log(`[CREATE] Template validation failed: ${validation.error}`);
+      console.log(`${LOG_COLORS.error}[CREATE] Template validation failed: ${validation.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Template validation failed: ${validation.error}`,
@@ -332,7 +264,7 @@ if (!templateId || templateId.trim() === '') {
       },
     };
   } catch (error) {
-    console.log("🔴 [TEMPLATE] ERROR:", error.message);
+    console.log(`${LOG_COLORS.error}[CREATE] Template loading error: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `Template loading failed: ${error.message}`,
@@ -349,8 +281,6 @@ if (!templateId || templateId.trim() === '') {
  * @private
  */
 function buildProjectData(projectId, config, template) {
-  console.log(`[CREATE] Building project data for: ${projectId}`);
-
   try {
     // Construction des données de base
     const now = new Date().toISOString();
@@ -385,10 +315,6 @@ function buildProjectData(projectId, config, template) {
         id: page.id || `page-${Date.now()}`,
         name: page.name || "Untitled Page",
       }));
-
-      console.log(
-        `[CREATE] Integrated ${projectData.pages.length} pages from template`
-      );
     } else {
       // Page par défaut si le template n'en contient pas
       projectData.pages = [
@@ -402,8 +328,6 @@ function buildProjectData(projectId, config, template) {
           },
         },
       ];
-
-      console.log(`[CREATE] Created default home page`);
     }
 
     return {
@@ -411,7 +335,6 @@ function buildProjectData(projectId, config, template) {
       data: projectData,
     };
   } catch (error) {
-    console.log(`[CREATE] Project data building error: ${error.message}`);
     return {
       success: false,
       error: error.message,
@@ -583,8 +506,6 @@ function validateTemplateForCreate(templateData, templateId) {
  * @private
  */
 async function rollbackCreate(projectFilePath) {
-  console.log(`[CREATE] Initiating rollback for: ${projectFilePath}`);
-
   try {
     // Vérifier si le fichier existe avant de le supprimer
     const fileCheck = await readPath(projectFilePath);
@@ -593,21 +514,14 @@ async function rollbackCreate(projectFilePath) {
       // Import dynamique pour unlink (éviter de charger fs en haut)
       const { unlink } = await import("fs/promises");
       await unlink(projectFilePath);
-      console.log(`[CREATE] Project file removed successfully`);
-    } else {
-      console.log(`[CREATE] No project file to remove`);
     }
 
     return { success: true };
   } catch (error) {
-    console.log(`[CREATE] Rollback failed: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[CREATE] Rollback failed: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: error.message,
     };
   }
 }
-
-console.log(
-  `[CREATE] Create coordinator loaded successfully - PIXEL PERFECT VERSION`
-);

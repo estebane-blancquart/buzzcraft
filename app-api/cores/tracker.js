@@ -5,9 +5,6 @@
  */
 
 import { WebSocketServer } from 'ws';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
 
 /**
  * Configuration WebSocket
@@ -55,8 +52,6 @@ class WorkflowTracker {
     this.clients = new Map();
     this.heartbeatTimer = null;
     this.isRunning = false;
-    
-    console.log(`[TRACKER] WebSocket tracker initialized (STUB)`);
   }
   
   /**
@@ -64,15 +59,9 @@ class WorkflowTracker {
    * @returns {Promise<boolean>} Succès du démarrage
    */
   async start() {
-    console.log(`[TRACKER] Starting WebSocket server on ws://${WEBSOCKET_CONFIG.host}:${WEBSOCKET_CONFIG.port}...`);
-    
     try {
       // TODO: Implémenter démarrage WebSocket Server
-      console.log(`[TRACKER] STUB: WebSocket server would start here`);
-      console.log(`[TRACKER] STUB: Configuration:`, WEBSOCKET_CONFIG);
-      
       this.isRunning = true;
-      console.log(`[TRACKER] WebSocket tracker ready (STUB MODE)`);
       
       return true;
     } catch (error) {
@@ -86,14 +75,9 @@ class WorkflowTracker {
    * @returns {Promise<boolean>} Succès de l'arrêt
    */
   async stop() {
-    console.log(`[TRACKER] Stopping WebSocket server...`);
-    
     try {
       // TODO: Implémenter arrêt graceful
-      console.log(`[TRACKER] STUB: WebSocket server would stop here`);
-      
       this.isRunning = false;
-      console.log(`[TRACKER] WebSocket tracker stopped`);
       
       return true;
     } catch (error) {
@@ -109,8 +93,6 @@ class WorkflowTracker {
    * @param {object} metadata - Métadonnées additionnelles
    */
   notifyWorkflowStart(projectId, action, metadata = {}) {
-    console.log(`[TRACKER] STUB: Would notify workflow start - ${action} on ${projectId}`);
-    
     const message = {
       type: MESSAGE_TYPES.WORKFLOW_STARTED,
       projectId,
@@ -132,8 +114,6 @@ class WorkflowTracker {
    * @param {object} details - Détails du CALL
    */
   notifyCallProgress(projectId, callNumber, callName, status, details = {}) {
-    console.log(`[TRACKER] STUB: Would notify CALL ${callNumber} ${status} - ${callName} on ${projectId}`);
-    
     const message = {
       type: MESSAGE_TYPES.CALL_STARTED + status.toLowerCase(),
       projectId,
@@ -158,8 +138,6 @@ class WorkflowTracker {
   notifyWorkflowEnd(projectId, action, success, result = {}) {
     const messageType = success ? MESSAGE_TYPES.WORKFLOW_COMPLETED : MESSAGE_TYPES.WORKFLOW_FAILED;
     
-    console.log(`[TRACKER] STUB: Would notify workflow ${success ? 'success' : 'failure'} - ${action} on ${projectId}`);
-    
     const message = {
       type: messageType,
       projectId,
@@ -181,8 +159,6 @@ class WorkflowTracker {
    * @param {object} metadata - Métadonnées du changement
    */
   notifyStateChange(projectId, fromState, toState, metadata = {}) {
-    console.log(`[TRACKER] STUB: Would notify state change - ${projectId}: ${fromState} → ${toState}`);
-    
     const message = {
       type: MESSAGE_TYPES.PROJECT_STATE_CHANGED,
       projectId,
@@ -203,8 +179,6 @@ class WorkflowTracker {
    * @param {object} context - Contexte de l'erreur
    */
   notifyError(projectId, error, context = {}) {
-    console.log(`[TRACKER] STUB: Would notify error - ${error} ${projectId ? `on ${projectId}` : ''}`);
-    
     const message = {
       type: MESSAGE_TYPES.ERROR,
       projectId,
@@ -239,7 +213,7 @@ class WorkflowTracker {
    */
   _stubBroadcast(message) {
     // TODO: Implémenter broadcast réel
-    console.log(`[TRACKER] STUB BROADCAST:`, JSON.stringify(message, null, 2));
+    // Silencieux pour éviter la pollution des logs
   }
 }
 
@@ -314,8 +288,6 @@ export const trackWorkflow = {
     getTracker().notifyError(projectId, error, context);
   }
 };
-
-console.log(`[TRACKER] WebSocket tracker module loaded (STUB)`);
 
 export default {
   getTracker,

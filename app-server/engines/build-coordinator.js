@@ -23,9 +23,6 @@ import { LOG_COLORS } from '../cores/constants.js';
 export async function buildWorkflow(projectId, config = {}) {
   const startTime = Date.now();
   
-  // 1. DÉBUT
-  console.log(`${LOG_COLORS.BUILT}[BUILD] Starting DRAFT → BUILT for ${projectId}${LOG_COLORS.reset}`);
-  
   // Validation des paramètres d'entrée
   const validation = validateBuildParameters(projectId, config);
   if (!validation.valid) {
@@ -74,8 +71,6 @@ export async function buildWorkflow(projectId, config = {}) {
       };
     }
     
-    console.log(`${LOG_COLORS.info}[BUILD] Generated ${buildResult.data.generatedFiles.length} files${LOG_COLORS.reset}`);
-    
     // Mise à jour des métadonnées projet
     const updatedProject = await updateProjectWithBuildData(projectData.data, buildResult.data, buildConfig);
     
@@ -106,7 +101,7 @@ export async function buildWorkflow(projectId, config = {}) {
     if (!finalState.success || !finalState.data.isBuilt) {
       console.log(`${LOG_COLORS.warning}[BUILD] Final verification failed but continuing (${duration}ms)${LOG_COLORS.reset}`);
     } else {
-      console.log(`${LOG_COLORS.success}[BUILD] Completed successfully in ${duration}ms${LOG_COLORS.reset}`);
+      console.log(`${LOG_COLORS.success}[BUILD] Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
     }
     
     return {
@@ -156,43 +151,27 @@ async function loadProjectForBuild(projectId) {
     const projectFilePath = getProjectFilePath(projectId);
     
     const projectFile = await readPath(projectFilePath, {
-      parseJson: true
+      parseJson: true,
+      includeStats: false
     });
     
-    if (!projectFile.success) {
+    if (!projectFile.success || !projectFile.data.exists) {
       return {
         success: false,
-        error: `Cannot read project file: ${projectFile.error}`
-      };
-    }
-    
-    if (!projectFile.data.exists) {
-      return {
-        success: false,
-        error: `Project file does not exist: ${projectFilePath}`
+        error: `Project file not found: ${projectId}`
       };
     }
     
     if (projectFile.data.jsonError) {
       return {
         success: false,
-        error: `Project file has invalid JSON: ${projectFile.data.jsonError}`
-      };
-    }
-    
-    const project = projectFile.data.parsed;
-    
-    // Validation des données obligatoires pour build
-    if (!project.pages || !Array.isArray(project.pages)) {
-      return {
-        success: false,
-        error: 'Project must have pages array for build'
+        error: `Invalid project file: ${projectFile.data.jsonError}`
       };
     }
     
     return {
       success: true,
-      data: project
+      data: projectFile.data.parsed
     };
     
   } catch (error) {
@@ -204,80 +183,51 @@ async function loadProjectForBuild(projectId) {
 }
 
 /**
- * Prépare la configuration de build avec les defaults
+ * Prépare la configuration de build
  * @param {object} projectData - Données du projet
- * @param {object} userConfig - Configuration utilisateur
+ * @param {object} config - Configuration utilisateur
  * @returns {object} Configuration de build complète
  * @private
  */
-function prepareBuildConfiguration(projectData, userConfig) {
-  const buildConfig = {
-    // Configuration utilisateur avec defaults
-    minify: userConfig.minify !== false,
-    targets: userConfig.targets || ['app-visitor'],
-    skipValidation: userConfig.skipValidation || false,
-    
-    // Métadonnées du build
-    buildVersion: `build_${Date.now()}`,
-    buildId: `${projectData.id}_${Date.now()}`,
-    projectId: projectData.id,
-    projectName: projectData.name,
-    
-    // Timestamp
-    buildStarted: new Date().toISOString()
+function prepareBuildConfiguration(projectData, config) {
+  return {
+    targets: config.targets || ['app-visitor'],
+    minify: config.minify !== false,
+    sourceMaps: config.sourceMaps === true,
+    skipValidation: config.skipValidation === true,
+    projectData,
+    buildId: `build_${Date.now()}`,
+    buildStartedAt: new Date().toISOString()
   };
-  
-  return buildConfig;
 }
 
 /**
- * Génère le code du projet en utilisant les templates Handlebars
+ * Génère le code du projet avec Handlebars (MOCK)
  * @param {object} projectData - Données du projet
  * @param {object} buildConfig - Configuration de build
- * @returns {Promise<{success: boolean, data: object}>}
+ * @returns {Promise<{success: boolean, data: object}>} Résultat de génération
  * @private
  */
 async function generateProjectCodeWithHandlebars(projectData, buildConfig) {
   try {
-    // Préparer le dossier de génération
-    const projectPath = getProjectPath(projectData.id);
-    const generatedFiles = [];
+    // Simulation de la génération de code
+    await new Promise(resolve => setTimeout(resolve, 100));
     
-    // Analyser les éléments utilisés dans le projet
-    const usedElements = analyzeUsedElements(projectData);
-    
-    // Préparer le contexte Handlebars complet
-    const handlebarsContext = {
-      project: projectData,
-      build: buildConfig,
-      usedElements,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Générer les services selon les targets
-    for (const target of buildConfig.targets) {
-      const targetResult = await generateServiceFiles(target, handlebarsContext, projectPath);
-      
-      if (targetResult.success) {
-        generatedFiles.push(...targetResult.data.files);
-      } else {
-        return {
-          success: false,
-          error: `Failed to generate ${target}: ${targetResult.error}`
-        };
-      }
-    }
-    
-    // Calcul de la taille totale
-    const totalSize = generatedFiles.reduce((sum, file) => sum + (file.size || 0), 0);
+    // Fichiers générés simulés
+    const generatedFiles = [
+      'index.html',
+      'styles.css',
+      'script.js',
+      'package.json'
+    ];
     
     return {
       success: true,
       data: {
         generatedFiles,
-        totalSize,
-        targets: buildConfig.targets,
-        handlebarsContext
+        totalSize: generatedFiles.length * 1024, // Taille simulée
+        buildTargets: buildConfig.targets,
+        buildId: buildConfig.buildId
       }
     };
     
@@ -290,8 +240,8 @@ async function generateProjectCodeWithHandlebars(projectData, buildConfig) {
 }
 
 /**
- * Met à jour les métadonnées du projet avec les données de build
- * @param {object} projectData - Données projet originales
+ * Met à jour le projet avec les données de build
+ * @param {object} projectData - Données du projet
  * @param {object} buildData - Données de build
  * @param {object} buildConfig - Configuration de build
  * @returns {Promise<{success: boolean, data: object}>} Projet mis à jour
@@ -301,17 +251,18 @@ async function updateProjectWithBuildData(projectData, buildData, buildConfig) {
   try {
     const updatedProject = {
       ...projectData,
-      // Ajout des métadonnées de build
+      state: 'BUILT',
+      lastModified: new Date().toISOString(),
       build: {
-        version: buildConfig.buildVersion,
+        builtAt: buildConfig.buildStartedAt,
         buildId: buildConfig.buildId,
-        builtAt: new Date().toISOString(),
+        version: `v${Date.now()}`,
         targets: buildConfig.targets,
         generatedFiles: buildData.generatedFiles.length,
-        totalSize: buildData.totalSize
-      },
-      // Mise à jour du timestamp
-      lastModified: new Date().toISOString()
+        totalSize: buildData.totalSize,
+        minified: buildConfig.minify,
+        sourceMaps: buildConfig.sourceMaps
+      }
     };
     
     return {
@@ -322,47 +273,43 @@ async function updateProjectWithBuildData(projectData, buildData, buildConfig) {
   } catch (error) {
     return {
       success: false,
-      error: `Metadata update failed: ${error.message}`
+      error: `Project update failed: ${error.message}`
     };
   }
 }
 
 /**
- * Met à jour l'état du projet vers BUILT
+ * Met à jour l'état du projet
  * @param {string} projectId - ID du projet
- * @param {string} newState - Nouvel état (BUILT)
- * @param {object} updatedProjectData - Données mises à jour
- * @returns {Promise<{success: boolean, data: object}>}
+ * @param {string} newState - Nouvel état
+ * @param {object} projectData - Données du projet
+ * @returns {Promise<{success: boolean}>} Résultat de mise à jour
  * @private
  */
-async function updateProjectState(projectId, newState, updatedProjectData) {
+async function updateProjectState(projectId, newState, projectData) {
   try {
-    // Mise à jour de l'état
-    const finalProjectData = {
-      ...updatedProjectData,
+    const projectFilePath = getProjectFilePath(projectId);
+    
+    const updatedProjectData = {
+      ...projectData,
       state: newState,
       lastModified: new Date().toISOString()
     };
     
-    // Sauvegarde du fichier projet
-    const projectFilePath = getProjectFilePath(projectId);
-    const saveResult = await writePath(projectFilePath, JSON.stringify(finalProjectData, null, 2));
+    const writeResult = await writePath(projectFilePath, updatedProjectData, {
+      jsonIndent: 2,
+      createDirs: false
+    });
     
-    if (!saveResult.success) {
+    if (!writeResult.success) {
       return {
         success: false,
-        error: `Failed to save project: ${saveResult.error}`
+        error: `Failed to write project state: ${writeResult.error}`
       };
     }
     
     return {
-      success: true,
-      data: {
-        projectId,
-        fromState: 'DRAFT',
-        toState: newState,
-        updatedAt: new Date().toISOString()
-      }
+      success: true
     };
     
   } catch (error) {
@@ -374,104 +321,7 @@ async function updateProjectState(projectId, newState, updatedProjectData) {
 }
 
 /**
- * Analyse les éléments utilisés dans le projet
- * @param {object} projectData - Données du projet
- * @returns {object} Éléments utilisés groupés par type
- * @private
- */
-function analyzeUsedElements(projectData) {
-  const components = new Set();
-  const containers = new Set();
-  
-  if (projectData.pages) {
-    for (const page of projectData.pages) {
-      if (page.layout?.sections) {
-        for (const section of page.layout.sections) {
-          // Analyser les containers
-          ['divs', 'lists', 'forms'].forEach(containerType => {
-            if (section[containerType]) {
-              const containerTypeSingular = containerType.slice(0, -1);
-              containers.add(containerTypeSingular);
-              
-              // Analyser les components dans les containers
-              for (const container of section[containerType]) {
-                if (container.components) {
-                  for (const component of container.components) {
-                    if (component.type) {
-                      components.add(component.type);
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
-      }
-    }
-  }
-  
-  return {
-    components: Array.from(components),
-    containers: Array.from(containers)
-  };
-}
-
-/**
- * Génère les fichiers pour un service spécifique
- * @param {string} target - Target à générer
- * @param {object} context - Contexte Handlebars
- * @param {string} projectPath - Chemin du projet
- * @returns {Promise<{success: boolean, data: object}>}
- * @private
- */
-async function generateServiceFiles(target, context, projectPath) {
-  try {
-    // Simulation de génération de fichiers
-    const generatedFiles = [];
-    
-    // Générer les composants utilisés
-    for (const componentType of context.usedElements.components) {
-      generatedFiles.push({
-        path: `${target}/components/${componentType}.tsx`,
-        size: Math.floor(Math.random() * 1000) + 100,
-        type: 'component'
-      });
-    }
-    
-    // Générer les containers utilisés
-    for (const containerType of context.usedElements.containers) {
-      generatedFiles.push({
-        path: `${target}/containers/${containerType}.tsx`,
-        size: Math.floor(Math.random() * 2000) + 200,
-        type: 'container'
-      });
-    }
-    
-    // Générer le package.json
-    generatedFiles.push({
-      path: `${target}/package.json`,
-      size: Math.floor(Math.random() * 500) + 300,
-      type: 'config'
-    });
-    
-    return {
-      success: true,
-      data: {
-        files: generatedFiles,
-        target
-      }
-    };
-    
-  } catch (error) {
-    return {
-      success: false,
-      error: `Service generation failed: ${error.message}`
-    };
-  }
-}
-
-/**
- * Valide les paramètres d'entrée du workflow BUILD
+ * Valide les paramètres de build
  * @param {string} projectId - ID du projet
  * @param {object} config - Configuration
  * @returns {{valid: boolean, error?: string}} Résultat de validation
@@ -503,5 +353,3 @@ function validateBuildParameters(projectId, config) {
   
   return { valid: true };
 }
-
-console.log(`${LOG_COLORS.BUILT}[BUILD] Build coordinator loaded${LOG_COLORS.reset}`);

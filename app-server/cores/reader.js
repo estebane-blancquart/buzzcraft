@@ -278,5 +278,3 @@ function validateReadDirectoryInput(directoryPath, options) {
     throw new Error('ValidationError: options.extensions must be an array');
   }
 }
-
-console.log(`${LOG_COLORS.info}[READER] Reader core loaded${LOG_COLORS.reset}`);

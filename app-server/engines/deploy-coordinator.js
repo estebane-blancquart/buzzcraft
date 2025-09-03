@@ -30,5 +30,3 @@ export async function deployWorkflow(projectId, config = {}) {
     }
   };
 }
-
-console.log(`[DEPLOY] Deploy coordinator loaded - MOCK HONNÊTE`);

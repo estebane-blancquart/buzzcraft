@@ -7,9 +7,6 @@ import express from "express";
 import cors from "cors";
 import projectsRouter from './routes.js';
 import { createServer } from 'http';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
 
 /**
  * Configuration du serveur
@@ -30,8 +27,6 @@ const SERVER_CONFIG = {
 function createExpressApp() {
   const app = express();
   
-  console.log(`[SERVER] Initializing Express application...`);
-  
   // Middleware de sécurité et performance
   setupSecurityMiddleware(app);
   
@@ -47,7 +42,6 @@ function createExpressApp() {
   // Middleware de gestion d'erreurs (doit être en dernier)
   setupErrorHandling(app);
   
-  console.log(`[SERVER] Express application configured successfully`);
   return app;
 }
 
@@ -56,8 +50,6 @@ function createExpressApp() {
  * @param {express.Application} app - Application Express
  */
 function setupSecurityMiddleware(app) {
-  console.log(`[SERVER] Setting up security middleware...`);
-  
   // CORS configuré pour le développement et la production
   const corsOptions = {
     origin: SERVER_CONFIG.environment === 'production' 
@@ -110,173 +102,128 @@ function setupSecurityMiddleware(app) {
     
     recentRequests.push(now);
     requestCounts.set(clientIp, recentRequests);
+    next();
+  });
+  
+  // Timeout des requêtes
+  app.use((req, res, next) => {
+    const timeout = setTimeout(() => {
+      if (!res.headersSent) {
+        res.status(408).json({
+          success: false,
+          error: 'Request timeout',
+          timeout: SERVER_CONFIG.requestTimeout
+        });
+      }
+    }, SERVER_CONFIG.requestTimeout);
+    
+    res.on('finish', () => clearTimeout(timeout));
+    res.on('close', () => clearTimeout(timeout));
     
     next();
   });
 }
 
 /**
- * Configure les middleware de parsing des requêtes
+ * Configure les middleware de parsing
  * @param {express.Application} app - Application Express
  */
 function setupParsingMiddleware(app) {
-  console.log(`[SERVER] Setting up parsing middleware...`);
-  
-  // Parse JSON avec limite de taille
+  // Parsing JSON avec limite de taille
   app.use(express.json({ 
     limit: SERVER_CONFIG.maxRequestSize,
     strict: true,
     type: 'application/json'
   }));
   
-  // Parse URL-encoded pour les forms si nécessaire
+  // Parsing URL-encoded
   app.use(express.urlencoded({ 
-    extended: true, 
+    extended: true,
     limit: SERVER_CONFIG.maxRequestSize
   }));
   
-  // Middleware de timeout des requêtes
-  app.use((req, res, next) => {
-    res.setTimeout(SERVER_CONFIG.requestTimeout, () => {
-      console.log(`[SERVER] Request timeout for ${req.method} ${req.originalUrl}`);
-      if (!res.headersSent) {
-        res.status(408).json({
-          success: false,
-          error: 'Request timeout'
-        });
-      }
-    });
-    next();
-  });
+  // Trust proxy si derrière un reverse proxy
+  if (SERVER_CONFIG.environment === 'production') {
+    app.set('trust proxy', 1);
+  }
 }
 
 /**
- * Configure les middleware de monitoring
+ * Configure le monitoring et les logs
  * @param {express.Application} app - Application Express
  */
 function setupMonitoringMiddleware(app) {
-  console.log(`[SERVER] Setting up monitoring middleware...`);
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      environment: SERVER_CONFIG.environment,
+      version: '1.0.0'
+    });
+  });
   
-  // Middleware de logging des requêtes
+  // Middleware de logging des requêtes (seulement les erreurs importantes)
   app.use((req, res, next) => {
     const startTime = Date.now();
     
-    // Log au début de la requête
-    console.log(`[SERVER] ${req.method} ${req.originalUrl} - Start`);
-    
-    // Override de res.end pour capturer la fin
-    const originalEnd = res.end;
-    res.end = function(...args) {
+    // Log seulement les erreurs importantes
+    res.on('finish', () => {
       const duration = Date.now() - startTime;
       const status = res.statusCode;
-      const level = status >= 400 ? 'ERROR' : 'INFO';
       
-      console.log(`[SERVER] ${req.method} ${req.originalUrl} - ${status} (${duration}ms)`);
-      
-      // Alertes pour les requêtes lentes
-      if (duration > 5000) {
-        console.log(`[SERVER] SLOW REQUEST: ${req.method} ${req.originalUrl} took ${duration}ms`);
+      if (status >= 400) {
+        console.log(`[SERVER] ${req.method} ${req.path} - ${status} (${duration}ms)`);
       }
-      
-      originalEnd.apply(this, args);
-    };
+    });
     
     next();
-  });
-  
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    const healthStatus = {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      environment: SERVER_CONFIG.environment,
-      version: '1.0.0'
-    };
-    
-    res.json({
-      success: true,
-      data: healthStatus
-    });
-  });
-  
-  // Metrics endpoint (basique)
-  app.get('/metrics', (req, res) => {
-    const metrics = {
-      nodejs_version: process.version,
-      uptime_seconds: process.uptime(),
-      memory_usage_bytes: process.memoryUsage(),
-      cpu_usage: process.cpuUsage(),
-      environment: SERVER_CONFIG.environment,
-      timestamp: new Date().toISOString()
-    };
-    
-    res.json({
-      success: true,
-      data: metrics
-    });
   });
 }
 
 /**
- * Configure les routes de l'application
+ * Configure les routes d'application
  * @param {express.Application} app - Application Express
  */
 function setupRoutes(app) {
-  console.log(`[SERVER] Setting up application routes...`);
-  
-  // Route racine informative
-  app.get('/', (req, res) => {
-    res.json({
-      success: true,
-      data: {
-        service: 'BuzzCraft API',
-        version: '1.0.0',
-        environment: SERVER_CONFIG.environment,
-        timestamp: new Date().toISOString(),
-        documentation: '/health',
-        endpoints: {
-          projects: '/projects',
-          health: '/health',
-          metrics: '/metrics'
-        }
-      }
-    });
-  });
-  
-  // Routes principales - sans préfixe car routes.js définit déjà /projects
+  // Routes principales
   app.use('/', projectsRouter);
   
   // Route 404 pour les endpoints non trouvés
   app.use('*', (req, res) => {
-    console.log(`[SERVER] 404 - Route not found: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
       success: false,
       error: `Route not found: ${req.method} ${req.originalUrl}`,
-      availableEndpoints: ['/', '/projects', '/health', '/metrics']
+      availableEndpoints: [
+        'GET /health',
+        'GET /projects',
+        'GET /projects/:id',
+        'POST /projects',
+        'POST /projects/:id/build',
+        'DELETE /projects/:id'
+      ]
     });
   });
 }
 
 /**
- * Configure la gestion d'erreurs globale
+ * Configure la gestion globale d'erreurs
  * @param {express.Application} app - Application Express
  */
 function setupErrorHandling(app) {
-  console.log(`[SERVER] Setting up error handling...`);
-  
-  // Middleware de gestion d'erreurs global
+  // Gestionnaire d'erreurs global
   app.use((error, req, res, next) => {
-    const errorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-    
-    console.log(`[SERVER] ERROR [${errorId}] ${error.name}: ${error.message}`);
-    console.log(`[SERVER] ERROR [${errorId}] Stack:`, error.stack);
-    console.log(`[SERVER] ERROR [${errorId}] Request: ${req.method} ${req.originalUrl}`);
-    
-    // Pas d'exposition des détails d'erreur en production
     const isDevelopment = SERVER_CONFIG.environment === 'development';
+    const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Log de l'erreur
+    console.log(`[SERVER] Error ${errorId}: ${error.message}`);
+    if (isDevelopment) {
+      console.log(error.stack);
+    }
+    
+    // Réponse JSON standardisée
     res.status(error.status || 500).json({
       success: false,
       error: isDevelopment ? error.message : 'Internal server error',
@@ -309,11 +256,6 @@ function startServer(app) {
         reject(error);
         return;
       }
-      
-      console.log(`[SERVER] ✓ BuzzCraft API running on http://${SERVER_CONFIG.host}:${SERVER_CONFIG.port}`);
-      console.log(`[SERVER] ✓ Environment: ${SERVER_CONFIG.environment}`);
-      console.log(`[SERVER] ✓ Process ID: ${process.pid}`);
-      console.log(`[SERVER] ✓ Node.js version: ${process.version}`);
       
       resolve(server);
     });
@@ -370,13 +312,8 @@ function startServer(app) {
 // Point d'entrée principal
 async function main() {
   try {
-    console.log(`[SERVER] Starting BuzzCraft API server...`);
-    
     const app = createExpressApp();
     const server = await startServer(app);
-    
-    console.log(`[SERVER] BuzzCraft API server started successfully`);
-    
   } catch (error) {
     console.log(`[SERVER] FATAL: Failed to start server: ${error.message}`);
     process.exit(1);

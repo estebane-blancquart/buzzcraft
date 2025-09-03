@@ -6,6 +6,7 @@
 
 import { readPath, checkFileAccess } from '../cores/reader.js';
 import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
+import { LOG_COLORS } from '../cores/constants.js';
 import { basename } from 'path';
 
 /**
@@ -20,11 +21,10 @@ import { basename } from 'path';
  * }
  */
 export async function detectVoidState(projectPath) {
-  console.log(`[VOID-DETECTOR] Detecting VOID state for: ${projectPath}`);
-  
   // Validation des paramètres
   const validation = validateVoidDetectionInput(projectPath);
   if (!validation.valid) {
+    console.log(`${LOG_COLORS.error}[VOID-DETECTOR] Invalid input: ${validation.error}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: validation.error
@@ -40,10 +40,8 @@ export async function detectVoidState(projectPath) {
     
     if (directoryAccess.accessible) {
       conflicts.push('Project directory exists');
-      console.log(`[VOID-DETECTOR] Directory exists: ${projectPath}`);
     } else {
       evidence.push('Project directory does not exist');
-      console.log(`[VOID-DETECTOR] Directory does not exist (expected for VOID)`);
     }
     
     // CRITÈRE 2: Le fichier project.json ne doit pas exister
@@ -52,7 +50,6 @@ export async function detectVoidState(projectPath) {
     
     if (projectFileAccess.accessible) {
       conflicts.push('Project file exists');
-      console.log(`[VOID-DETECTOR] Project file exists: ${projectFilePath}`);
       
       // Analyse du contenu si accessible
       const fileContent = await readPath(projectFilePath, { parseJson: true });
@@ -61,7 +58,6 @@ export async function detectVoidState(projectPath) {
       }
     } else {
       evidence.push('Project file does not exist');
-      console.log(`[VOID-DETECTOR] Project file does not exist (expected for VOID)`);
     }
     
     // CRITÈRE 3: Aucun fichier de build ne doit exister
@@ -90,8 +86,6 @@ export async function detectVoidState(projectPath) {
       Math.min(95 + evidence.length * 2, 100) : 
       Math.max(5, 100 - conflicts.length * 20);
     
-    console.log(`[VOID-DETECTOR] Detection result: ${isVoid ? 'VOID' : 'NOT_VOID'} (confidence: ${confidence}%)`);
-    
     const result = {
       isVoid,
       confidence,
@@ -119,7 +113,7 @@ export async function detectVoidState(projectPath) {
     };
     
   } catch (error) {
-    console.log(`[VOID-DETECTOR] Detection failed: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[VOID-DETECTOR] Detection failed: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `VOID state detection failed: ${error.message}`,
@@ -137,10 +131,9 @@ export async function detectVoidState(projectPath) {
  * const result = await detectVoidStateById('mon-projet');
  */
 export async function detectVoidStateById(projectId) {
-  console.log(`[VOID-DETECTOR] Detecting VOID state by ID: ${projectId}`);
-  
   // Validation projectId
   if (!projectId || typeof projectId !== 'string') {
+    console.log(`${LOG_COLORS.error}[VOID-DETECTOR] Invalid project ID: must be non-empty string${LOG_COLORS.reset}`);
     return {
       success: false,
       error: 'projectId must be non-empty string'
@@ -161,8 +154,6 @@ export async function detectVoidStateById(projectId) {
  * if (result.data.isVoid) console.log('Projet inexistant');
  */
 export async function quickVoidCheck(projectPath) {
-  console.log(`[VOID-DETECTOR] Quick VOID check for: ${projectPath}`);
-  
   try {
     // Check minimal : dossier + project.json
     const directoryExists = await checkFileAccess(projectPath);
@@ -187,14 +178,12 @@ export async function quickVoidCheck(projectPath) {
       success: true,
       data: {
         isVoid: !projectFileExists.accessible,
-        reason: projectFileExists.accessible ? 
-          'Project file exists' : 
-          'Project file does not exist'
+        reason: projectFileExists.accessible ? 'Project file exists' : 'Project file does not exist'
       }
     };
     
   } catch (error) {
-    console.log(`[VOID-DETECTOR] Quick check failed: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[VOID-DETECTOR] Quick check failed: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `Quick VOID check failed: ${error.message}`
@@ -233,5 +222,3 @@ function validateVoidDetectionInput(projectPath) {
   
   return { valid: true };
 }
-
-console.log(`[VOID-DETECTOR] VOID detector loaded successfully - PIXEL PERFECT VERSION`);

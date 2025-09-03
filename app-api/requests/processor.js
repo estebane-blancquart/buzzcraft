@@ -47,7 +47,6 @@ export async function process(requestData) {
   // Enrichissement avec données spécifiques au workflow
   enrichDataForWorkflow(processedData, action, config);
 
-  console.log(`[REQUEST-PROCESSOR] ${action} request processed successfully`);
   return {
     success: true,
     data: processedData,
@@ -58,6 +57,7 @@ export async function process(requestData) {
  * Valide la structure des données reçues du parser
  * @param {object} requestData - Données à valider
  * @returns {{valid: boolean, error?: string}}
+ * @private
  */
 function validateRequestData(requestData) {
   if (!requestData) {
@@ -107,146 +107,198 @@ function validateRequestData(requestData) {
 }
 
 /**
- * Génère le chemin système vers le projet
+ * Génère le chemin système du projet
  * @param {string} projectId - ID du projet
- * @returns {string} Chemin complet vers le projet
+ * @returns {string} Chemin vers le dossier projet
+ * @private
  */
 function generateProjectPath(projectId) {
+  if (!projectId) {
+    return null;
+  }
+  
+  // Chemin simple sans utiliser path.resolve pour éviter les problèmes d'import
   return `./app-server/data/outputs/${projectId}`;
 }
 
 /**
- * Process la configuration selon l'action
- * @param {string} action - Action à exécuter
- * @param {object} config - Configuration de base
+ * Traite la configuration spécifique à l'action
+ * @param {string} action - Action à traiter
+ * @param {object} config - Configuration brute
  * @param {string} projectId - ID du projet
- * @returns {object} Configuration enrichie
+ * @returns {object} Configuration traitée
+ * @private
  */
 function processActionConfig(action, config, projectId) {
-  const enrichedConfig = {
-    ...config,
-    action,
-    projectId,
-    timestamp: new Date().toISOString(),
-  };
+  const processedConfig = { ...config };
 
+  // Traitement spécifique par action
   switch (action) {
     case "CREATE":
-      return {
-        ...enrichedConfig,
-        template: config.template || "basic",
-        overwrite: config.overwrite !== false,
-        validateSchema: config.validateSchema !== false,
-      };
-
+      return processCreateConfig(processedConfig, projectId);
     case "BUILD":
-      return {
-        ...enrichedConfig,
-        targets: config.targets || ["app-visitor"],
-        minify: config.minify !== false,
-        sourceMaps: config.sourceMaps === true,
-        optimizeImages: config.optimizeImages !== false,
-      };
-
+      return processBuildConfig(processedConfig);
     case "DEPLOY":
-      return {
-        ...enrichedConfig,
-        environment: config.environment || "development",
-        ports: config.ports || { http: 3000, https: 3443 },
-        healthCheck: config.healthCheck !== false,
-      };
-
-    case "DELETE":
-      return {
-        ...enrichedConfig,
-        force: config.force === true,
-        createBackup: config.createBackup !== false,
-      };
-
-    case "UPDATE":
-      return {
-        ...enrichedConfig,
-        version: config.version || "1.0.0",
-        strategy: config.strategy || "rolling",
-        rollbackOnFailure: config.rollbackOnFailure !== false,
-      };
-
+      return processDeployConfig(processedConfig);
     default:
-      return enrichedConfig;
+      return processedConfig;
   }
 }
 
 /**
- * Valide les données système générées
- * @param {object} systemData - Données système à valider
- * @returns {{valid: boolean, error?: string}}
+ * Traite la configuration CREATE
+ * @param {object} config - Configuration CREATE
+ * @param {string} projectId - ID du projet
+ * @returns {object} Configuration CREATE traitée
+ * @private
  */
-function validateSystemData(systemData) {
-  const requiredFields = [
-    "action",
-    "projectId",
-    "projectPath",
-    "config",
-    "metadata",
-    "validation",
+function processCreateConfig(config, projectId) {
+  const processedConfig = {
+    // Nom du projet avec fallback intelligent
+    name: config.name || projectId?.replace(/-/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase()) || 'New Project',
+    
+    // Template avec validation
+    template: config.template || 'basic',
+    
+    // Description optionnelle
+    description: config.description || '',
+    
+    // Métadonnées additionnelles
+    metadata: config.metadata || {},
+    
+    // Options de création
+    options: {
+      overwrite: config.overwrite === true,
+      backup: config.backup !== false, // true par défaut
+      validate: config.validate !== false, // true par défaut
+      ...config.options
+    }
+  };
+
+  // Validation du template
+  const validTemplates = ['basic', 'empty', 'contact', 'list', 'restaurant'];
+  if (!validTemplates.includes(processedConfig.template)) {
+    processedConfig.template = 'basic';
+  }
+
+  return processedConfig;
+}
+
+/**
+ * Traite la configuration BUILD
+ * @param {object} config - Configuration BUILD
+ * @returns {object} Configuration BUILD traitée
+ * @private
+ */
+function processBuildConfig(config) {
+  return {
+    // Targets de build
+    targets: config.targets || ['app-visitor'],
+    
+    // Options de build
+    minify: config.minify !== false, // true par défaut
+    sourceMaps: config.sourceMaps === true, // false par défaut
+    skipValidation: config.skipValidation === true, // false par défaut
+    
+    // Configuration de build avancée
+    buildOptions: config.buildOptions || {},
+    
+    // Métadonnées
+    buildId: config.buildId || `build-${Date.now()}`,
+    triggeredBy: config.triggeredBy || 'manual'
+  };
+}
+
+/**
+ * Traite la configuration DEPLOY
+ * @param {object} config - Configuration DEPLOY
+ * @returns {object} Configuration DEPLOY traitée
+ * @private
+ */
+function processDeployConfig(config) {
+  return {
+    // Environnement cible
+    environment: config.environment || 'development',
+    
+    // Options de déploiement
+    strategy: config.strategy || 'rolling',
+    replicas: config.replicas || 1,
+    
+    // Configuration réseau
+    port: config.port || 3000,
+    ssl: config.ssl === true,
+    
+    // Métadonnées
+    deployId: config.deployId || `deploy-${Date.now()}`,
+    triggeredBy: config.triggeredBy || 'manual'
+  };
+}
+
+/**
+ * Génère les règles de validation pour une action
+ * @param {string} action - Action à valider
+ * @returns {Array} Règles de validation
+ * @private
+ */
+function generateValidationRules(action) {
+  const baseRules = [
+    { field: 'projectId', type: 'string', required: true },
+    { field: 'config', type: 'object', required: true }
   ];
 
+  switch (action) {
+    case 'CREATE':
+      return [
+        ...baseRules,
+        { field: 'config.name', type: 'string', required: false },
+        { field: 'config.template', type: 'string', required: false }
+      ];
+    case 'BUILD':
+      return [
+        ...baseRules,
+        { field: 'config.targets', type: 'array', required: false }
+      ];
+    default:
+      return baseRules;
+  }
+}
+
+/**
+ * Valide les données système construites
+ * @param {object} systemData - Données système à valider
+ * @returns {{valid: boolean, error?: string}}
+ * @private
+ */
+function validateSystemData(systemData) {
+  if (!systemData || typeof systemData !== 'object') {
+    return { valid: false, error: 'System data must be an object' };
+  }
+
+  // Vérification des champs obligatoires
+  const requiredFields = ['action', 'projectId', 'config', 'metadata'];
   for (const field of requiredFields) {
     if (!systemData[field]) {
       return { valid: false, error: `Missing system field: ${field}` };
     }
   }
 
-  // Validation du projectPath
-  if (!systemData.projectPath.includes(systemData.projectId)) {
-    return { valid: false, error: "projectPath must contain projectId" };
-  }
-
-  // Validation de la metadata
+  // Validation de la structure metadata
   if (!systemData.metadata.processedAt || !systemData.metadata.processedBy) {
-    return {
-      valid: false,
-      error: "Metadata must contain processedAt and processedBy",
-    };
+    return { valid: false, error: 'Invalid metadata structure' };
   }
 
   return { valid: true };
 }
 
 /**
- * Génère les règles de validation pour l'action
- * @param {string} action - Action concernée
- * @returns {string[]} Liste des règles appliquées
- */
-function generateValidationRules(action) {
-  const commonRules = [
-    "projectId-format",
-    "action-validity",
-    "config-structure",
-  ];
-
-  const actionRules = {
-    CREATE: [...commonRules, "unique-project", "template-exists"],
-    BUILD: [...commonRules, "project-exists", "state-draft"],
-    DEPLOY: [...commonRules, "project-exists", "state-built"],
-    START: [...commonRules, "project-exists", "state-offline"],
-    STOP: [...commonRules, "project-exists", "state-online"],
-    DELETE: [...commonRules, "project-exists"],
-    REVERT: [...commonRules, "project-exists", "revert-allowed"],
-    UPDATE: [...commonRules, "project-exists", "update-allowed"],
-  };
-
-  return actionRules[action] || commonRules;
-}
-
-/**
- * Enrichit les données avec informations spécifiques au workflow
- * @param {object} processedData - Données à enrichir (modifiées en place)
- * @param {string} action - Action concernée
- * @param {object} config - Configuration source
+ * Enrichit les données avec des informations spécifiques au workflow
+ * @param {object} processedData - Données à enrichir
+ * @param {string} action - Action du workflow
+ * @param {object} config - Configuration originale
+ * @private
  */
 function enrichDataForWorkflow(processedData, action, config) {
-  // Ajout de données spécifiques selon l'action
+  // Ajout d'informations sur le workflow attendu
   switch (action) {
     case "CREATE":
       processedData.workflow = {
@@ -291,5 +343,3 @@ function enrichDataForWorkflow(processedData, action, config) {
     nextStage: "workflow-coordinator",
   };
 }
-
-console.log(`[REQUEST-PROCESSOR] Request processor loaded successfully - PIXEL PERFECT VERSION`);
