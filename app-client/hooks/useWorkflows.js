@@ -1,288 +1,251 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { apiUrl } from '@config/api.js';
+import { PROJECT_ACTIONS, MESSAGE_TYPES } from '@config/constants.js';
 
-/**
- * Hook useWorkflows avec logs debug pour diagnostiquer le chargement
+/*
+ * FAIT QUOI : Hook mÃ©tier workflows - Gestion complÃ¨te projets + API + console
+ * REÃ‡OIT : Rien (hook autonome)
+ * RETOURNE : Ã‰tats + handlers complets pour workflows
+ * ERREURS : Gestion complÃ¨te avec Ã©tats d'erreur + logging
  */
+
 export function useWorkflows() {
+  // Ã‰tats principaux
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
   const [consoleMessages, setConsoleMessages] = useState([]);
-  
-  // Utiliser useRef pour Ã©viter les multiples instances de polling
-  const pollingIntervalRef = useRef(null);
-  const isComponentMountedRef = useRef(true);
 
-  /**
-   * Ajoute un message Ã  la console avec format unifiÃ©
-   */
-  const addConsoleMessage = useCallback((type, text, metadata = {}) => {
-    if (!isComponentMountedRef.current) return;
-    
-    const timestamp = new Date().toISOString();
-    const workflowId = metadata.workflowId ? ` | Workflow: ${metadata.workflowId}` : '';
-    const duration = metadata.duration ? ` | Duration: ${metadata.duration}ms` : '';
-    
-    const message = {
-      type,
-      text: `${text}${workflowId}${duration}`,
-      timestamp,
-      ...metadata
-    };
-
-    setConsoleMessages(prev => {
-      const newMessages = [...prev, message];
-      return newMessages.slice(-100); // Limite Ã  100 messages
-    });
+  // Chargement projets au montage
+  useEffect(() => {
+    loadProjects();
   }, []);
 
-  /**
-   * Charge la liste des projets - VERSION DEBUG
-   */
-  const loadProjects = useCallback(async () => {
-    if (!isComponentMountedRef.current) return;
-    
-    console.log('í´ [DEBUG] loadProjects called');
-    addConsoleMessage('info', '[API] Loading projects...');
-    
-    try {
-      console.log('í´ [DEBUG] Fetching http://localhost:3000/projects');
-      const response = await fetch('http://localhost:3000/projects');
-      console.log('í´ [DEBUG] Response status:', response.status, response.statusText);
-      
-      const result = await response.json();
-      console.log('í´ [DEBUG] Response data:', result);
-      
-      if (result.success && isComponentMountedRef.current) {
-        console.log('í´ [DEBUG] Projects found:', result.data.projects.length);
-        console.log('í´ [DEBUG] Projects list:', result.data.projects);
-        
-        setProjects(result.data.projects || []);
-        addConsoleMessage('success', `[API] Loaded ${result.data.projects.length} projects`);
-      } else if (isComponentMountedRef.current) {
-        console.log('í´ [DEBUG] API returned failure:', result.error);
-        addConsoleMessage('error', `[API] Failed to load projects: ${result.error}`);
-        setProjects([]);
-      }
-    } catch (error) {
-      console.error('í´ [DEBUG] Fetch error:', error);
-      if (isComponentMountedRef.current) {
-        addConsoleMessage('error', `[API] Network error loading projects: ${error.message}`);
-        setProjects([]);
-      }
-    }
-  }, [addConsoleMessage]);
+  // === GESTION PROJETS ===
 
   /**
-   * Execute une action de projet avec gestion loading corrigÃ©e
+   * Charge tous les projets depuis l'API
    */
-  const executeProjectAction = useCallback(async (projectId, action, config = {}) => {
-    if (loading) {
-      console.log('[useWorkflows] Action already in progress, skipping');
-      return;
-    }
-
-    const actionStart = Date.now();
-    
+  const loadProjects = async () => {
     try {
-      addConsoleMessage('info', `[WORKFLOW] Starting ${action}`, { projectId });
+      console.log('[useWorkflows] Loading projects...');
       setLoading(true);
-
-      const endpoint = getActionEndpoint(projectId, action);
+      setError(null);
       
-      // Gestion spÃ©cifique pour CREATE
-      let requestBody = {};
+      const response = await fetch(apiUrl('projects'));
+      const data = await response.json();
       
-      if (action === 'CREATE') {
-        requestBody = {
-          projectId: config.projectId,
-          name: config.name,
-          template: config.template,
-          description: config.description || ''
-        };
-        console.log('í¿¡ [CLIENT] CREATE body:', JSON.stringify(requestBody, null, 2));
+      if (data.success) {
+        const projectsList = data.data.projects || [];
+        setProjects(projectsList);
+        console.log(`[useWorkflows] Loaded ${projectsList.length} projects`);
+        
+        addConsoleMessage(
+          MESSAGE_TYPES.SUCCESS, 
+          `${projectsList.length} projet(s) chargÃ©(s)`
+        );
       } else {
-        requestBody = config;
+        throw new Error(data.error || 'Failed to load projects');
       }
+    } catch (err) {
+      console.error('[useWorkflows] Load projects error:', err);
+      setError(`Erreur chargement projets: ${err.message}`);
+      addConsoleMessage(MESSAGE_TYPES.ERROR, `Erreur: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const response = await fetch(endpoint, {
-        method: getActionMethod(action),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: Object.keys(requestBody).length > 0 ? JSON.stringify(requestBody) : undefined,
+  /**
+   * CrÃ©e un nouveau projet
+   */
+  const createProject = async (formData) => {
+    try {
+      console.log('[useWorkflows] Creating project:', formData);
+      
+      const response = await fetch(apiUrl('projects'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('[useWorkflows] Project created successfully');
+        addConsoleMessage(MESSAGE_TYPES.SUCCESS, 'Projet crÃ©Ã© avec succÃ¨s');
+        
+        // Recharger la liste des projets
+        await loadProjects();
+        
+        return { success: true, data: data.data };
+      } else {
+        throw new Error(data.error || 'Project creation failed');
+      }
+    } catch (err) {
+      console.error('[useWorkflows] Create project error:', err);
+      addConsoleMessage(MESSAGE_TYPES.ERROR, `CrÃ©ation Ã©chouÃ©e: ${err.message}`);
+      throw err;
+    }
+  };
 
-      const result = await response.json();
-      const duration = Date.now() - actionStart;
-
-      if (result.workflowId) {
-        if (result.success) {
-          addConsoleMessage('success', 
-            `[WORKFLOW] ${action} completed successfully`, 
-            { 
-              workflowId: result.workflowId,
-              projectId,
-              duration: result.duration || duration
-            }
+  /**
+   * ExÃ©cute une action sur un projet
+   */
+  const executeProjectAction = async (projectId, action) => {
+    const actionKey = `${projectId}-${action}`;
+    
+    try {
+      console.log(`[useWorkflows] Executing ${action} on project ${projectId}`);
+      
+      // Ã‰tat de chargement pour l'action spÃ©cifique
+      setActionLoading(prev => ({ ...prev, [actionKey]: true }));
+      
+      let url = '';
+      let method = '';
+      
+      // Configuration selon l'action
+      switch (action) {
+        case PROJECT_ACTIONS.BUILD:
+          url = `projects/${projectId}/build`;
+          method = 'POST';
+          break;
+        case PROJECT_ACTIONS.DEPLOY:
+          url = `projects/${projectId}/deploy`;
+          method = 'POST';
+          break;
+        case PROJECT_ACTIONS.START:
+          url = `projects/${projectId}/start`;
+          method = 'POST';
+          break;
+        case PROJECT_ACTIONS.STOP:
+          url = `projects/${projectId}/stop`;
+          method = 'POST';
+          break;
+        case PROJECT_ACTIONS.REVERT:
+          url = `projects/${projectId}/revert`;
+          method = 'PUT';
+          break;
+        case PROJECT_ACTIONS.DELETE:
+          url = `projects/${projectId}`;
+          method = 'DELETE';
+          break;
+        default:
+          throw new Error(`Unknown action: ${action}`);
+      }
+      
+      const response = await fetch(apiUrl(url), {
+        method,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log(`[useWorkflows] ${action} completed successfully`);
+        addConsoleMessage(MESSAGE_TYPES.SUCCESS, `${action} terminÃ© avec succÃ¨s`);
+        
+        // Recharger les projets aprÃ¨s l'action
+        await loadProjects();
+        
+        return { success: true, data: data.data };
+      } else {
+        // Gestion spÃ©ciale pour les actions non implÃ©mentÃ©es
+        if (data.error === 'NOT_IMPLEMENTED') {
+          addConsoleMessage(
+            MESSAGE_TYPES.WARNING, 
+            `${action} pas encore implÃ©mentÃ© (prÃ©vu v2.0)`
           );
         } else {
-          if (result.error === 'NOT_IMPLEMENTED') {
-            addConsoleMessage('info', 
-              `[WORKFLOW] ${result.message}`, 
-              { 
-                workflowId: result.workflowId,
-                projectId,
-                planned: result.details?.version
-              }
-            );
-          } else {
-            addConsoleMessage('error', 
-              `[WORKFLOW] ${action} failed: ${result.message || result.error}`,
-              { 
-                workflowId: result.workflowId,
-                projectId,
-                failedAt: result.failedAt,
-                duration
-              }
-            );
-          }
+          throw new Error(data.error || `${action} failed`);
         }
       }
-
-      // Refresh projects aprÃ¨s action
-      setTimeout(async () => {
-        if (isComponentMountedRef.current) {
-          console.log('í´ [DEBUG] Refreshing projects after action');
-          await loadProjects();
-        }
-      }, 1000);
-      
-      return result;
-      
-    } catch (error) {
-      const duration = Date.now() - actionStart;
-      addConsoleMessage('error', 
-        `[WORKFLOW] ${action} network error: ${error.message}`,
-        { projectId, duration }
-      );
-      throw error;
+    } catch (err) {
+      console.error(`[useWorkflows] ${action} error:`, err);
+      addConsoleMessage(MESSAGE_TYPES.ERROR, `${action} Ã©chouÃ©: ${err.message}`);
+      throw err;
     } finally {
-      if (isComponentMountedRef.current) {
-        setLoading(false);
-      }
+      setActionLoading(prev => {
+        const newState = { ...prev };
+        delete newState[actionKey];
+        return newState;
+      });
     }
-  }, [addConsoleMessage, loading, loadProjects]);
+  };
 
   /**
-   * Actions spÃ©cifiques
+   * Supprime un projet (raccourci pour DELETE)
    */
-  const createProject = useCallback(async (formData) => {
-    return executeProjectAction(null, 'CREATE', formData);
-  }, [executeProjectAction]);
+  const deleteProject = async (projectId) => {
+    return executeProjectAction(projectId, PROJECT_ACTIONS.DELETE);
+  };
 
-  const deleteProject = useCallback(async (projectId) => {
-    return executeProjectAction(projectId, 'DELETE');
-  }, [executeProjectAction]);
+  // === GESTION CONSOLE ===
 
   /**
-   * Clear console messages
+   * Ajoute un message Ã  la console
    */
-  const clearConsole = useCallback(() => {
-    if (isComponentMountedRef.current) {
-      setConsoleMessages([]);
-    }
-  }, []);
-
-  /**
-   * Polling des projets
-   */
-  const startPolling = useCallback(() => {
-    if (pollingIntervalRef.current) return;
-    
-    pollingIntervalRef.current = setInterval(() => {
-      if (isComponentMountedRef.current) {
-        loadProjects();
-      }
-    }, 5000);
-  }, [loadProjects]);
-
-  const stopPolling = useCallback(() => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-  }, []);
-
-  // Chargement initial et polling - VERSION DEBUG
-  useEffect(() => {
-    console.log('í´ [DEBUG] useWorkflows useEffect called');
-    const startPollingTimer = setTimeout(() => {
-      console.log('í´ [DEBUG] Starting initial load and polling');
-      if (isComponentMountedRef.current) {
-        loadProjects();
-        startPolling();
-      }
-    }, 100);
-
-    return () => {
-      console.log('í´ [DEBUG] useWorkflows cleanup');
-      isComponentMountedRef.current = false;
-      clearTimeout(startPollingTimer);
-      
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+  const addConsoleMessage = (type, message) => {
+    const newMessage = {
+      id: Date.now() + Math.random(),
+      type,
+      message,
+      timestamp: new Date().toISOString()
     };
-  }, [loadProjects, startPolling]);
+    
+    setConsoleMessages(prev => [...prev, newMessage]);
+    console.log(`[useWorkflows] Console: [${type}] ${message}`);
+  };
 
-  console.log('í´ [DEBUG] useWorkflows render - projects count:', projects.length);
+  /**
+   * Vide la console
+   */
+  const clearConsole = () => {
+    setConsoleMessages([]);
+    console.log('[useWorkflows] Console cleared');
+  };
 
+  // === Ã‰TATS TRANSITOIRES ===
+
+  /**
+   * VÃ©rifie si une action est en cours pour un projet
+   */
+  const isActionInProgress = (projectId, action) => {
+    return Boolean(actionLoading[`${projectId}-${action}`]);
+  };
+
+  /**
+   * VÃ©rifie si le projet est dans un Ã©tat transitoire
+   */
+  const isProjectInTransition = (project) => {
+    const transitionalStates = ['[BUILDING]', '[DEPLOYING]', '[STARTING]', '[REVERTING]'];
+    return transitionalStates.includes(project.state);
+  };
+
+  // Interface publique du hook
   return {
+    // Ã‰tats
     projects,
     loading,
+    error,
+    actionLoading,
     consoleMessages,
-    executeProjectAction,
-    createProject,
-    deleteProject,
+    
+    // Actions projets
     loadProjects,
+    createProject,
+    executeProjectAction,
+    deleteProject,
+    
+    // Console
     addConsoleMessage,
     clearConsole,
-    startPolling,
-    stopPolling
+    
+    // Utilitaires
+    isActionInProgress,
+    isProjectInTransition
   };
 }
 
-/**
- * Utilitaires pour la construction des endpoints
- */
-function getActionEndpoint(projectId, action) {
-  const base = 'http://localhost:3000';
-  
-  switch (action) {
-    case 'CREATE':
-      return `${base}/projects`;
-    case 'BUILD':
-      return `${base}/projects/${projectId}/build`;
-    case 'DEPLOY':
-      return `${base}/projects/${projectId}/deploy`;
-    case 'START':
-      return `${base}/projects/${projectId}/start`;
-    case 'STOP':
-      return `${base}/projects/${projectId}/stop`;
-    case 'REVERT':
-      return `${base}/projects/${projectId}/revert`;
-    case 'DELETE':
-      return `${base}/projects/${projectId}`;
-    default:
-      throw new Error(`Unknown action: ${action}`);
-  }
-}
-
-function getActionMethod(action) {
-  if (action === 'DELETE') return 'DELETE';
-  if (action === 'REVERT') return 'POST';
-  return 'POST';
-}
-
-console.log('[useWorkflows] Debug version loaded with extensive logging');
+export default useWorkflows;

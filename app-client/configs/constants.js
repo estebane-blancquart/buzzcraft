@@ -1,92 +1,60 @@
-/*
- * FAIT QUOI : Constantes centralisées pour éliminer magic strings
- * REÇOIT : Rien (export seulement)
- * RETOURNE : Constantes organisées par domaine
- * ERREURS : Aucune (définitions statiques)
- */
+// 📋 CONSTANTES CLIENT BUZZCRAFT
 
-// === ÉTATS PROJETS ===
-export const PROJECT_STATES = {
-  VOID: 'VOID',
-  DRAFT: 'DRAFT', 
-  BUILT: 'BUILT',
-  OFFLINE: 'OFFLINE',
-  ONLINE: 'ONLINE'
-};
-
-// === ACTIONS PROJETS ===
+// Actions projets disponibles
 export const PROJECT_ACTIONS = {
   CREATE: 'CREATE',
-  EDIT: 'EDIT',
   BUILD: 'BUILD',
   DEPLOY: 'DEPLOY', 
   START: 'START',
   STOP: 'STOP',
-  UPDATE: 'UPDATE',
+  REVERT: 'REVERT',
   DELETE: 'DELETE',
-  REVERT: 'REVERT'
+  EDIT: 'EDIT'
 };
 
-// === TYPES MESSAGES CONSOLE ===
+// Types de messages console
 export const MESSAGE_TYPES = {
-  INFO: 'info',
   SUCCESS: 'success',
-  ERROR: 'error'
+  ERROR: 'error', 
+  WARNING: 'warning',
+  INFO: 'info'
 };
 
-// === DEVICES RESPONSIVE ===
+// États projets possibles
+export const PROJECT_STATES = {
+  VOID: 'VOID',
+  DRAFT: 'DRAFT',
+  BUILT: 'BUILT', 
+  OFFLINE: 'OFFLINE',
+  ONLINE: 'ONLINE',
+  
+  // États transitoires
+  BUILDING: '[BUILDING]',
+  DEPLOYING: '[DEPLOYING]', 
+  STARTING: '[STARTING]',
+  REVERTING: '[REVERTING]'
+};
+
+// Devices pour l'éditeur
 export const DEVICES = {
-  DESKTOP: 'desktop',
-  TABLET: 'tablet',
-  MOBILE: 'mobile'
+  MOBILE: 'mobile',
+  TABLET: 'tablet', 
+  DESKTOP: 'desktop'
 };
 
-// === TYPES ÉLÉMENTS ===
-export const ELEMENT_TYPES = {
-  PAGE: 'page',
-  SECTION: 'section', 
-  DIV: 'div',
-  HEADING: 'heading',
-  PARAGRAPH: 'paragraph',
-  BUTTON: 'button',
-  IMAGE: 'image',
-  VIDEO: 'video',
-  LINK: 'link',
-  FORM: 'form',
-  LIST: 'list'
+// Templates disponibles
+export const TEMPLATES = {
+  EMPTY: 'empty',
+  BASIC: 'basic',
+  CONTACT: 'contact',
+  PORTFOLIO: 'portfolio'
 };
 
-// === COLONNES RESPONSIVE ===
-export const RESPONSIVE_COLUMNS = {
-  DESKTOP: [1, 2, 3],
-  TABLET: [1, 2],
-  MOBILE: [1]
+// Configuration timeouts
+export const TIMEOUTS = {
+  API_REQUEST: 10000,
+  WORKFLOW: 30000,
+  POLLING: 2000
 };
 
-// === VALIDATIONS FORMULAIRES ===
-export const VALIDATION_RULES = {
-  PROJECT_ID: {
-    MIN_LENGTH: 3,
-    MAX_LENGTH: 50,
-    PATTERN: /^[a-z0-9-]+$/
-  },
-  PROJECT_NAME: {
-    MIN_LENGTH: 2,
-    MAX_LENGTH: 100
-  }
-};
-
-// === MESSAGES UI ===
-export const UI_MESSAGES = {
-  LOADING: 'Chargement...',
-  SELECT_ELEMENT: 'Sélectionnez un élément',
-  CONFIRM_DELETE: 'Cette action est irréversible.',
-  UNSAVED_CHANGES: 'Vous avez des modifications non sauvegardées. Quitter quand même ?'
-};
-
-// === TIMEOUTS & DELAYS ===
-export const TIMING = {
-  AUTO_SAVE_DELAY: 2000,
-  LOADING_MIN_DURATION: 500,
-  NOTIFICATION_DURATION: 3000
-};
+console.log('[CONSTANTS] Client constants loaded');

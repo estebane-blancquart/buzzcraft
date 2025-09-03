@@ -336,99 +336,66 @@ export async function quickBuiltCheck(projectPath) {
 }
 
 /**
- * Vérifie la présence d'artifacts de build
+ * Vérifie la présence d'artifacts de build avec nouvelle structure
  * @param {string} projectPath - Chemin du projet
  * @returns {Promise<{hasArtifacts: boolean, foundArtifacts: string[]}>}
  * @private
  */
 async function checkBuildArtifacts(projectPath) {
-  const buildIndicators = [
-    'package.json',
-    'index.js',
-    'index.html',
-    'src/index.js',
-    'src/App.jsx',
-    'public/index.html',
-    'components/',
-    'containers/',
-    'dist/',
-    'build/'
-  ];
-  
+  // NOUVELLE STRUCTURE - Services générés : front/, api/, back/, database/, admin/
+  const serviceDirectories = ['front', 'api', 'back', 'database', 'admin'];
   const foundArtifacts = [];
   
-  for (const indicator of buildIndicators) {
-    const indicatorPath = `${projectPath}/${indicator}`;
+  console.log(`[BUILT-DETECTOR] Scanning for service directories...`);
+  
+  // Scan des services générés
+  for (const service of serviceDirectories) {
+    const servicePath = `${projectPath}/${service}`;
     
-    const exists = await checkFileAccess(indicatorPath);
-    if (exists.accessible) {
-      foundArtifacts.push({
-        path: indicator,
-        type: indicator.endsWith('/') ? 'directory' : 'file',
-        fullPath: indicatorPath
-      });
-    }
-  }
-  
-  // Scan du dossier src/ si il existe
-  const srcPath = `${projectPath}/src`;
-  const srcExists = await checkFileAccess(srcPath);
-  if (srcExists.accessible) {
-    try {
-      const srcContent = await readDirectory(srcPath);
-      if (srcContent.success && srcContent.data.items.length > 0) {
-        foundArtifacts.push({
-          path: `src/ (${srcContent.data.items.length} items)`,
-          type: 'directory_content',
-          fullPath: srcPath
-        });
-      }
-    } catch (srcError) {
-      console.log(`[BUILT-DETECTOR] Error scanning src directory: ${srcError.message}`);
-    }
-  }
-  
-  // CORRECTION PROBLÈME 1: Scan du dossier components/ - COMPTAGE INDIVIDUEL
-  const componentsPath = `${projectPath}/components`;
-  const componentsExists = await checkFileAccess(componentsPath);
-  if (componentsExists.accessible) {
-    try {
-      const componentsContent = await readDirectory(componentsPath);
-      if (componentsContent.success && componentsContent.data.items.length > 0) {
-        // NOUVEAU: Ajouter chaque fichier individuellement au lieu du dossier
-        for (const item of componentsContent.data.items) {
-          foundArtifacts.push({
-            path: `components/${item.name}`,
-            type: 'file',
-            fullPath: `${componentsPath}/${item.name}`
-          });
+    const serviceExists = await checkFileAccess(servicePath);
+    if (serviceExists.accessible) {
+      console.log(`[BUILT-DETECTOR] Found service: ${service}`);
+      
+      try {
+        const serviceContent = await readDirectory(servicePath);
+        if (serviceContent.success && serviceContent.data.items.length > 0) {
+          
+          // Scan des fichiers dans le service
+          for (const item of serviceContent.data.items) {
+            foundArtifacts.push({
+              path: `${service}/${item.name}`,
+              type: item.isFile ? 'file' : 'directory',
+              fullPath: `${servicePath}/${item.name}`
+            });
+          }
+          
+          // Scan des sous-dossiers (components, containers, etc.)
+          const subDirs = serviceContent.data.items.filter(item => item.isDirectory);
+          for (const subDir of subDirs) {
+            const subDirPath = `${servicePath}/${subDir.name}`;
+            try {
+              const subDirContent = await readDirectory(subDirPath);
+              if (subDirContent.success) {
+                for (const subItem of subDirContent.data.items) {
+                  foundArtifacts.push({
+                    path: `${service}/${subDir.name}/${subItem.name}`,
+                    type: 'file',
+                    fullPath: `${subDirPath}/${subItem.name}`
+                  });
+                }
+              }
+            } catch (error) {
+              console.log(`[BUILT-DETECTOR] Error scanning ${service}/${subDir.name}: ${error.message}`);
+            }
+          }
         }
+      } catch (error) {
+        console.log(`[BUILT-DETECTOR] Error scanning service ${service}: ${error.message}`);
       }
-    } catch (componentsError) {
-      console.log(`[BUILT-DETECTOR] Error scanning components directory: ${componentsError.message}`);
     }
   }
   
-  // CORRECTION PROBLÈME 1: Scan du dossier containers/ - COMPTAGE INDIVIDUEL  
-  const containersPath = `${projectPath}/containers`;
-  const containersExists = await checkFileAccess(containersPath);
-  if (containersExists.accessible) {
-    try {
-      const containersContent = await readDirectory(containersPath);
-      if (containersContent.success && containersContent.data.items.length > 0) {
-        // NOUVEAU: Ajouter chaque fichier individuellement au lieu du dossier
-        for (const item of containersContent.data.items) {
-          foundArtifacts.push({
-            path: `containers/${item.name}`,
-            type: 'file', 
-            fullPath: `${containersPath}/${item.name}`
-          });
-        }
-      }
-    } catch (containersError) {
-      console.log(`[BUILT-DETECTOR] Error scanning containers directory: ${containersError.message}`);
-    }
-  }
+  console.log(`[BUILT-DETECTOR] Found ${foundArtifacts.length} build artifacts`);
   
   return {
     hasArtifacts: foundArtifacts.length > 0,
@@ -437,10 +404,7 @@ async function checkBuildArtifacts(projectPath) {
 }
 
 /**
- * Analyse la structure du dossier pour vérifier cohérence BUILT
- * @param {string} projectPath - Chemin du projet
- * @returns {Promise<{isBuiltLike: boolean, reason: string}>}
- * @private
+ * AUSSI, corrige analyzeBuiltDirectoryStructure() pour reconnaître les services
  */
 async function analyzeBuiltDirectoryStructure(projectPath) {
   try {
@@ -456,25 +420,19 @@ async function analyzeBuiltDirectoryStructure(projectPath) {
     const files = dirContent.data.items.filter(item => item.isFile);
     const dirs = dirContent.data.items.filter(item => item.isDirectory);
     
-    console.log(`[BUILT-DETECTOR] 📁 Directory contains: ${files.length} files, ${dirs.length} directories`);
-    
-    // Un projet BUILT devrait avoir des fichiers générés
-    const hasGeneratedFiles = files.some(file => 
-      ['package.json', 'index.js', 'index.html'].includes(file.name)
-    );
-    
-    // Peut avoir des dossiers de build
-    const hasBuildDirs = dirs.some(dir => 
-      ['src', 'public', 'dist', 'build', 'components', 'containers'].includes(dir.name)
-    );
+    console.log(`[BUILT-DETECTOR] Directory contains: ${files.length} files, ${dirs.length} directories`);
     
     // Doit avoir le project.json
     const hasProjectFile = files.some(file => file.name === 'project.json');
     
-    console.log(`[BUILT-DETECTOR] 🔍 Structure analysis:`);
+    // NOUVELLE LOGIQUE : Chercher les services générés
+    const serviceDirectories = ['front', 'api', 'back', 'database', 'admin'];
+    const foundServices = dirs.filter(dir => serviceDirectories.includes(dir.name));
+    
+    console.log(`[BUILT-DETECTOR] Structure analysis:`);
     console.log(`[BUILT-DETECTOR]    - Has project.json: ${hasProjectFile}`);
-    console.log(`[BUILT-DETECTOR]    - Has generated files: ${hasGeneratedFiles}`);
-    console.log(`[BUILT-DETECTOR]    - Has build directories: ${hasBuildDirs}`);
+    console.log(`[BUILT-DETECTOR]    - Found services: ${foundServices.map(s => s.name).join(', ')}`);
+    console.log(`[BUILT-DETECTOR]    - Service count: ${foundServices.length}/${serviceDirectories.length}`);
     
     if (!hasProjectFile) {
       return {
@@ -483,10 +441,10 @@ async function analyzeBuiltDirectoryStructure(projectPath) {
       };
     }
     
-    if (hasGeneratedFiles || hasBuildDirs) {
+    if (foundServices.length > 0) {
       return {
         isBuiltLike: true,
-        reason: `Contains ${hasGeneratedFiles ? 'generated files' : ''}${hasGeneratedFiles && hasBuildDirs ? ' and ' : ''}${hasBuildDirs ? 'build directories' : ''}`
+        reason: `Contains ${foundServices.length} generated service(s): ${foundServices.map(s => s.name).join(', ')}`
       };
     }
     
@@ -498,8 +456,8 @@ async function analyzeBuiltDirectoryStructure(projectPath) {
     }
     
     return {
-      isBuiltLike: true,
-      reason: `Contains ${files.length} files and ${dirs.length} directories`
+      isBuiltLike: false,
+      reason: `No generated services found (expected: ${serviceDirectories.join(', ')})`
     };
     
   } catch (error) {
