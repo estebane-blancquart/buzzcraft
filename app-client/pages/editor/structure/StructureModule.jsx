@@ -1,14 +1,13 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import ElementTree from './ElementTree.jsx';
+import React from 'react';
 
 /*
- * FAIT QUOI : Container structure avec ElementTree + modals selector intégrés
- * REÇOIT : project, selectedElement, onElementSelect, handlers CRUD
- * RETOURNE : Module complet gestion structure avec UX optimisée
- * ERREURS : Défensif avec handlers optionnels + validation
+ * FAIT QUOI : Arbre hiérarchique pour naviguer dans la structure projet
+ * REÇOIT : project, selectedElement, onElementSelect, onAddPage, onAddSection, onAddDiv, onAddComponent, onDeleteElement
+ * RETOURNE : Structure tree navigable
+ * ERREURS : Défensif avec projet vide
  */
 
-function StructureModule({ 
+function ElementTree({ 
   project = null, 
   selectedElement = null, 
   onElementSelect = () => {},
@@ -18,264 +17,228 @@ function StructureModule({
   onAddComponent = () => {},
   onDeleteElement = () => {}
 }) {
-  // États locaux pour les modals
-  const [showComponentSelector, setShowComponentSelector] = useState(false);
-  const [showContainerSelector, setShowContainerSelector] = useState(false);
-
-  // Configuration des types avec métadonnées
-  const componentTypes = useMemo(() => [
-    { id: 'heading', name: 'Heading', icon: '📝', description: 'Text heading (H1-H6)' },
-    { id: 'paragraph', name: 'Paragraph', icon: '📄', description: 'Regular text content' },
-    { id: 'button', name: 'Button', icon: '🔘', description: 'Interactive button' },
-    { id: 'image', name: 'Image', icon: '🖼️', description: 'Image with alt text' },
-    { id: 'video', name: 'Video', icon: '🎥', description: 'Video player' },
-    { id: 'link', name: 'Link', icon: '🔗', description: 'Hyperlink to URL' }
-  ], []);
-
-  const containerTypes = useMemo(() => [
-    { id: 'div', name: 'Div Container', icon: '📦', description: 'Generic container' },
-    { id: 'list', name: 'List Container', icon: '📋', description: 'Ordered/unordered list' },
-    { id: 'form', name: 'Form Container', icon: '📝', description: 'Form with inputs' }
-  ], []);
-
-  // === HANDLERS OPTIMISÉS ===
-
-  // Ouverture modals avec fermeture de l'autre
-  const handleOpenComponentSelector = useCallback(() => {
-    console.log('Opening component selector');
-    setShowComponentSelector(true);
-    setShowContainerSelector(false);
-  }, []);
-
-  const handleOpenContainerSelector = useCallback(() => {
-    console.log('Opening container selector');
-    setShowContainerSelector(true);
-    setShowComponentSelector(false);
-  }, []);
-
-  // Fermeture des modals
-  const handleCloseSelectors = useCallback(() => {
-    console.log('Closing all selectors');
-    setShowComponentSelector(false);
-    setShowContainerSelector(false);
-  }, []);
-
-  // Sélection de composant avec validation
-  const handleComponentSelect = useCallback((componentType) => {
-    console.log('Component selected:', componentType);
+  // CORRECTION : Utiliser les IDs au lieu des noms pour éviter les conflits
+  const [expandedItems, setExpandedItems] = React.useState(() => {
+    if (!project) return new Set();
     
-    if (!componentType) {
-      console.warn('Invalid component type selected');
-      return;
-    }
-
-    if (!selectedElement) {
-      console.warn('No container selected for component');
-      return;
-    }
-
-    setShowComponentSelector(false);
+    const initialExpanded = new Set();
+    // Toujours garder le projet ouvert
+    initialExpanded.add(project.id);
     
-    if (onAddComponent) {
-      onAddComponent(componentType);
-    }
-  }, [selectedElement, onAddComponent]);
-
-  // Sélection de container avec validation
-  const handleContainerSelect = useCallback((containerType) => {
-    console.log('Container selected:', containerType);
+    // Ouvrir toutes les pages par défaut
+    project.pages?.forEach(page => {
+      initialExpanded.add(page.id);
+      // Ouvrir aussi les composants qui ont des enfants
+      page.components?.forEach(component => {
+        if (component.children && component.children.length > 0) {
+          initialExpanded.add(component.id);
+        }
+      });
+    });
     
-    if (!containerType) {
-      console.warn('Invalid container type selected');
-      return;
-    }
+    return initialExpanded;
+  });
 
-    if (!selectedElement) {
-      console.warn('No section selected for container');
-      return;
-    }
-
-    setShowContainerSelector(false);
-    
-    if (onAddDiv) {
-      onAddDiv(containerType);
-    }
-  }, [selectedElement, onAddDiv]);
-
-  // Handlers avec validation pour ElementTree
-  const handleAddDivWithValidation = useCallback(() => {
-    if (!selectedElement) {
-      console.warn('No section selected for adding container');
-      return;
-    }
-    handleOpenContainerSelector();
-  }, [selectedElement, handleOpenContainerSelector]);
-
-  const handleAddComponentWithValidation = useCallback(() => {
-    if (!selectedElement) {
-      console.warn('No container selected for adding component');
-      return;
-    }
-    handleOpenComponentSelector();
-  }, [selectedElement, handleOpenComponentSelector]);
-
-  // === RENDERING FUNCTIONS ===
-
-  // Render modal component selector
-  const renderComponentSelector = useCallback(() => {
-    if (!showComponentSelector) return null;
-
-    return (
-      <div className="modal-overlay" onClick={handleCloseSelectors}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Add Component</h2>
-            <button onClick={handleCloseSelectors} className="modal-close" aria-label="Close">
-              ×
-            </button>
-          </div>
-          
-          <div className="modal-body">
-            {!selectedElement ? (
-              <div className="modal-warning">
-                ⚠️ Select a container first to add a component
-              </div>
-            ) : (
-              <>
-                <div className="modal-context">
-                  Adding to: <strong>{selectedElement.name || selectedElement.id}</strong>
-                </div>
-                <div className="selector-grid">
-                  {componentTypes.map(type => (
-                    <button
-                      key={type.id}
-                      className="selector-item"
-                      onClick={() => handleComponentSelect(type.id)}
-                      title={type.description}
-                    >
-                      <span className="selector-icon">{type.icon}</span>
-                      <span className="selector-name">{type.name}</span>
-                      <span className="selector-desc">{type.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="modal-footer">
-            <button onClick={handleCloseSelectors} className="btn-secondary">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }, [showComponentSelector, selectedElement, componentTypes, handleComponentSelect, handleCloseSelectors]);
-
-  // Render modal container selector  
-  const renderContainerSelector = useCallback(() => {
-    if (!showContainerSelector) return null;
-
-    return (
-      <div className="modal-overlay" onClick={handleCloseSelectors}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Add Container</h2>
-            <button onClick={handleCloseSelectors} className="modal-close" aria-label="Close">
-              ×
-            </button>
-          </div>
-          
-          <div className="modal-body">
-            {!selectedElement ? (
-              <div className="modal-warning">
-                ⚠️ Select a section first to add a container
-              </div>
-            ) : (
-              <>
-                <div className="modal-context">
-                  Adding to: <strong>{selectedElement.name || selectedElement.id}</strong>
-                </div>
-                <div className="selector-grid">
-                  {containerTypes.map(type => (
-                    <button
-                      key={type.id}
-                      className="selector-item"
-                      onClick={() => handleContainerSelect(type.id)}
-                      title={type.description}
-                    >
-                      <span className="selector-icon">{type.icon}</span>
-                      <span className="selector-name">{type.name}</span>
-                      <span className="selector-desc">{type.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="modal-footer">
-            <button onClick={handleCloseSelectors} className="btn-secondary">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }, [showContainerSelector, selectedElement, containerTypes, handleContainerSelect, handleCloseSelectors]);
-
-  // === KEYBOARD SHORTCUTS ===
-
-  // Support clavier pour fermer modals
   React.useEffect(() => {
-    const handleKeyPress = (event) => {
-      if (event.key === 'Escape' && (showComponentSelector || showContainerSelector)) {
-        handleCloseSelectors();
+    const handleKeyDown = (event) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selected = selectedElement;
+        if (selected && selected.type !== 'project') {
+          onDeleteElement(selected.id);
+        }
+        event.preventDefault();
       }
     };
 
-    if (showComponentSelector || showContainerSelector) {
-      document.addEventListener('keydown', handleKeyPress);
-      return () => document.removeEventListener('keydown', handleKeyPress);
-    }
-  }, [showComponentSelector, showContainerSelector, handleCloseSelectors]);
-
-  // === VALIDATION PROJECT ===
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElement, onDeleteElement]);
 
   if (!project) {
     return (
-      <div className="project-tree">
-        <div className="tree-header">
-          <h3>Structure</h3>
-        </div>
-        <div className="tree-empty">
-          No project loaded
-        </div>
+      <div className="tree-content">
+        <div className="tree-empty">No project loaded</div>
       </div>
     );
   }
 
-  // === MAIN RENDER ===
+  const handleElementClick = (element) => {
+    if (onElementSelect) {
+      onElementSelect(element);
+    }
+  };
+
+  // CORRECTION : Utiliser l'ID au lieu du nom
+  const toggleExpand = (event, itemId) => {
+    event.stopPropagation();
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const isSelected = (element) => {
+    return selectedElement && selectedElement.id === element?.id;
+  };
+
+  const isExpanded = (itemId) => {
+    return expandedItems.has(itemId);
+  };
+
+  const renderIndents = (level) => {
+    const indents = [];
+    for (let i = 0; i < level; i++) {
+      const isLast = i === level - 1;
+      const continues = !isLast;
+      indents.push(
+        <div 
+          key={i} 
+          className={`tree-indent ${continues ? 'has-line continues' : 'has-line'}`}
+        />
+      );
+    }
+    return indents;
+  };
 
   return (
-    <div className="project-tree">     
-      <ElementTree
-        project={project}
-        selectedElement={selectedElement}
-        onElementSelect={onElementSelect}
-        onAddPage={onAddPage}
-        onAddSection={onAddSection}
-        onAddDiv={handleAddDivWithValidation}
-        onAddComponent={handleAddComponentWithValidation}
-        onDeleteElement={onDeleteElement}
-      />
+    <div className="tree-content">
+      {/* Projet racine */}
+      <div 
+        className={`tree-item ${isSelected({ id: project.id, type: 'project' }) ? 'selected' : ''}`}
+        onClick={() => handleElementClick({ id: project.id, type: 'project', name: project.name })}
+      >
+        <div className="tree-item-content">
+          <span className="tree-label">{project.name}</span>
+        </div>
+        <span className="tree-type">project</span>
+        <button 
+          className="tree-add-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddPage();
+          }}
+        >
+          +
+        </button>
+      </div>
 
-      {/* Modals avec validation intégrée */}
-      {renderComponentSelector()}
-      {renderContainerSelector()}
+      {/* Pages */}
+      {project.pages?.map(page => (
+        <React.Fragment key={page.id}>
+          <div 
+            className={`tree-item ${isSelected(page) ? 'selected' : ''} ${!isExpanded(project.id) ? 'hidden' : ''}`}
+            onClick={() => handleElementClick(page)}
+          >
+            <div className="tree-item-content">
+              {/* CORRECTION : Utiliser page.id au lieu de page.name */}
+              <span 
+                className={`tree-expand ${isExpanded(page.id) ? 'expanded' : 'collapsed'}`}
+                onClick={(e) => toggleExpand(e, page.id)}
+              />
+              <span className="tree-label">{page.name}</span>
+            </div>
+            <span className="tree-type">page</span>
+            <button 
+              className="tree-add-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddSection(page.id);
+              }}
+            >
+              +
+            </button>
+          </div>
+
+          {/* Sections dans cette page */}
+          {page.sections?.map(section => (
+            <div 
+              key={section.id}
+              className={`tree-item ${isSelected(section) ? 'selected' : ''} ${!isExpanded(page.id) ? 'hidden' : ''}`}
+              onClick={() => handleElementClick(section)}
+            >
+              <div className="tree-item-content">
+                {renderIndents(1)}
+                <span className="tree-label">{section.name}</span>
+              </div>
+              <span className="tree-type">section</span>
+              <button 
+                className="tree-add-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddDiv(section.id);
+                }}
+              >
+                +
+              </button>
+            </div>
+          ))}
+
+          {/* Composants dans cette page */}
+          {page.components?.map(component => (
+            <React.Fragment key={component.id}>
+              <div 
+                className={`tree-item ${isSelected(component) ? 'selected' : ''} ${!isExpanded(page.id) ? 'hidden' : ''}`}
+                onClick={() => handleElementClick(component)}
+              >
+                <div className="tree-item-content">
+                  {renderIndents(1)}
+                  {/* CORRECTION : Utiliser component.id et vérifier s'il a des enfants */}
+                  {component.children && component.children.length > 0 && (
+                    <span 
+                      className={`tree-expand ${isExpanded(component.id) ? 'expanded' : 'collapsed'}`}
+                      onClick={(e) => toggleExpand(e, component.id)}
+                    />
+                  )}
+                  <span className="tree-label">{component.name}</span>
+                </div>
+                <span className="tree-type">{component.type}</span>
+                <button 
+                  className="tree-add-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddComponent(component.id);
+                  }}
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Enfants du composant */}
+              {component.children?.map(child => (
+                <div 
+                  key={child.id}
+                  className={`tree-item ${isSelected(child) ? 'selected' : ''} ${(!isExpanded(page.id) || !isExpanded(component.id)) ? 'hidden' : ''}`}
+                  onClick={() => handleElementClick(child)}
+                >
+                  <div className="tree-item-content">
+                    {renderIndents(2)}
+                    <span className="tree-label">{child.name}</span>
+                  </div>
+                  <span className="tree-type">{child.type}</span>
+                  <button 
+                    className="tree-add-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddComponent(child.id);
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              ))}
+            </React.Fragment>
+          ))}
+        </React.Fragment>
+      ))}
+
+      <div className="delete-hint">Suppr pour supprimer</div>
     </div>
   );
 }
 
-export default StructureModule;
+export default ElementTree;

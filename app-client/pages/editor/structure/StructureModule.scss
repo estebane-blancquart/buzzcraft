@@ -3,45 +3,13 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.tree-header {
-  height: 6%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
-  flex-shrink: 0;
-
-  h3 {
-    font-size: var(--size-md);
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0;
-  }
-
-  button {
-    background: var(--color-primary);
-    color: var(--color-bg-primary);
-    border: none;
-    width: 24px;
-    height: 24px;
-    border-radius: var(--radius-sm);
-    font-size: var(--size-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-
-    &:hover {
-      background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
-    }
-  }
+  outline: none;
 }
 
 .tree-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-4);
+  padding: var(--space-2) 0;
 
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%) transparent;
@@ -61,47 +29,86 @@
 }
 
 .tree-item {
-  margin-bottom: var(--space-2);
-
-  &.nested {
-    margin-left: var(--space-6);
-  }
-}
-
-.tree-node {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-radius: var(--radius-sm);
+  height: 22px;
+  padding: 0 var(--space-2);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.1s ease;
+  position: relative;
 
   &:hover {
-    background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+    background: rgba(255, 255, 255, 0.04);
   }
 
   &.selected {
     background: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg-secondary));
-    color: var(--color-primary);
+  }
+
+  &.hidden {
+    display: none;
   }
 }
 
-.tree-node-content {
+.tree-item-content {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
   flex: 1;
 }
 
-.tree-icon {
-  font-size: var(--size-sm);
+.tree-indent {
+  width: 16px;
+  height: 22px;
+  position: relative;
+  flex-shrink: 0;
+
+  &.has-line::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    width: 1px;
+    height: 11px;
+    background: #464647;
+  }
+
+  &.has-line.continues::before {
+    height: 22px;
+  }
+}
+
+.tree-expand {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+  color: var(--color-text-secondary);
+  font-size: 8px;
+  cursor: pointer;
+
+  &.expanded::before {
+    content: '▽';
+  }
+
+  &.collapsed::before {
+    content: '▷';
+  }
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
 }
 
 .tree-label {
-  font-size: var(--size-sm);
-  font-weight: 500;
   color: var(--color-text-primary);
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--size-sm);
+  font-weight: 500;
 }
 
 .tree-type {
@@ -110,51 +117,28 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--color-text-secondary);
+  margin-right: 12px;
+  margin-left: 12px;
 }
 
-.tree-actions {
-  display: flex;
-  gap: var(--space-1);
-  opacity: 0;
-  transition: opacity 0.15s ease;
-
-  .tree-node:hover & {
-    opacity: 1;
-  }
-}
-
-.tree-action-btn {
+.tree-add-btn {
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--color-text-secondary) 30%, transparent);
+  border: none;
   color: var(--color-text-secondary);
-  width: 20px;
-  height: 20px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  font-weight: bold;
   cursor: pointer;
-  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.1s ease;
 
   &:hover {
-    border-color: var(--color-text-primary);
-    color: var(--color-text-primary);
-  }
-
-  &.add {
-    &:hover {
-      border-color: var(--color-success);
-      color: var(--color-success);
-    }
-  }
-
-  &.remove {
-    &:hover {
-      border-color: var(--color-danger);
-      color: var(--color-danger);
-    }
+    background: var(--color-success);
+    color: white;
+    border-radius: 2px;
   }
 }
 
@@ -165,21 +149,11 @@
   padding: var(--space-6);
 }
 
-.tree-add-first {
-  text-align: center;
-  padding: var(--space-6);
-
-  .tree-action-btn {
-    width: auto;
-    height: auto;
-    padding: var(--space-2) var(--space-4);
-    font-size: var(--size-sm);
-    background: var(--color-primary);
-    color: var(--color-bg-primary);
-    border-color: var(--color-primary);
-
-    &:hover {
-      background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
-    }
-  }
+.delete-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  pointer-events: none;
 }
