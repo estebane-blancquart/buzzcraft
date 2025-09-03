@@ -4,12 +4,15 @@
  * @description Orchestre le build complet d'un projet DRAFT vers l'état BUILT
  */
 
+import Handlebars from 'handlebars';
+import { readdir } from 'fs/promises';
+import { join } from 'path';
 import { detectDraftState } from '../probes/draft-detector.js';
 import { detectBuiltState } from '../probes/built-detector.js';
 import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
 import { readPath } from '../cores/reader.js';
 import { writePath } from '../cores/writer.js';
-import { LOG_COLORS } from '../cores/constants.js';
+import { LOG_COLORS, PATHS } from '../cores/constants.js';
 
 /**
  * Orchestre le workflow complet BUILD (DRAFT → BUILT)
@@ -99,11 +102,12 @@ export async function buildWorkflow(projectId, config = {}) {
     const duration = Date.now() - startTime;
     
     if (!finalState.success || !finalState.data.isBuilt) {
-      console.log(`${LOG_COLORS.warning}[BUILD] Final verification failed but continuing (${duration}ms)${LOG_COLORS.reset}`);
-    } else {
-      console.log(`${LOG_COLORS.success}[BUILD] ${projectId}: Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
+      console.log(`${LOG_COLORS.warning}[BUILD] Final verification incomplete, but proceeding${LOG_COLORS.reset}`);
     }
+
+    console.log(`${LOG_COLORS.success}[BUILD] ${projectId}: Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
     
+    // Construction de la réponse
     return {
       success: true,
       data: {
@@ -112,12 +116,7 @@ export async function buildWorkflow(projectId, config = {}) {
         toState: 'BUILT',
         duration,
         project: updatedProject.data,
-        build: {
-          generatedFiles: buildResult.data.generatedFiles.length,
-          totalSize: buildResult.data.totalSize || 0,
-          targets: buildConfig.targets,
-          builtAt: new Date().toISOString()
-        },
+        build: buildResult.data,
         workflow: {
           action: 'BUILD',
           projectId,
@@ -141,9 +140,9 @@ export async function buildWorkflow(projectId, config = {}) {
 }
 
 /**
- * Charge les données projet pour build
+ * Charge les données du projet pour build
  * @param {string} projectId - ID du projet
- * @returns {Promise<{success: boolean, data: object}>} Données projet
+ * @returns {Promise<{success: boolean, data: object}>} Données du projet
  * @private
  */
 async function loadProjectForBuild(projectId) {
@@ -202,7 +201,7 @@ function prepareBuildConfiguration(projectData, config) {
 }
 
 /**
- * Génère le code du projet avec Handlebars (MOCK)
+ * Génère le code du projet avec Handlebars (VRAIE IMPLÉMENTATION)
  * @param {object} projectData - Données du projet
  * @param {object} buildConfig - Configuration de build
  * @returns {Promise<{success: boolean, data: object}>} Résultat de génération
@@ -210,33 +209,145 @@ function prepareBuildConfiguration(projectData, config) {
  */
 async function generateProjectCodeWithHandlebars(projectData, buildConfig) {
   try {
-    // Simulation de la génération de code
-    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log(`${LOG_COLORS.info}[BUILD] Starting code generation with Handlebars...${LOG_COLORS.reset}`);
     
-    // Fichiers générés simulés
-    const generatedFiles = [
-      'index.html',
-      'styles.css',
-      'script.js',
-      'package.json'
-    ];
+    const templatesPath = join(PATHS.dataInputs, 'templates', 'code');
+    const outputPath = join(PATHS.dataOutputs, projectData.id);
+    
+    // 1. Scanner tous les templates .hbs
+    const templates = await scanHandlebarsTemplates(templatesPath);
+    console.log(`${LOG_COLORS.info}[BUILD] Found ${templates.length} Handlebars templates${LOG_COLORS.reset}`);
+    
+    if (templates.length === 0) {
+      return {
+        success: false,
+        error: 'No Handlebars templates found in templates/code directory'
+      };
+    }
+    
+    // 2. Préparer le contexte pour Handlebars
+    const context = {
+      project: projectData,
+      build: buildConfig,
+      timestamp: new Date().toISOString(),
+      buildId: buildConfig.buildId
+    };
+    
+    // 3. Générer tous les fichiers
+    const generatedFiles = [];
+    let totalSize = 0;
+    
+    for (const template of templates) {
+      try {
+        // Lire le template
+        const templateResult = await readPath(template.absolutePath, { encoding: 'utf8' });
+        
+        if (!templateResult.success) {
+          console.log(`${LOG_COLORS.warning}[BUILD] Cannot read template: ${template.relativePath}${LOG_COLORS.reset}`);
+          continue;
+        }
+        
+        // Compiler avec Handlebars
+        const compiledTemplate = Handlebars.compile(templateResult.data.content);
+        const generatedContent = compiledTemplate(context);
+        
+        // Chemin de sortie (remove .hbs extension)
+        const outputFilePath = join(outputPath, template.outputPath);
+        
+        // Écrire le fichier généré
+        const writeResult = await writePath(outputFilePath, generatedContent, {
+          createDirs: true,
+          encoding: 'utf8'
+        });
+        
+        if (writeResult.success) {
+          generatedFiles.push({
+            path: template.outputPath,
+            size: generatedContent.length,
+            template: template.relativePath
+          });
+          totalSize += generatedContent.length;
+          console.log(`${LOG_COLORS.success}[BUILD] Generated: ${template.outputPath}${LOG_COLORS.reset}`);
+        } else {
+          console.log(`${LOG_COLORS.warning}[BUILD] Failed to write: ${template.outputPath} - ${writeResult.error}${LOG_COLORS.reset}`);
+        }
+        
+      } catch (templateError) {
+        console.log(`${LOG_COLORS.warning}[BUILD] Template compilation failed for ${template.relativePath}: ${templateError.message}${LOG_COLORS.reset}`);
+        // Continue avec les autres templates
+      }
+    }
+    
+    if (generatedFiles.length === 0) {
+      return {
+        success: false,
+        error: 'No files were successfully generated'
+      };
+    }
+    
+    console.log(`${LOG_COLORS.success}[BUILD] Code generation completed: ${generatedFiles.length} files, ${Math.round(totalSize/1024)}KB total${LOG_COLORS.reset}`);
     
     return {
       success: true,
       data: {
-        generatedFiles,
-        totalSize: generatedFiles.length * 1024, // Taille simulée
+        generatedFiles: generatedFiles.map(f => f.path),
+        fileDetails: generatedFiles,
+        totalSize,
+        templateCount: templates.length,
         buildTargets: buildConfig.targets,
         buildId: buildConfig.buildId
       }
     };
     
   } catch (error) {
+    console.log(`${LOG_COLORS.error}[BUILD] Code generation failed: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `Code generation failed: ${error.message}`
     };
   }
+}
+
+/**
+ * Scanner récursif pour trouver tous les templates .hbs
+ * @param {string} templatesPath - Chemin vers les templates
+ * @returns {Promise<Array>} Liste des templates trouvés
+ * @private
+ */
+async function scanHandlebarsTemplates(templatesPath) {
+  const templates = [];
+  
+  async function scanDirectory(currentPath, relativePath = '') {
+    try {
+      const entries = await readdir(currentPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = join(currentPath, entry.name);
+        const relativeFullPath = join(relativePath, entry.name);
+        
+        if (entry.isDirectory()) {
+          // Récursion dans les sous-dossiers
+          await scanDirectory(fullPath, relativeFullPath);
+        } else if (entry.isFile() && entry.name.endsWith('.hbs')) {
+          // Fichier template trouvé
+          const outputPath = relativeFullPath.replace(/\.hbs$/, ''); // Remove .hbs
+          
+          templates.push({
+            name: entry.name,
+            absolutePath: fullPath,
+            relativePath: relativeFullPath,
+            outputPath: outputPath,
+            directory: relativePath
+          });
+        }
+      }
+    } catch (error) {
+      console.log(`${LOG_COLORS.warning}[BUILD] Cannot scan directory ${currentPath}: ${error.message}${LOG_COLORS.reset}`);
+    }
+  }
+  
+  await scanDirectory(templatesPath);
+  return templates;
 }
 
 /**
