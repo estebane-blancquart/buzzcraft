@@ -24,23 +24,10 @@ function PreviewModule({
     return deviceLabels[device] || 'Unknown';
   };
 
-  const getDeviceIcon = () => {
-    const deviceIcons = {
-      [DEVICES.DESKTOP]: '💻',
-      [DEVICES.TABLET]: '📱',
-      [DEVICES.MOBILE]: '📱'
-    };
-    return deviceIcons[device] || '💻';
-  };
-
   return (
     <div className="project-preview">
       <div className="preview-header">
         <h3>Preview</h3>
-        <span className="device-indicator">
-          <span className="device-icon">{getDeviceIcon()}</span>
-          {getDeviceLabel()}
-        </span>
       </div>
       
       <CanvasFrame

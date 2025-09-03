@@ -8,6 +8,9 @@
   height: 20vh;
   display: flex;
   flex-direction: column;
+  position: absolute;
+  bottom: 2rem;
+  width: 60vw;
 }
 
 .console-header {
@@ -49,8 +52,7 @@
 .console-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2);
-  
+  padding: var(--space-2) var(--space-4);  
   scrollbar-width: thin;
   scrollbar-color: #444 transparent;
   scroll-behavior: smooth;

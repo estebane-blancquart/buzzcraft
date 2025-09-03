@@ -17,7 +17,7 @@
   user-select: none;
 
   &:first-child {
-    margin-right: var(--space-8);
+    margin-right: var(--space-12);
     box-shadow: var(--shadow-sm);
     
     .stat-label {
@@ -30,52 +30,48 @@
     }
   }
 
+  // États projets
   &.draft {
-    border-color: var(--color-primary);
-    &:hover { border-color: color-mix(in srgb, var(--color-primary) 80%, white 20%); }
+    border-color: var(--color-draft);
+    &:hover { border-color: color-mix(in srgb, var(--color-draft) 80%, white 20%); }
   }
 
   &.built {
-    border-color: #3b82f6;
-    &:hover { border-color: color-mix(in srgb, #3b82f6 80%, white 20%); }
+    border-color: var(--color-built);
+    &:hover { border-color: color-mix(in srgb, var(--color-built) 80%, white 20%); }
   }
 
   &.offline {
-    border-color: var(--color-warning);
-    &:hover { border-color: color-mix(in srgb, var(--color-warning) 80%, white 20%); }
+    border-color: var(--color-offline);
+    &:hover { border-color: color-mix(in srgb, var(--color-offline) 80%, white 20%); }
   }
 
   &.online {
-    border-color: var(--color-success);
-    &:hover { border-color: color-mix(in srgb, var(--color-success) 80%, white 20%); }
+    border-color: var(--color-online);
+    &:hover { border-color: color-mix(in srgb, var(--color-online) 80%, white 20%); }
   }
 
+  // Active
   &.active {
-    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-secondary));
-    border-color: var(--color-primary);
-    
     &.draft { 
-      background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-secondary));
-      border-color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-draft) 10%, var(--color-bg-secondary));
+      border-color: var(--color-draft);
     }
     &.built { 
-      background: color-mix(in srgb, #3b82f6 10%, var(--color-bg-secondary));
-      border-color: #3b82f6;
+      background: color-mix(in srgb, var(--color-built) 10%, var(--color-bg-secondary));
+      border-color: var(--color-built);
     }
     &.offline { 
-      background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-secondary));
-      border-color: var(--color-warning);
+      background: color-mix(in srgb, var(--color-offline) 10%, var(--color-bg-secondary));
+      border-color: var(--color-offline);
     }
     &.online { 
-      background: color-mix(in srgb, var(--color-success) 10%, var(--color-bg-secondary));
-      border-color: var(--color-success);
+      background: color-mix(in srgb, var(--color-online) 10%, var(--color-bg-secondary));
+      border-color: var(--color-online);
     }
   }
-
-  &:hover {
-    transform: translateY(-1px);
-  }
 }
+
 
 .stat-number {
   font-size: var(--size-2xl);

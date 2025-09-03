@@ -10,7 +10,7 @@ import React from 'react';
 function LogMessage({ message = {} }) {
   const { 
     type = 'info', 
-    text = 'Empty message', 
+    message: text = 'Empty message',  // ← Changement ici : message au lieu de text
     timestamp = new Date().toISOString() 
   } = message;
 

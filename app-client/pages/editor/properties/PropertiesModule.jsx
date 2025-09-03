@@ -113,14 +113,8 @@ function PropertiesModule({
     <div className="project-properties">
       <div className="properties-header">
         <h3>Properties</h3>
-        {selectedElement && (
-          <span className="element-type">{getElementTypeLabel()}</span>
-        )}
       </div>
-      
-      <div className="properties-device-indicator">
-        <span className="device-label">{getDeviceLabel()}</span>
-      </div>
+
       
       <div className="properties-content">
         {selectedElement ? (

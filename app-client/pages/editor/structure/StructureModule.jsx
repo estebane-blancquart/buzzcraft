@@ -262,24 +262,7 @@ function StructureModule({
     <div className="project-tree">
       <div className="tree-header">
         <h3>Structure</h3>
-        <div className="tree-actions">
-          <button 
-            onClick={onAddPage}
-            className="btn-primary btn-small"
-            title="Add new page to project"
-          >
-            + Page
-          </button>
-        </div>
       </div>
-
-      {/* Contexte sélection */}
-      {selectedElement && (
-        <div className="tree-selection-context">
-          Selected: <strong>{selectedElement.name || selectedElement.id}</strong>
-          <span className="selection-type">({selectedElement.type || 'element'})</span>
-        </div>
-      )}
       
       <ElementTree
         project={project}

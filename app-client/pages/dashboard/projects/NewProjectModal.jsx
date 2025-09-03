@@ -16,7 +16,7 @@ function NewProjectModal({
   const [formData, setFormData] = useState({
     projectId: "",
     name: "",
-    template: "", // ❌ PLUS DE 'basic' par défaut !
+    template: "", 
   });
 
   const [errors, setErrors] = useState({});

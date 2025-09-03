@@ -53,27 +53,27 @@
   margin-right: var(--space-8);
 
   &.draft {
-    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
-    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-draft) 10%, transparent);
+    color: var(--color-draft);
+    border-color: var(--color-draft);
   }
 
   &.built {
-    background: color-mix(in srgb, #3b82f6 10%, transparent);
-    color: #3b82f6;
-    border-color: #3b82f6;
+    background: color-mix(in srgb, var(--color-built) 10%, transparent);
+    color: var(--color-built);
+    border-color: var(--color-built);
   }
 
   &.offline {
-    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-    color: var(--color-warning);
-    border-color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-offline) 10%, transparent);
+    color: var(--color-offline);
+    border-color: var(--color-offline);
   }
 
   &.online {
-    background: color-mix(in srgb, var(--color-success) 10%, transparent);
-    color: var(--color-success);
-    border-color: var(--color-success);
+    background: color-mix(in srgb, var(--color-online) 10%, transparent);
+    color: var(--color-online);
+    border-color: var(--color-online);
   }
 }
 
@@ -89,7 +89,7 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
     min-width: 60px;
     height: 26px;
     border: 1px solid;
@@ -101,7 +101,7 @@
     &:hover:not(:disabled) {
       background: color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
       color: var(--color-text-primary);
-      border-color: color-mix(in srgb, var(--color-bg-secondary) 82%, white 18%);
+      border-color: color-mix(in srgb, var(--color-bg-secondary) 88%, white 12%);
     }
 
     &:disabled {
@@ -113,12 +113,14 @@
   .delete-btn {
     background: color-mix(in srgb, var(--color-danger) 20%, var(--color-bg-primary));
     color: color-mix(in srgb, var(--color-danger) 90%, white 10%);
-    border-color: color-mix(in srgb, var(--color-danger) 80%, var(--color-bg-primary) 20%);
+    border: 1px solid color-mix(in srgb, var(--color-danger) 80%, var(--color-bg-primary) 20%);
     margin-left: 8px;
+    transition: background-color 0.15s ease, color 0.15s ease;
 
     &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--color-danger) 80%, var(--color-bg-primary) 20%);
-      color: white;
+      background: color-mix(in srgb, var(--color-danger) 30%, var(--color-bg-primary) 70%);
+      color: color-mix(in srgb, var(--color-danger) 95%, white 5%);
+      border-color: color-mix(in srgb, var(--color-danger) 80%, var(--color-bg-primary) 20%); // border fixe
     }
   }
 }

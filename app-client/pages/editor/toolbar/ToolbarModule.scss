@@ -24,7 +24,6 @@
 
   &:hover:not(:disabled) {
     color: var(--color-text-primary);
-    background: color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
   }
 
   &.active {

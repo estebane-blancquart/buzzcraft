@@ -293,7 +293,6 @@ p {
   &:hover {
     background: color-mix(in srgb, var(--color-bg-secondary) 92%, white 8%);
     border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
-    transform: translateY(-1px);
   }
 
   .selector-icon {
@@ -466,12 +465,12 @@ button {
 // Project list specific buttons (compatibility)
 .project-list {
   .btn-primary {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-12);
     box-shadow: var(--shadow-sm);
+    width: 100%;
 
     &:hover {
       box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
     }
   }
 }
@@ -480,7 +479,10 @@ button {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  height: 45vh;
+  overflow: auto;
 }
+
 
 .empty-projects {
   text-align: center;

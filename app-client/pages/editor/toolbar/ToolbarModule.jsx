@@ -42,7 +42,6 @@ function ToolbarModule({
     <header className="editor-header">
       <div className="editor-title">
         <h1>{project.name}</h1>
-        <span className="project-id">({project.id})</span>
         {isDirty && <span className="dirty-indicator">●</span>}
       </div>
 

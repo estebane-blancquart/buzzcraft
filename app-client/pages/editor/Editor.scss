@@ -19,7 +19,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-
+    width: 20%;
+  
   h1 {
     font-size: var(--size-lg);
     font-weight: 600;
@@ -27,13 +28,8 @@
     margin: 0;
   }
 
-  .project-id {
-    font-size: var(--size-sm);
-    color: var(--color-text-secondary);
-    font-weight: normal;
-  }
-
   .dirty-indicator {
+    position: relative;
     color: var(--color-warning);
     font-size: var(--size-lg);
     margin-left: var(--space-2);
@@ -50,6 +46,9 @@
   display: flex;
   gap: var(--space-3);
   align-items: center;
+  width: 20%;
+  display: flex;
+  justify-content: center;
 
   button {
     padding: var(--space-2) var(--space-4);
@@ -66,7 +65,6 @@
       background: var(--color-primary);
       color: var(--color-bg-primary);
       border-color: var(--color-primary);
-
       &:hover:not(:disabled) {
         background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
       }

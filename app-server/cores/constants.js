@@ -378,19 +378,18 @@ return { valid: true };
 
 // === COULEURS LOGS ===
 export const LOG_COLORS = {
-  // Couleurs de base
-  reset: '\x1b[0m',
-  
-  // États projets (cohérent avec dashboard)
-  DRAFT: '\x1b[35m',      // Magenta (comme --color-primary violet)
-  BUILT: '\x1b[34m',      // Bleu (comme #3b82f6)  
-  OFFLINE: '\x1b[33m',    // Jaune (comme --color-warning)
-  ONLINE: '\x1b[32m',     // Vert (comme --color-success)
-  
-  // Actions/logs génériques
-  success: '\x1b[32m',    // Vert
-  error: '\x1b[31m',      // Rouge
-  warning: '\x1b[33m',    // Jaune
-  info: '\x1b[36m',       // Cyan
-  debug: '\x1b[90m'       // Gris
+  projectStates: {
+    DRAFT: { console: '\x1b[35m', css: '#524e9b' },
+    BUILT: { console: '\x1b[34m', css: '#3b82f6' },
+    OFFLINE: { console: '\x1b[33m', css: '#f59e0b' },
+    ONLINE: { console: '\x1b[32m', css: '#10b981' },
+  },
+  messages: {
+    success: { console: '\x1b[32m', css: '#22c55e' },
+    warning: { console: '\x1b[33m', css: '#fbbf24' },
+    error:   { console: '\x1b[31m', css: '#ef4444' },
+    info:    { console: '\x1b[36m', css: '#0ea5e9' },
+    debug:   { console: '\x1b[90m', css: '#9ca3af' },
+  }
 };
+

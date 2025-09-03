@@ -14,9 +14,9 @@ function DeviceToggle({
   disabled = false 
 }) {
   const devices = [
-    { id: DEVICES.DESKTOP, label: 'DESKTOP', icon: '💻' },
-    { id: DEVICES.TABLET, label: 'TABLET', icon: '📱' },
-    { id: DEVICES.MOBILE, label: 'MOBILE', icon: '📱' }
+    { id: DEVICES.DESKTOP, label: 'DESKTOP' },
+    { id: DEVICES.TABLET, label: 'TABLET' },
+    { id: DEVICES.MOBILE, label: 'MOBILE' }
   ];
 
   const handleDeviceClick = (deviceId) => {
@@ -34,7 +34,6 @@ function DeviceToggle({
           onClick={() => handleDeviceClick(device.id)}
           disabled={disabled}
         >
-          <span className="device-icon">{device.icon}</span>
           <span className="device-label">{device.label}</span>
         </button>
       ))}
