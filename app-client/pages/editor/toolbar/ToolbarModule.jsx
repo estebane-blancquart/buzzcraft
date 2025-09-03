@@ -2,9 +2,9 @@ import React from 'react';
 import DeviceToggle from './DeviceToggle.jsx';
 
 /*
- * FAIT QUOI : Container toolbar complet avec titre + DeviceToggle + actions
+ * FAIT QUOI : Container toolbar complet avec titre + DeviceToggle + SAVE seulement
  * REÇOIT : project, selectedDevice, isDirty, onDeviceChange, onSave, onBackToDashboard
- * RETOURNE : Header éditeur complet
+ * RETOURNE : Header éditeur avec SAVE + DASHBOARD uniquement
  * ERREURS : Défensif avec projet null
  */
 
@@ -43,6 +43,7 @@ function ToolbarModule({
       <div className="editor-title">
         <h1>{project.name}</h1>
         {isDirty && <span className="dirty-indicator">●</span>}
+        <span className="project-state">{project.state}</span>
       </div>
 
       <div className="editor-controls">
@@ -60,6 +61,7 @@ function ToolbarModule({
         >
           SAVE
         </button>
+        
         <button 
           className="btn-secondary"
           onClick={handleBack}

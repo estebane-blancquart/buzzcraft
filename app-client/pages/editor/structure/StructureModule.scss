@@ -10,7 +10,6 @@
   flex: 1;
   overflow-y: auto;
   padding: var(--space-2) 0;
-
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%) transparent;
 
@@ -62,18 +61,15 @@
   position: relative;
   flex-shrink: 0;
 
+  // Ligne verticale complète pour tous les éléments d'indentation
   &.has-line::before {
     content: '';
     position: absolute;
     left: 8px;
     top: 0;
     width: 1px;
-    height: 11px;
-    background: #464647;
-  }
-
-  &.has-line.continues::before {
     height: 22px;
+    background: #464647;
   }
 }
 
@@ -156,4 +152,38 @@
   font-size: 10px;
   color: var(--color-text-secondary);
   pointer-events: none;
+}
+
+// === SÉLECTEURS MODAUX ===
+
+.selector-grid {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  justify-content: center;
+}
+
+.selector-item {
+  padding: 20px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  text-align: center;
+  min-width: 120px;
+  
+  &:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+  }
+}
+
+.selector-label {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.selector-description {
+  font-size: 12px;
+  color: #666;
 }

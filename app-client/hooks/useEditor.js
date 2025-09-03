@@ -23,6 +23,7 @@ export function useEditor() {
   const [isDirty, setIsDirty] = useState(false);
   const [showComponentSelector, setShowComponentSelector] = useState(false);
   const [showContainerSelector, setShowContainerSelector] = useState(false);
+  const [pendingSectionId, setPendingSectionId] = useState(null); // Pour retenir l'ID section lors sélection container
 
   // Cache des templates pour éviter les re-fetch
   const [templatesCache, setTemplatesCache] = useState({
@@ -57,7 +58,7 @@ export function useEditor() {
       
       if (data.success) {
         setProject(data.data.project);
-        console.log('Project loaded:', data.project);
+        console.log('Project loaded:', data.data.project);
       } else {
         setError(data.error || 'Failed to load project');
       }
@@ -115,9 +116,12 @@ export function useEditor() {
     try {
       console.log('Saving project...');
       
+      // CORRECTION: Utiliser PATCH au lieu de PUT + project.id numérique
       const response = await fetch(apiUrl(`projects/${project.id}`), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(project)
       });
       
@@ -127,17 +131,20 @@ export function useEditor() {
         setIsDirty(false);
         console.log('Project saved successfully');
       } else {
-        setError(data.error || 'Failed to save project');
+        throw new Error(data.error || 'Save failed');
       }
     } catch (error) {
-      console.error('Save error:', error);
-      setError(`Save failed: ${error.message}`);
+      console.error('Save project error:', error);
+      throw error;
     }
   };
 
   // Mise à jour projet
   const updateProject = (updates) => {
-    setProject(prev => ({ ...prev, ...updates }));
+    setProject(prevProject => ({
+      ...prevProject,
+      ...updates
+    }));
     setIsDirty(true);
   };
 
@@ -147,21 +154,26 @@ export function useEditor() {
     setSelectedElement(element);
   };
 
-  // Mise à jour profonde des éléments dans la hiérarchie BuzzCraft
   const handleElementUpdate = (elementId, updates) => {
-    console.log('Element update:', elementId, updates);
+    console.log('Element updated:', elementId, updates);
     
     if (!project || !elementId) {
       console.warn('Cannot update element: missing project or elementId');
       return;
     }
-
+    
     setProject(prevProject => {
       const updatedProject = JSON.parse(JSON.stringify(prevProject)); // Deep clone
       
-      // Navigation hiérarchique : project → pages → sections → containers → components
+      // Navigation hiérarchique pour mise à jour
       const findAndUpdateElement = (structure) => {
         if (!structure.pages) return false;
+        
+        // Vérifier si c'est le projet
+        if (structure.id === elementId) {
+          Object.assign(structure, updates);
+          return true;
+        }
         
         for (const page of structure.pages) {
           // Vérifier si c'est une page
@@ -301,8 +313,18 @@ export function useEditor() {
     setShowContainerSelector(false);
   };
 
-  const handleAddDiv = () => {
-    console.log('Add div clicked');
+  // CORRIGÉ : Ajout container avec possibilité de spécifier sectionId
+  const handleAddDiv = (sectionId = null) => {
+    console.log('Add div clicked', sectionId ? `for section: ${sectionId}` : '');
+    
+    if (sectionId) {
+      // Si un sectionId est fourni directement, stocker et afficher sélecteur
+      setPendingSectionId(sectionId);
+    } else {
+      // Sinon, utiliser selectedElement comme avant
+      setPendingSectionId(null);
+    }
+    
     setShowContainerSelector(true);
     setShowComponentSelector(false);
   };
@@ -434,12 +456,20 @@ export function useEditor() {
     setIsDirty(true);
   };
 
-  // Ajout de container à la section sélectionnée
+  // CORRIGÉ : Ajout de container à la section sélectionnée ou spécifiée
   const handleContainerSelect = (containerType) => {
     console.log('Container selected:', containerType);
     
-    if (!selectedElement || !project) {
-      console.warn('Cannot add container: no section selected');
+    if (!project) {
+      console.warn('Cannot add container: no project');
+      return;
+    }
+
+    // Utiliser pendingSectionId si disponible, sinon selectedElement.id
+    const targetSectionId = pendingSectionId || selectedElement?.id;
+    
+    if (!targetSectionId) {
+      console.warn('Cannot add container: no section specified');
       return;
     }
     
@@ -450,26 +480,34 @@ export function useEditor() {
       
       // Trouver la section et ajouter le container
       const addContainerToSection = (structure) => {
-        if (!structure.pages) return;
+        if (!structure.pages) return false;
         
         for (const page of structure.pages) {
           if (!page.layout?.sections) continue;
           
           for (const section of page.layout.sections) {
-            if (section.id === selectedElement.id) {
+            if (section.id === targetSectionId) {
               const containerKey = `${containerType}s`; // divs, lists, forms
               if (!section[containerKey]) section[containerKey] = [];
               section[containerKey].push(newContainer);
-              return;
+              console.log(`Container ${containerType} added to section:`, targetSectionId);
+              return true;
             }
           }
         }
+        return false;
       };
       
-      addContainerToSection(updatedProject);
+      const success = addContainerToSection(updatedProject);
+      if (!success) {
+        console.warn('Section not found:', targetSectionId);
+      }
+      
       return updatedProject;
     });
     
+    // Reset pending section et fermer sélecteur
+    setPendingSectionId(null);
     setShowContainerSelector(false);
     setIsDirty(true);
   };
@@ -480,6 +518,7 @@ export function useEditor() {
 
   const handleCloseContainerSelector = () => {
     setShowContainerSelector(false);
+    setPendingSectionId(null); // Reset pending section
   };
 
   // === FONCTIONS UTILITAIRES AVEC TEMPLATES ===
@@ -508,6 +547,8 @@ export function useEditor() {
           name: overrides.name || 'New Section',
           classname: 'py-6',
           divs: [],
+          lists: [],
+          forms: [],
           ...overrides
         };
         
@@ -536,18 +577,18 @@ export function useEditor() {
       // Utiliser le template avec ses defaults
       const component = { 
         id: baseId,
-        type: componentType 
+        type: componentType,
+        ...overrides 
       };
       
       // Appliquer les defaults du schema
-      Object.entries(template.schema).forEach(([key, config]) => {
-        if (config.default !== undefined) {
-          component[key] = config.default;
+      Object.entries(template.schema.properties || {}).forEach(([key, prop]) => {
+        if (prop.default !== undefined && component[key] === undefined) {
+          component[key] = prop.default;
         }
       });
       
-      // Appliquer les overrides
-      return { ...component, ...overrides };
+      return component;
     }
     
     // Fallback si pas de template
@@ -564,51 +605,52 @@ export function useEditor() {
       // Utiliser le template avec ses defaults
       const container = { 
         id: baseId,
-        type: containerType 
+        type: containerType,
+        ...overrides 
       };
       
       // Appliquer les defaults du schema
-      Object.entries(template.schema).forEach(([key, config]) => {
-        if (config.default !== undefined) {
-          if (key === 'components' || key === 'items') {
-            container[key] = [...config.default]; // Clone des arrays
-          } else {
-            container[key] = config.default;
-          }
+      Object.entries(template.schema.properties || {}).forEach(([key, prop]) => {
+        if (prop.default !== undefined && container[key] === undefined) {
+          container[key] = prop.default;
         }
       });
       
-      // Appliquer les overrides
-      return { ...container, ...overrides };
+      return container;
     }
     
     // Fallback si pas de template
     return createContainerFallback(containerType, baseId, overrides);
   };
 
-  // Fallbacks pour composants si templates non disponibles
+  // Fallbacks pour components si templates non disponibles
   const createComponentFallback = (type, baseId, overrides) => {
-    const baseComponent = { id: baseId, type, ...overrides };
+    const baseComponent = { 
+      id: baseId, 
+      type, 
+      ...overrides 
+    };
     
     switch (type) {
       case 'heading':
         return {
           ...baseComponent,
-          tag: 'h2',
           content: 'New Heading',
-          classname: 'text-xl font-semibold'
+          level: 2,
+          classname: 'text-2xl font-bold'
         };
       case 'paragraph':
         return {
           ...baseComponent,
-          content: 'New paragraph content',
+          content: 'New paragraph text',
           classname: 'text-base'
         };
       case 'button':
         return {
           ...baseComponent,
-          content: 'New Button',
-          classname: 'bg-blue-500 text-white px-4 py-2 rounded'
+          content: 'Click me',
+          type: 'button',
+          classname: 'px-4 py-2 bg-blue-500 text-white rounded'
         };
       case 'image':
         return {

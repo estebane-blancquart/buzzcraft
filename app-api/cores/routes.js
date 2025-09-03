@@ -16,8 +16,8 @@ import { deployWorkflow } from "../../app-server/engines/deploy-coordinator.js";
 import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
 import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
 import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
-import { revertWorkflow } from '../../app-server/engines/revert-coordinator.js';
-import { saveWorkflow } from '../../app-server/engines/save-coordinator.js';
+import { revertWorkflow } from "../../app-server/engines/revert-coordinator.js";
+import { saveWorkflow } from "../../app-server/engines/save-coordinator.js";
 
 const router = express.Router();
 
@@ -44,23 +44,25 @@ async function handleWorkflowRequest(req, res) {
   try {
     // Request parsing
     const parsedRequest = await request(req);
-    
+
     if (!parsedRequest.success) {
       console.log(`[ROUTES] Request parsing failed: ${parsedRequest.error}`);
       return res.status(400).json({
         success: false,
-        error: parsedRequest.error
+        error: parsedRequest.error,
       });
     }
 
     // Request processing
     const processedRequest = await processRequest(parsedRequest.data);
-    
+
     if (!processedRequest.success) {
-      console.log(`[ROUTES] Request processing failed: ${processedRequest.error}`);
+      console.log(
+        `[ROUTES] Request processing failed: ${processedRequest.error}`
+      );
       return res.status(400).json({
         success: false,
-        error: processedRequest.error
+        error: processedRequest.error,
       });
     }
 
@@ -73,62 +75,69 @@ async function handleWorkflowRequest(req, res) {
       return res.status(400).json({
         success: false,
         error: `UNSUPPORTED_ACTION: ${action}`,
-        availableActions: Object.keys(WORKFLOW_COORDINATORS)
+        availableActions: Object.keys(WORKFLOW_COORDINATORS),
       });
     }
 
     const workflowResult = await coordinator(projectId, config);
 
     if (!workflowResult.success) {
-      console.log(`[ROUTES] Workflow ${action} failed: ${workflowResult.error}`);
-      return res.status(workflowResult.error === 'NOT_IMPLEMENTED' ? 501 : 500).json({
-        success: false,
-        error: workflowResult.error,
-        message: workflowResult.message,
-        details: workflowResult.details
-      });
+      console.log(
+        `[ROUTES] Workflow ${action} failed: ${workflowResult.error}`
+      );
+
+      // ✅ CORRECTION : RETURN immédiatement, ne pas continuer le traitement
+      return res
+        .status(workflowResult.error === "NOT_IMPLEMENTED" ? 501 : 500)
+        .json({
+          success: false,
+          error: workflowResult.error,
+          message: workflowResult.message,
+          details: workflowResult.details,
+        });
     }
 
     // Response parsing
     const parsedResponse = await response(workflowResult);
-    
+
     if (!parsedResponse.success) {
       console.log(`[ROUTES] Response parsing failed: ${parsedResponse.error}`);
       return res.status(500).json({
         success: false,
-        error: parsedResponse.error
+        error: parsedResponse.error,
       });
     }
 
     // Response processing
     const finalResponse = await processResponse(parsedResponse);
-    
+
     if (!finalResponse.success) {
-      console.log(`[ROUTES] Response processing failed: ${finalResponse.error}`);
+      console.log(
+        `[ROUTES] Response processing failed: ${finalResponse.error}`
+      );
       return res.status(500).json({
         success: false,
-        error: finalResponse.error
+        error: finalResponse.error,
       });
     }
-    
+
     const duration = Date.now() - startTime;
-    
+
     res.json({
       success: true,
       data: finalResponse.data,
       duration,
-      action
+      action,
     });
-    
   } catch (error) {
     const duration = Date.now() - startTime;
     console.log(`[ROUTES] Unexpected error: ${error.message}`);
-    
+
     res.status(500).json({
       success: false,
       error: "INTERNAL_SERVER_ERROR",
       message: "Unexpected error during workflow execution",
-      duration
+      duration,
     });
   }
 }
@@ -142,12 +151,12 @@ async function handleWorkflowRequest(req, res) {
  */
 function handleRouteError(res, error, operation) {
   console.log(`[ROUTES] ${operation} failed: ${error.message}`);
-  
+
   res.status(500).json({
     success: false,
     error: `Server error during ${operation}`,
     message: error.message,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -158,11 +167,11 @@ function handleRouteError(res, error, operation) {
  */
 router.get("/projects", async (req, res) => {
   try {
-    const { PATHS } = await import('../../app-server/cores/constants.js');
-    
+    const { PATHS } = await import("../../app-server/cores/constants.js");
+
     const projectFolders = await readdir(PATHS.dataOutputs);
     const projects = [];
-    
+
     for (const folder of projectFolders) {
       try {
         const projectPath = join(PATHS.dataOutputs, folder);
@@ -175,7 +184,7 @@ router.get("/projects", async (req, res) => {
         continue;
       }
     }
-    
+
     res.json({
       success: true,
       data: {
@@ -194,19 +203,19 @@ router.get("/projects", async (req, res) => {
  */
 router.get("/projects/:id", async (req, res) => {
   const { id: projectId } = req.params;
-  
-  if (!projectId || typeof projectId !== 'string') {
+
+  if (!projectId || typeof projectId !== "string") {
     return res.status(400).json({
       success: false,
-      error: 'projectId must be non-empty string'
+      error: "projectId must be non-empty string",
     });
   }
 
   try {
-    const { PATHS } = await import('../../app-server/cores/constants.js');
-    
+    const { PATHS } = await import("../../app-server/cores/constants.js");
+
     const projectFile = join(PATHS.dataOutputs, projectId, "project.json");
-    
+
     try {
       const content = await readFile(projectFile, "utf8");
       const projectData = JSON.parse(content);
@@ -234,31 +243,32 @@ router.get("/projects/:id", async (req, res) => {
  */
 router.get("/projects/meta/templates", async (req, res) => {
   try {
-    const { PATHS } = await import('../../app-server/cores/constants.js');
-    
+    const { PATHS } = await import("../../app-server/cores/constants.js");
+
     let templates = [];
-    
+
     try {
       const files = await readdir(PATHS.projectTemplates);
-      
+
       templates = files
-        .filter(file => file.endsWith('.json'))
-        .map(file => {
-          const id = file.replace('.json', '');
+        .filter((file) => file.endsWith(".json"))
+        .map((file) => {
+          const id = file.replace(".json", "");
           return {
             id: id,
             name: `${id.charAt(0).toUpperCase() + id.slice(1)} Template`,
-            description: `Template ${id} pour créer votre projet`
+            description: `Template ${id} pour créer votre projet`,
           };
         });
-      
     } catch (dirError) {
-      console.log(`[ROUTES] Templates directory not accessible: ${dirError.message}`);
-      
+      console.log(
+        `[ROUTES] Templates directory not accessible: ${dirError.message}`
+      );
+
       return res.status(500).json({
         success: false,
         error: `Templates directory not found: ${PATHS.projectTemplates}`,
-        details: dirError.message
+        details: dirError.message,
       });
     }
 
@@ -267,16 +277,15 @@ router.get("/projects/meta/templates", async (req, res) => {
       data: {
         templates,
         count: templates.length,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
-
   } catch (error) {
     console.log(`[ROUTES] Templates loading error: ${error.message}`);
-    
+
     res.status(500).json({
       success: false,
-      error: `Failed to load templates: ${error.message}`
+      error: `Failed to load templates: ${error.message}`,
     });
   }
 });

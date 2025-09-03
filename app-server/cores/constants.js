@@ -378,18 +378,29 @@ return { valid: true };
 
 // === COULEURS LOGS ===
 export const LOG_COLORS = {
+  // Couleurs simples pour les logs console
+  success: '\x1b[32m',  // Vert
+  warning: '\x1b[33m',  // Jaune  
+  error: '\x1b[31m',    // Rouge
+  info: '\x1b[36m',     // Cyan
+  debug: '\x1b[90m',    // Gris
+  reset: '\x1b[0m',     // Reset
+  
+  // Couleurs pour états projets
   projectStates: {
     DRAFT: { console: '\x1b[35m', css: '#524e9b' },
     BUILT: { console: '\x1b[34m', css: '#3b82f6' },
     OFFLINE: { console: '\x1b[33m', css: '#f59e0b' },
     ONLINE: { console: '\x1b[32m', css: '#10b981' },
   },
+  
+  // Couleurs détaillées (pour usage avancé)
   messages: {
     success: { console: '\x1b[32m', css: '#22c55e' },
     warning: { console: '\x1b[33m', css: '#fbbf24' },
-    error:   { console: '\x1b[31m', css: '#ef4444' },
-    info:    { console: '\x1b[36m', css: '#0ea5e9' },
-    debug:   { console: '\x1b[90m', css: '#9ca3af' },
+    error: { console: '\x1b[31m', css: '#ef4444' },
+    info: { console: '\x1b[36m', css: '#0ea5e9' },
+    debug: { console: '\x1b[90m', css: '#9ca3af' },
   }
 };
 

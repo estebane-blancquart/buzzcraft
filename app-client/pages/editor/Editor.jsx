@@ -71,6 +71,12 @@ function Editor() {
           onAddDiv={editor.handleAddDiv}
           onAddComponent={editor.handleAddComponent}
           onDeleteElement={editor.handleDeleteElement}
+          showComponentSelector={editor.showComponentSelector}
+          showContainerSelector={editor.showContainerSelector}
+          onComponentSelect={editor.handleComponentSelect}
+          onContainerSelect={editor.handleContainerSelect}
+          onCloseComponentSelector={editor.handleCloseComponentSelector}
+          onCloseContainerSelector={editor.handleCloseContainerSelector}
         />
 
         <PreviewModule
