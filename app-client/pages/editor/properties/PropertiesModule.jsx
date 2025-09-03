@@ -110,12 +110,7 @@ function PropertiesModule({
   };
 
   return (
-    <div className="project-properties">
-      <div className="properties-header">
-        <h3>Properties</h3>
-      </div>
-
-      
+    <div className="project-properties">      
       <div className="properties-content">
         {selectedElement ? (
           <div className="properties-form">

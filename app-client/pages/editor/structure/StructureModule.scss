@@ -7,11 +7,9 @@
 
 .tree-header {
   height: 6%;
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
   flex-shrink: 0;
 
@@ -74,7 +72,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;

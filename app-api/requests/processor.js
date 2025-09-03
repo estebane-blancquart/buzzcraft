@@ -85,6 +85,7 @@ function validateRequestData(requestData) {
     "DELETE",
     "REVERT",
     "UPDATE",
+    "SAVE"
   ];
   if (!VALID_ACTIONS.includes(requestData.action)) {
     return { valid: false, error: `Invalid action: ${requestData.action}` };

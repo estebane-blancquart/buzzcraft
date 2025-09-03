@@ -17,12 +17,14 @@ import { startWorkflow } from "../../app-server/engines/start-coordinator.js";
 import { stopWorkflow } from "../../app-server/engines/stop-coordinator.js";
 import { deleteWorkflow } from "../../app-server/engines/delete-coordinator.js";
 import { revertWorkflow } from '../../app-server/engines/revert-coordinator.js';
+import { saveWorkflow } from '../../app-server/engines/save-coordinator.js';
 
 const router = express.Router();
 
 // Workflow coordinators mapping
 const WORKFLOW_COORDINATORS = {
   CREATE: createWorkflow,
+  SAVE: saveWorkflow,
   BUILD: buildWorkflow,
   DEPLOY: deployWorkflow,
   START: startWorkflow,
@@ -286,6 +288,7 @@ router.post("/projects/:id/build", handleWorkflowRequest);
 router.post("/projects/:id/deploy", handleWorkflowRequest);
 router.post("/projects/:id/start", handleWorkflowRequest);
 router.post("/projects/:id/stop", handleWorkflowRequest);
+router.patch("/projects/:id", handleWorkflowRequest);
 router.delete("/projects/:id", handleWorkflowRequest);
 router.put("/projects/:id/revert", handleWorkflowRequest);
 router.post("/projects/:id/revert", handleWorkflowRequest);

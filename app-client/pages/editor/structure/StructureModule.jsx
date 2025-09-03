@@ -259,11 +259,7 @@ function StructureModule({
   // === MAIN RENDER ===
 
   return (
-    <div className="project-tree">
-      <div className="tree-header">
-        <h3>Structure</h3>
-      </div>
-      
+    <div className="project-tree">     
       <ElementTree
         project={project}
         selectedElement={selectedElement}

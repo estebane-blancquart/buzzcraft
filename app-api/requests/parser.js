@@ -23,9 +23,11 @@ export async function request(req) {
 
     // Détermination de l'action et extraction des paramètres
     const actionResult = determineActionAndParams(req, requestData);
-    
+
     if (!actionResult.success) {
-      console.log(`[REQUEST-PARSER] Action determination failed: ${actionResult.error}`);
+      console.log(
+        `[REQUEST-PARSER] Action determination failed: ${actionResult.error}`
+      );
       return {
         success: false,
         error: actionResult.error,
@@ -53,12 +55,11 @@ export async function request(req) {
         ip: requestData.ip,
       },
     };
-    
+
     return {
       success: true,
       data: parsedData,
     };
-
   } catch (error) {
     console.log(`[REQUEST-PARSER] Parse error: ${error.message}`);
     return {
@@ -84,96 +85,107 @@ function determineActionAndParams(req, requestData) {
       // CREATE: POST /projects
       {
         pattern: /^\/projects\/?$/,
-        method: 'POST',
-        action: 'CREATE',
+        method: "POST",
+        action: "CREATE",
         extractParams: (req, match) => ({
           projectId: generateProjectIdFromBody(req.body),
-          config: req.body || {}
-        })
+          config: req.body || {},
+        }),
+      },
+
+      // SAVE: PATCH /projects/:id
+      {
+        pattern: /^\/projects\/([^\/]+)\/?$/,
+        method: "PATCH",
+        action: "SAVE",
+        extractParams: (req, match) => ({
+          projectId: match[1],
+          config: req.body || {},
+        }),
       },
 
       // BUILD: POST /projects/:id/build
       {
         pattern: /^\/projects\/([^\/]+)\/build\/?$/,
-        method: 'POST',
-        action: 'BUILD',
+        method: "POST",
+        action: "BUILD",
         extractParams: (req, match) => ({
           projectId: match[1],
-          config: req.body || {}
-        })
+          config: req.body || {},
+        }),
       },
 
       // DEPLOY: POST /projects/:id/deploy
       {
         pattern: /^\/projects\/([^\/]+)\/deploy\/?$/,
-        method: 'POST',
-        action: 'DEPLOY',
+        method: "POST",
+        action: "DEPLOY",
         extractParams: (req, match) => ({
           projectId: match[1],
-          config: req.body || {}
-        })
+          config: req.body || {},
+        }),
       },
 
       // START: POST /projects/:id/start
       {
         pattern: /^\/projects\/([^\/]+)\/start\/?$/,
-        method: 'POST',
-        action: 'START',
+        method: "POST",
+        action: "START",
         extractParams: (req, match) => ({
           projectId: match[1],
-          config: req.body || {}
-        })
+          config: req.body || {},
+        }),
       },
 
       // STOP: POST /projects/:id/stop
       {
         pattern: /^\/projects\/([^\/]+)\/stop\/?$/,
-        method: 'POST',
-        action: 'STOP',
+        method: "POST",
+        action: "STOP",
         extractParams: (req, match) => ({
           projectId: match[1],
-          config: req.body || {}
-        })
+          config: req.body || {},
+        }),
       },
 
       // DELETE: DELETE /projects/:id
       {
         pattern: /^\/projects\/([^\/]+)\/?$/,
-        method: 'DELETE',
-        action: 'DELETE',
+        method: "DELETE",
+        action: "DELETE",
         extractParams: (req, match) => ({
           projectId: match[1],
-          config: req.body || {}
-        })
+          config: req.body || {},
+        }),
       },
 
       // REVERT: PUT /projects/:id/revert
       {
         pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
-        method: 'PUT',
-        action: 'REVERT',
+        method: "PUT",
+        action: "REVERT",
         extractParams: (req, match) => ({
           projectId: match[1],
-          config: req.body || {}
-        })
+          config: req.body || {},
+        }),
       },
 
       // REVERT: POST /projects/:id/revert (alternative)
       {
         pattern: /^\/projects\/([^\/]+)\/revert\/?$/,
-        method: 'POST',
-        action: 'REVERT',
+        method: "POST",
+        action: "REVERT",
         extractParams: (req, match) => ({
           projectId: match[1],
-          config: req.body || {}
-        })
-      }
+          config: req.body || {},
+        }),
+      },
     ];
 
     // Recherche du pattern correspondant
     for (const routePattern of routePatterns) {
       if (routePattern.method !== method) continue;
-      
+
       const match = routePattern.pattern.exec(path);
       if (match) {
         try {
@@ -229,19 +241,19 @@ function generateProjectIdFromBody(body) {
   if (!body) return null;
 
   // Si un projectId est explicitement fourni
-  if (body.projectId && typeof body.projectId === 'string') {
+  if (body.projectId && typeof body.projectId === "string") {
     return body.projectId.trim();
   }
 
   // Générer à partir du nom
-  if (body.name && typeof body.name === 'string') {
+  if (body.name && typeof body.name === "string") {
     return body.name
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
   }
 
   // Générer un ID aléatoire si aucune base
@@ -282,7 +294,8 @@ function validateProjectId(projectId, action) {
   if (!/^[a-z0-9-]+$/.test(projectId)) {
     return {
       valid: false,
-      error: "Project ID must contain only lowercase letters, numbers, and hyphens",
+      error:
+        "Project ID must contain only lowercase letters, numbers, and hyphens",
     };
   }
 

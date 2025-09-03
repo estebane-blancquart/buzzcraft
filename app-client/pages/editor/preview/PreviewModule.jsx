@@ -26,10 +26,7 @@ function PreviewModule({
 
   return (
     <div className="project-preview">
-      <div className="preview-header">
-        <h3>Preview</h3>
-      </div>
-      
+
       <CanvasFrame
         project={project}
         device={device}

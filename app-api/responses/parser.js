@@ -113,6 +113,7 @@ function determineActionFromTransition(fromState, toState) {
     'OFFLINE->ONLINE': 'START',
     'ONLINE->OFFLINE': 'STOP',
     'BUILT->DRAFT': 'REVERT',
+    'DRAFT->DRAFT': 'SAVE',
     'ANY->VOID': 'DELETE',
     'DRAFT->VOID': 'DELETE',
     'BUILT->VOID': 'DELETE',
