@@ -101,7 +101,7 @@ export async function buildWorkflow(projectId, config = {}) {
     if (!finalState.success || !finalState.data.isBuilt) {
       console.log(`${LOG_COLORS.warning}[BUILD] Final verification failed but continuing (${duration}ms)${LOG_COLORS.reset}`);
     } else {
-      console.log(`${LOG_COLORS.success}[BUILD] Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
+      console.log(`${LOG_COLORS.success}[BUILD] ${projectId}: Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
     }
     
     return {

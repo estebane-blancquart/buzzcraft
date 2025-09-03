@@ -2,7 +2,7 @@
  * Coordinateur STOP - MOCK HONNÊTE - En attente d'implémentation
  */
 export async function stopWorkflow(projectId, config = {}) {
-  console.log(`[STOP] Mock coordinator called for project: ${projectId}`);
+  console.log(`[STOP] ${projectId}: Mock coordinator called for project: ${projectId}`);
   
   if (!projectId || typeof projectId !== 'string') {
     return {

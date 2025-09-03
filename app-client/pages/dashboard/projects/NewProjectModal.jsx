@@ -135,7 +135,6 @@ function NewProjectModal({
 
     // Debug : tracer les changements de template
     if (name === "template") {
-      console.log("🟡 [CLIENT] Template changed to:", `"${value}"`);
     }
 
     setFormData((prev) => ({ ...prev, [name]: processedValue }));

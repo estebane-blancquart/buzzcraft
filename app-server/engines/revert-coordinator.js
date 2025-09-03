@@ -87,7 +87,7 @@ export async function revertWorkflow(projectId, config = {}) {
     await detectDraftState(projectPath);
     
     const duration = Date.now() - startTime;
-    console.log(`${LOG_COLORS.success}[REVERT] Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
+    console.log(`${LOG_COLORS.success}[REVERT] ${projectId}: Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
     
     // Construction de la réponse
     return {

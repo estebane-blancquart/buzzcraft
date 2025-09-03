@@ -111,7 +111,7 @@ export async function deleteWorkflow(projectId, config = {}) {
     }
     
     const duration = Date.now() - startTime;
-    console.log(`${LOG_COLORS.success}[DELETE] Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
+    console.log(`${LOG_COLORS.success}[DELETE] ${projectId}: Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
     
     // Construction de la réponse
     return {

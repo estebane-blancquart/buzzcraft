@@ -145,7 +145,7 @@ export async function createWorkflow(projectId, config = {}) {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`${LOG_COLORS.success}[CREATE] Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
+    console.log(`${LOG_COLORS.success}[CREATE] ${projectId}: Workflow completed successfully in ${duration}ms${LOG_COLORS.reset}`);
 
     // Construction de la réponse
     return {

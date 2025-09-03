@@ -2,7 +2,7 @@
  * Coordinateur DEPLOY - MOCK HONNÊTE - En attente d'implémentation
  */
 export async function deployWorkflow(projectId, config = {}) {
-  console.log(`[DEPLOY] Mock coordinator called for project: ${projectId}`);
+  console.log(`[DEPLOY] ${projectId}: Mock coordinator called for project: ${projectId}`);
   
   if (!projectId || typeof projectId !== 'string') {
     return {

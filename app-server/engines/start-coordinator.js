@@ -2,7 +2,7 @@
  * Coordinateur START - MOCK HONNÊTE - En attente d'implémentation
  */
 export async function startWorkflow(projectId, config = {}) {
-  console.log(`[START] Mock coordinator called for project: ${projectId}`);
+  console.log(`[START] ${projectId}: Mock coordinator called for project: ${projectId}`);
   
   if (!projectId || typeof projectId !== 'string') {
     return {
