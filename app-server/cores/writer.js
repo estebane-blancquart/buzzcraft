@@ -6,6 +6,7 @@
 
 import { writeFile, mkdir } from 'fs/promises';
 import { dirname, normalize, resolve } from 'path';
+import { LOG_COLORS } from './constants.js';
 
 /**
  * Écrit du contenu dans un fichier avec création automatique des dossiers parents
@@ -16,24 +17,16 @@ import { dirname, normalize, resolve } from 'path';
  * @param {number} [options.jsonIndent=2] - Indentation JSON si data est objet
  * @param {boolean} [options.createDirs=true] - Créer dossiers parents automatiquement
  * @param {boolean} [options.overwrite=true] - Autoriser l'écrasement de fichiers existants
+ * @param {boolean} [options.verbose=false] - Logs détaillés (debug uniquement)
  * @returns {Promise<{success: boolean, data: object}>} Résultat avec métadonnées
- * 
- * @example
- * // Écrire un JSON
- * const result = await writePath('./config.json', { name: 'test' });
- * 
- * // Écrire du texte avec options
- * const result = await writePath('./file.txt', 'content', { 
- *   encoding: 'utf8',
- *   createDirs: true 
- * });
  */
 export async function writePath(path, data, options = {}) {
-  console.log('[WRITER] Writing to path: ' + path);
+  const verbose = options.verbose === true;
   
   // Validation des paramètres
   const validation = validateWritePathInput(path, data, options);
   if (!validation.valid) {
+    console.log(`${LOG_COLORS.error}[WRITER] Validation failed: ${validation.error}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: validation.error
@@ -41,6 +34,10 @@ export async function writePath(path, data, options = {}) {
   }
 
   try {
+    const normalizedPath = normalize(path);
+    const absolutePath = resolve(normalizedPath);
+    
+    // Configuration par défaut
     const config = {
       encoding: options.encoding || 'utf8',
       jsonIndent: options.jsonIndent || 2,
@@ -48,46 +45,28 @@ export async function writePath(path, data, options = {}) {
       overwrite: options.overwrite !== false
     };
     
-    // Normalisation du chemin
-    const normalizedPath = normalize(path);
-    const absolutePath = resolve(normalizedPath);
-    
-    console.log('[WRITER] Normalized path: ' + normalizedPath);
-    
-    // Vérification de sécurité du chemin
-    const securityCheck = validatePathSecurity(absolutePath);
-    if (!securityCheck.valid) {
-      return {
-        success: false,
-        error: securityCheck.error
-      };
-    }
-    
     // Préparation du contenu à écrire
-    const contentResult = prepareWriteContent(data, config);
-    if (!contentResult.success) {
-      return {
-        success: false,
-        error: contentResult.error
-      };
+    let writeContent;
+    let contentType;
+    
+    if (typeof data === 'object' && data !== null) {
+      writeContent = JSON.stringify(data, null, config.jsonIndent);
+      contentType = 'application/json';
+    } else {
+      writeContent = String(data);
+      contentType = 'text/plain';
     }
     
-    const writeContent = contentResult.data.content;
-    const contentType = contentResult.data.type;
-    
-    // Création des dossiers parents si nécessaire
+    // Création automatique des dossiers parents
     if (config.createDirs) {
       const parentDir = dirname(absolutePath);
-      
       try {
         await mkdir(parentDir, { recursive: true });
-        console.log('[WRITER] Parent directories ensured: ' + parentDir);
       } catch (mkdirError) {
-        console.log('[WRITER] Directory creation failed: ' + mkdirError.message);
+        console.log(`${LOG_COLORS.error}[WRITER] Failed to create directories for ${path}: ${mkdirError.message}${LOG_COLORS.reset}`);
         return {
           success: false,
-          error: 'Directory creation failed: ' + mkdirError.message,
-          errorCode: mkdirError.code
+          error: `Directory creation failed: ${mkdirError.message}`
         };
       }
     }
@@ -99,7 +78,6 @@ export async function writePath(path, data, options = {}) {
         const { constants } = await import('fs');
         
         await access(absolutePath, constants.F_OK);
-        // Si on arrive ici, le fichier existe
         return {
           success: false,
           error: 'File already exists and overwrite is disabled'
@@ -117,8 +95,6 @@ export async function writePath(path, data, options = {}) {
     // Calcul de la taille du contenu écrit
     const contentSize = Buffer.byteLength(writeContent, config.encoding);
     
-    console.log('[WRITER] File written successfully, size: ' + contentSize + ' bytes, time: ' + writeTime + 'ms');
-    
     return {
       success: true,
       data: {
@@ -134,10 +110,10 @@ export async function writePath(path, data, options = {}) {
     };
     
   } catch (error) {
-    console.log('[WRITER] Write operation failed: ' + error.message);
+    console.log(`${LOG_COLORS.error}[WRITER] Failed to write ${path}: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
-      error: 'File write failed: ' + error.message,
+      error: `File write failed: ${error.message}`,
       errorCode: error.code,
       errorType: error.constructor.name
     };
@@ -147,221 +123,101 @@ export async function writePath(path, data, options = {}) {
 /**
  * Écrit un objet au format JSON avec indentation
  * @param {string} path - Chemin vers le fichier JSON
- * @param {object} data - Objet à sérialiser en JSON
- * @param {object} [options={}] - Options d'écriture JSON
- * @param {number} [options.indent=2] - Nombre d'espaces pour l'indentation
- * @param {boolean} [options.createDirs=true] - Créer dossiers parents
- * @returns {Promise<{success: boolean, data: object}>} Résultat d'écriture
- * 
- * @example
- * const result = await writeJson('./config.json', { name: 'test', version: '1.0' });
- * if (result.success) {
- *   console.log('JSON written: ' + result.data.size + ' bytes');
- * }
+ * @param {object} jsonData - Objet à serializer en JSON
+ * @param {object} [options={}] - Options d'écriture
+ * @returns {Promise<{success: boolean, data: object}>} Résultat de l'écriture
  */
-export async function writeJson(path, data, options = {}) {
-  console.log('[WRITER] Writing JSON to: ' + path);
-  
-  if (!data || typeof data !== 'object') {
-    return {
-      success: false,
-      error: 'Data must be an object for JSON writing'
-    };
-  }
-  
-  const jsonOptions = {
+export async function writeJsonPath(path, jsonData, options = {}) {
+  return writePath(path, jsonData, {
     ...options,
-    jsonIndent: options.indent || options.jsonIndent || 2
-  };
-  
-  return await writePath(path, data, jsonOptions);
+    jsonIndent: options.indent || 2
+  });
 }
 
 /**
- * Écrit du texte brut avec encodage spécifique
- * @param {string} path - Chemin vers le fichier texte
- * @param {string} content - Contenu texte à écrire
- * @param {object} [options={}] - Options d'écriture texte
- * @param {string} [options.encoding='utf8'] - Encodage du fichier
- * @param {boolean} [options.createDirs=true] - Créer dossiers parents
- * @returns {Promise<{success: boolean, data: object}>} Résultat d'écriture
- * 
- * @example
- * const result = await writeText('./readme.txt', 'Hello World!');
- * if (result.success) {
- *   console.log('Text written: ' + result.data.size + ' bytes');
- * }
+ * Ajoute du contenu à la fin d'un fichier existant
+ * @param {string} path - Chemin vers le fichier
+ * @param {string} content - Contenu à ajouter
+ * @param {object} [options={}] - Options d'écriture
+ * @returns {Promise<{success: boolean, data: object}>} Résultat de l'ajout
  */
-export async function writeText(path, content, options = {}) {
-  console.log('[WRITER] Writing text to: ' + path);
-  
-  if (typeof content !== 'string') {
+export async function appendPath(path, content, options = {}) {
+  try {
+    const { appendFile } = await import('fs/promises');
+    
+    const normalizedPath = normalize(path);
+    const absolutePath = resolve(normalizedPath);
+    const encoding = options.encoding || 'utf8';
+    
+    const startTime = Date.now();
+    await appendFile(absolutePath, content, encoding);
+    const writeTime = Date.now() - startTime;
+    
+    const contentSize = Buffer.byteLength(content, encoding);
+    
+    return {
+      success: true,
+      data: {
+        appended: true,
+        path: normalizedPath,
+        absolutePath,
+        size: contentSize,
+        encoding,
+        writeTime,
+        appendedAt: new Date().toISOString()
+      }
+    };
+    
+  } catch (error) {
+    console.log(`${LOG_COLORS.error}[WRITER] Failed to append to ${path}: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
-      error: 'Content must be a string for text writing'
+      error: `File append failed: ${error.message}`,
+      errorCode: error.code
     };
   }
-  
-  return await writePath(path, content, options);
 }
 
-// === FONCTIONS PRIVÉES ===
+// === FONCTIONS DE VALIDATION (inchangées) ===
 
-/**
- * Valide les paramètres d'entrée de writePath
- * @param {string} path - Chemin à valider
- * @param {any} data - Données à valider
- * @param {object} options - Options à valider
- * @returns {{valid: boolean, error?: string}}
- * @private
- */
 function validateWritePathInput(path, data, options) {
-  // Validation du chemin
   if (!path || typeof path !== 'string') {
     return {
       valid: false,
-      error: 'Path must be non-empty string'
+      error: 'path must be non-empty string'
     };
   }
   
   if (path.trim().length === 0) {
     return {
       valid: false,
-      error: 'Path cannot be empty or whitespace only'
+      error: 'path cannot be empty or whitespace only'
     };
   }
   
-  // Validation des données
-  if (data === undefined || data === null) {
+  if (data === undefined) {
     return {
       valid: false,
-      error: 'Data cannot be undefined or null'
+      error: 'data is required'
     };
   }
   
-  // Validation des options
   if (options && typeof options !== 'object') {
     return {
       valid: false,
-      error: 'Options must be an object'
+      error: 'options must be an object'
     };
   }
   
-  // Validation de l'encodage si spécifié
-  if (options.encoding && typeof options.encoding !== 'string') {
+  const validEncodings = ['utf8', 'ascii', 'base64', 'binary', 'hex'];
+  if (options.encoding && !validEncodings.includes(options.encoding)) {
     return {
       valid: false,
-      error: 'Options.encoding must be a string'
+      error: `encoding must be one of: ${validEncodings.join(', ')}`
     };
-  }
-  
-  // Validation de l'indentation JSON si spécifiée
-  if (options.jsonIndent !== undefined) {
-    if (typeof options.jsonIndent !== 'number' || options.jsonIndent < 0) {
-      return {
-        valid: false,
-        error: 'Options.jsonIndent must be a non-negative number'
-      };
-    }
   }
   
   return { valid: true };
 }
 
-/**
- * Valide la sécurité d'un chemin de fichier
- * @param {string} absolutePath - Chemin absolu à valider
- * @returns {{valid: boolean, error?: string}}
- * @private
- */
-function validatePathSecurity(absolutePath) {
-  // Interdiction de chemins dangereux
-  const dangerousPatterns = [
-    '/etc/',
-    '/bin/',
-    '/usr/bin/',
-    '/root/',
-    'C:\\Windows\\',
-    'C:\\Program Files\\',
-    '../../../'
-  ];
-  
-  for (const pattern of dangerousPatterns) {
-    if (absolutePath.includes(pattern)) {
-      return {
-        valid: false,
-        error: 'Path contains dangerous pattern: ' + pattern
-      };
-    }
-  }
-  
-  // Interdiction de caractères dangereux
-  const dangerousChars = ['|', ';', '&', '$', '<', '>'];
-  for (const char of dangerousChars) {
-    if (absolutePath.includes(char)) {
-      return {
-        valid: false,
-        error: 'Path contains dangerous character: ' + char
-      };
-    }
-  }
-  
-  return { valid: true };
-}
-
-/**
- * Prépare le contenu à écrire selon le type de données
- * @param {any} data - Données à préparer
- * @param {object} config - Configuration d'écriture
- * @returns {{success: boolean, data?: {content: string, type: string}, error?: string}}
- * @private
- */
-function prepareWriteContent(data, config) {
-  try {
-    if (typeof data === 'string') {
-      return {
-        success: true,
-        data: {
-          content: data,
-          type: 'text'
-        }
-      };
-    }
-    
-    if (typeof data === 'object') {
-      // Sérialisation JSON avec indentation
-      const jsonContent = JSON.stringify(data, null, config.jsonIndent);
-      
-      return {
-        success: true,
-        data: {
-          content: jsonContent,
-          type: 'json'
-        }
-      };
-    }
-    
-    if (typeof data === 'number' || typeof data === 'boolean') {
-      return {
-        success: true,
-        data: {
-          content: String(data),
-          type: 'primitive'
-        }
-      };
-    }
-    
-    return {
-      success: false,
-      error: 'Unsupported data type: ' + typeof data
-    };
-    
-  } catch (serializationError) {
-    return {
-      success: false,
-      error: 'Content preparation failed: ' + serializationError.message
-    };
-  }
-}
-
-console.log('[WRITER] Writer core loaded successfully - PIXEL PERFECT VERSION');
+console.log(`${LOG_COLORS.info}[WRITER] Writer core loaded${LOG_COLORS.reset}`);

@@ -1,164 +1,295 @@
 /**
- * Request Processor - Traitement des requêtes HTTP - VERSION CORRIGÉE PIXEL PERFECT
- * @description Transforme les données parsées en format coordinateur
+ * CALL 2: Request Processor - Process données parsées en données système
+ * @param {object} requestData - Données parsées du request parser
+ * @returns {Promise<{success: boolean, data: object}>} Données système pour workflow
+ * @throws {Error} ValidationError si requestData invalide
  */
 
-/**
- * Traite une requête parsée pour la transformer en format coordinateur
- * @param {object} requestData - Données de requête parsées
- * @returns {Promise<{success: boolean, data: object}>} Données traitées
- */
 export async function process(requestData) {
-  console.log("��� [API] === DEBUG process START ===");
-  console.log("��� [API] requestData complet:", JSON.stringify(requestData, null, 2));
-
-  try {
-    // Validation des données d'entrée
-    if (!requestData || typeof requestData !== 'object') {
-      return {
-        success: false,
-        error: 'Invalid request data: must be object'
-      };
-    }
-
-    // Traitement selon l'action
-    switch (requestData.action) {
-      case 'CREATE':
-        return await processCreateRequest(requestData);
-      case 'BUILD':
-      case 'DEPLOY':
-      case 'START':
-      case 'STOP':
-      case 'DELETE':
-      case 'REVERT':
-        return await processProjectAction(requestData);
-      default:
-        return {
-          success: false,
-          error: `Unknown action: ${requestData.action}`
-        };
-    }
-    
-  } catch (error) {
-    console.log(`[REQUEST-PROCESSOR] Processing error: ${error.message}`);
-    return {
-      success: false,
-      error: `Request processing failed: ${error.message}`
-    };
-  }
-}
-
-/**
- * Traite une requête CREATE spécifiquement
- * @param {object} requestData - Données de requête CREATE
- * @returns {Promise<{success: boolean, data: object}>} Données CREATE traitées
- * @private
- */
-async function processCreateRequest(requestData) {
-  console.log("[REQUEST-PROCESSOR] CALL 2: Processing CREATE request...");
-  
-  // PROBLÈME IDENTIFIÉ : Les données arrivent dans rawRequest.body
-  let formData;
-  
-  // Récupération des données du formulaire
-  if (requestData.rawRequest && requestData.rawRequest.body) {
-    formData = requestData.rawRequest.body;
-    console.log("��� [API] formData from body:", JSON.stringify(formData, null, 2));
-  } else {
-    console.log("��� [API] No body found in rawRequest");
-    return {
-      success: false,
-      error: 'Missing required field: form data'
-    };
+  // Validation du paramètre d'entrée
+  const validation = validateRequestData(requestData);
+  if (!validation.valid) {
+    console.log(`[REQUEST-PROCESSOR] Validation failed: ${validation.error}`);
+    throw new Error(`ValidationError: ${validation.error}`);
   }
 
-  // Validation des champs requis
-  if (!formData.projectId || typeof formData.projectId !== 'string') {
-    console.log("[REQUEST-PROCESSOR] Validation failed: Missing required field: projectId");
-    return {
-      success: false,
-      error: 'Missing required field: projectId'
-    };
-  }
+  const { action, projectId, config, metadata } = requestData;
 
-  if (!formData.name || typeof formData.name !== 'string') {
-    console.log("[REQUEST-PROCESSOR] Validation failed: Missing required field: name");
-    return {
-      success: false,
-      error: 'Missing required field: name'
-    };
-  }
-
-  if (!formData.template || typeof formData.template !== 'string') {
-    console.log("[REQUEST-PROCESSOR] Validation failed: Missing required field: template");
-    return {
-      success: false,
-      error: 'Missing required field: template'
-    };
-  }
-
-  // Construction des données pour le coordinateur
+  // Construction des données système pour le workflow
   const processedData = {
-    action: 'CREATE',
-    projectId: formData.projectId.trim(),
-    config: {
-      name: formData.name.trim(),
-      template: formData.template.trim(),
-      description: formData.description || ''
+    action,
+    projectId,
+    projectPath: generateProjectPath(projectId),
+    config: processActionConfig(action, config, projectId),
+    metadata: {
+      ...metadata,
+      processedAt: new Date().toISOString(),
+      processedBy: "request-processor",
+      workflow: action,
     },
-    metadata: {
-      ...requestData.metadata,
-      processedBy: 'request-processor',
-      processedAt: new Date().toISOString()
-    }
+    validation: {
+      passed: true,
+      timestamp: new Date().toISOString(),
+      rules: generateValidationRules(action),
+    },
   };
 
-  console.log("��� [API] processedData final:", JSON.stringify(processedData, null, 2));
-  console.log("[REQUEST-PROCESSOR] CREATE request processed successfully");
+  // Validation finale des données système
+  const systemValidation = validateSystemData(processedData);
+  if (!systemValidation.valid) {
+    console.log(`[REQUEST-PROCESSOR] System validation failed: ${systemValidation.error}`);
+    return {
+      success: false,
+      error: `System data validation failed: ${systemValidation.error}`,
+    };
+  }
 
+  // Enrichissement avec données spécifiques au workflow
+  enrichDataForWorkflow(processedData, action, config);
+
+  console.log(`[REQUEST-PROCESSOR] ${action} request processed successfully`);
   return {
     success: true,
-    data: processedData
+    data: processedData,
   };
 }
 
 /**
- * Traite une requête d'action projet (BUILD, DEPLOY, etc.)
- * @param {object} requestData - Données de requête d'action
- * @returns {Promise<{success: boolean, data: object}>} Données d'action traitées
- * @private
+ * Valide la structure des données reçues du parser
+ * @param {object} requestData - Données à valider
+ * @returns {{valid: boolean, error?: string}}
  */
-async function processProjectAction(requestData) {
-  console.log(`[REQUEST-PROCESSOR] CALL 2: Processing ${requestData.action} request...`);
+function validateRequestData(requestData) {
+  if (!requestData) {
+    return { valid: false, error: "requestData is required" };
+  }
 
-  // Extraction projectId du path pour les actions
-  const projectId = requestData.rawRequest?.params?.id;
-  
-  if (!projectId) {
+  if (typeof requestData !== "object") {
+    return { valid: false, error: "requestData must be an object" };
+  }
+
+  const requiredFields = ["action", "projectId", "config", "metadata"];
+  for (const field of requiredFields) {
+    if (!requestData[field]) {
+      return { valid: false, error: `Missing required field: ${field}` };
+    }
+  }
+
+  // Validation de l'action
+  const VALID_ACTIONS = [
+    "CREATE",
+    "BUILD",
+    "DEPLOY",
+    "START",
+    "STOP",
+    "DELETE",
+    "REVERT",
+    "UPDATE",
+  ];
+  if (!VALID_ACTIONS.includes(requestData.action)) {
+    return { valid: false, error: `Invalid action: ${requestData.action}` };
+  }
+
+  // Validation du projectId
+  if (
+    typeof requestData.projectId !== "string" ||
+    requestData.projectId.length === 0
+  ) {
+    return { valid: false, error: "projectId must be non-empty string" };
+  }
+
+  // Validation de la config
+  if (typeof requestData.config !== "object") {
+    return { valid: false, error: "config must be an object" };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Génère le chemin système vers le projet
+ * @param {string} projectId - ID du projet
+ * @returns {string} Chemin complet vers le projet
+ */
+function generateProjectPath(projectId) {
+  return `./app-server/data/outputs/${projectId}`;
+}
+
+/**
+ * Process la configuration selon l'action
+ * @param {string} action - Action à exécuter
+ * @param {object} config - Configuration de base
+ * @param {string} projectId - ID du projet
+ * @returns {object} Configuration enrichie
+ */
+function processActionConfig(action, config, projectId) {
+  const enrichedConfig = {
+    ...config,
+    action,
+    projectId,
+    timestamp: new Date().toISOString(),
+  };
+
+  switch (action) {
+    case "CREATE":
+      return {
+        ...enrichedConfig,
+        template: config.template || "basic",
+        overwrite: config.overwrite !== false,
+        validateSchema: config.validateSchema !== false,
+      };
+
+    case "BUILD":
+      return {
+        ...enrichedConfig,
+        targets: config.targets || ["app-visitor"],
+        minify: config.minify !== false,
+        sourceMaps: config.sourceMaps === true,
+        optimizeImages: config.optimizeImages !== false,
+      };
+
+    case "DEPLOY":
+      return {
+        ...enrichedConfig,
+        environment: config.environment || "development",
+        ports: config.ports || { http: 3000, https: 3443 },
+        healthCheck: config.healthCheck !== false,
+      };
+
+    case "DELETE":
+      return {
+        ...enrichedConfig,
+        force: config.force === true,
+        createBackup: config.createBackup !== false,
+      };
+
+    case "UPDATE":
+      return {
+        ...enrichedConfig,
+        version: config.version || "1.0.0",
+        strategy: config.strategy || "rolling",
+        rollbackOnFailure: config.rollbackOnFailure !== false,
+      };
+
+    default:
+      return enrichedConfig;
+  }
+}
+
+/**
+ * Valide les données système générées
+ * @param {object} systemData - Données système à valider
+ * @returns {{valid: boolean, error?: string}}
+ */
+function validateSystemData(systemData) {
+  const requiredFields = [
+    "action",
+    "projectId",
+    "projectPath",
+    "config",
+    "metadata",
+    "validation",
+  ];
+
+  for (const field of requiredFields) {
+    if (!systemData[field]) {
+      return { valid: false, error: `Missing system field: ${field}` };
+    }
+  }
+
+  // Validation du projectPath
+  if (!systemData.projectPath.includes(systemData.projectId)) {
+    return { valid: false, error: "projectPath must contain projectId" };
+  }
+
+  // Validation de la metadata
+  if (!systemData.metadata.processedAt || !systemData.metadata.processedBy) {
     return {
-      success: false,
-      error: 'Missing required field: projectId in path'
+      valid: false,
+      error: "Metadata must contain processedAt and processedBy",
     };
   }
 
-  // Construction des données pour le coordinateur
-  const processedData = {
-    action: requestData.action,
-    projectId: projectId,
-    config: requestData.config || {},
-    metadata: {
-      ...requestData.metadata,
-      processedBy: 'request-processor',
-      processedAt: new Date().toISOString()
-    }
+  return { valid: true };
+}
+
+/**
+ * Génère les règles de validation pour l'action
+ * @param {string} action - Action concernée
+ * @returns {string[]} Liste des règles appliquées
+ */
+function generateValidationRules(action) {
+  const commonRules = [
+    "projectId-format",
+    "action-validity",
+    "config-structure",
+  ];
+
+  const actionRules = {
+    CREATE: [...commonRules, "unique-project", "template-exists"],
+    BUILD: [...commonRules, "project-exists", "state-draft"],
+    DEPLOY: [...commonRules, "project-exists", "state-built"],
+    START: [...commonRules, "project-exists", "state-offline"],
+    STOP: [...commonRules, "project-exists", "state-online"],
+    DELETE: [...commonRules, "project-exists"],
+    REVERT: [...commonRules, "project-exists", "revert-allowed"],
+    UPDATE: [...commonRules, "project-exists", "update-allowed"],
   };
 
-  console.log(`[REQUEST-PROCESSOR] ${requestData.action} request processed successfully`);
+  return actionRules[action] || commonRules;
+}
 
-  return {
-    success: true,
-    data: processedData
+/**
+ * Enrichit les données avec informations spécifiques au workflow
+ * @param {object} processedData - Données à enrichir (modifiées en place)
+ * @param {string} action - Action concernée
+ * @param {object} config - Configuration source
+ */
+function enrichDataForWorkflow(processedData, action, config) {
+  // Ajout de données spécifiques selon l'action
+  switch (action) {
+    case "CREATE":
+      processedData.workflow = {
+        type: "creation",
+        expectedDuration: 5000,
+        rollbackSupported: true,
+        stateTransition: "VOID -> DRAFT",
+      };
+      break;
+
+    case "BUILD":
+      processedData.workflow = {
+        type: "compilation",
+        expectedDuration: 30000,
+        rollbackSupported: true,
+        stateTransition: "DRAFT -> BUILT",
+      };
+      break;
+
+    case "DELETE":
+      processedData.workflow = {
+        type: "destruction",
+        expectedDuration: 2000,
+        rollbackSupported: false,
+        stateTransition: "ANY -> VOID",
+      };
+      break;
+
+    default:
+      processedData.workflow = {
+        type: "generic",
+        expectedDuration: 10000,
+        rollbackSupported: false,
+        stateTransition: "UNKNOWN",
+      };
+  }
+
+  // Ajout timestamp de début de traitement
+  processedData.processing = {
+    startedAt: new Date().toISOString(),
+    requestProcessor: true,
+    nextStage: "workflow-coordinator",
   };
 }
 
-console.log("[REQUEST-PROCESSOR] Request processor loaded successfully - PIXEL PERFECT VERSION");
+console.log(`[REQUEST-PROCESSOR] Request processor loaded successfully - PIXEL PERFECT VERSION`);

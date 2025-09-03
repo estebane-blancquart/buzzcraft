@@ -56,7 +56,7 @@ export function useEditor() {
       const data = await response.json();
       
       if (data.success) {
-        setProject(data.project);
+        setProject(data.data.project);
         console.log('Project loaded:', data.project);
       } else {
         setError(data.error || 'Failed to load project');
@@ -80,7 +80,7 @@ export function useEditor() {
         const componentTemplates = new Map();
         const containerTemplates = new Map();
         
-        data.templates.forEach(template => {
+        data.data.templates.forEach(template => {
           // Les templates components sont identifiés par leur type dans le schema
           if (template.type && ['heading', 'paragraph', 'button', 'image', 'video', 'link'].includes(template.type)) {
             componentTemplates.set(template.type, template);

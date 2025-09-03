@@ -1,30 +1,27 @@
 /**
- * Détecteur d'état BUILT - VERSION PIXEL PARFAIT CORRIGÉE
+ * Détecteur d'état BUILT - VERSION PIXEL PARFAIT
  * @module built-detector
  * @description Détermine si un projet est dans l'état BUILT (compilé, prêt à déployer)
  */
 
 import { readPath, checkFileAccess, readDirectory } from '../cores/reader.js';
 import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
+import { LOG_COLORS } from '../cores/constants.js';
 import { basename } from 'path';
 
 /**
  * Détecte si un projet est dans l'état BUILT
  * @param {string} projectPath - Chemin vers le dossier du projet
  * @returns {Promise<{success: boolean, data: object}>} Résultat de détection
- * 
- * @example
- * const result = await detectBuiltState('./outputs/mon-projet');
- * if (result.success && result.data.isBuilt) {
- *   console.log('Projet compilé, déploiement possible');
- * }
  */
 export async function detectBuiltState(projectPath) {
-  console.log(`[BUILT-DETECTOR] 🔍 Detecting BUILT state for: ${projectPath}`);
+  // 1. DÉBUT
+  console.log(`${LOG_COLORS.BUILT}[BUILT-DETECTOR] Detecting BUILT state for ${basename(projectPath)}${LOG_COLORS.reset}`);
   
   // Validation des paramètres
   const validation = validateBuiltDetectionInput(projectPath);
   if (!validation.valid) {
+    console.log(`${LOG_COLORS.error}[BUILT-DETECTOR] Invalid input: ${validation.error}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: validation.error
@@ -36,156 +33,87 @@ export async function detectBuiltState(projectPath) {
     const conflicts = [];
     let projectData = null;
     let buildArtifacts = [];
+    let confidence = 0;
     
-    // CRITÈRE 1: Le fichier project.json doit exister avec state BUILT
+    // CRITÈRE 1: Vérification du fichier project.json
     const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     
-    console.log(`[BUILT-DETECTOR] 📄 Checking project file: ${projectFilePath}`);
     const projectFileResult = await readPath(projectFilePath, { 
       parseJson: true, 
-      includeStats: true 
+      required: false 
     });
     
-    if (!projectFileResult.success || !projectFileResult.data.exists) {
-      conflicts.push('Project file does not exist');
-      console.log(`[BUILT-DETECTOR] ❌ Project file not found`);
-    } else {
+    let hasProjectFile = false;
+    let hasValidJson = false;
+    let hasBuiltState = false;
+    
+    if (projectFileResult.success && projectFileResult.data.exists) {
+      hasProjectFile = true;
       evidence.push('Project file exists');
-      console.log(`[BUILT-DETECTOR] ✅ Project file found`);
+      confidence += 25;
       
-      // Vérification du parsing JSON
-      if (projectFileResult.data.jsonError) {
-        conflicts.push(`Project file has invalid JSON: ${projectFileResult.data.jsonError}`);
-        console.log(`[BUILT-DETECTOR] ❌ Invalid JSON: ${projectFileResult.data.jsonError}`);
-      } else if (projectFileResult.data.parsed) {
+      if (!projectFileResult.data.jsonError) {
+        hasValidJson = true;
         projectData = projectFileResult.data.parsed;
-        evidence.push('Project file contains valid JSON');
-        console.log(`[BUILT-DETECTOR] ✅ Valid JSON parsed`);
+        evidence.push('Valid JSON parsed');
+        confidence += 25;
         
-        // CRITÈRE 2: Le state doit être BUILT
         if (projectData.state === 'BUILT') {
+          hasBuiltState = true;
           evidence.push('Project state is BUILT');
-          console.log(`[BUILT-DETECTOR] ✅ Project state confirmed: BUILT`);
-          
-          // CRITÈRE 3: Métadonnées de build (NON-BLOQUANT)
-          if (projectData.build) {
-            evidence.push('Project has build metadata');
-            console.log(`[BUILT-DETECTOR] ✅ Build metadata present`);
-            
-            if (projectData.build.builtAt) {
-              evidence.push('Build timestamp present');
-              console.log(`[BUILT-DETECTOR] ✅ Build timestamp: ${projectData.build.builtAt}`);
-            } else {
-              console.log(`[BUILT-DETECTOR] ⚠️ Missing build timestamp (non-critical)`);
-            }
-            
-            if (projectData.build.version) {
-              evidence.push('Build version present');
-              console.log(`[BUILT-DETECTOR] ✅ Build version: ${projectData.build.version}`);
-            } else {
-              console.log(`[BUILT-DETECTOR] ⚠️ Missing build version (non-critical)`);
-            }
-            
-          } else {
-            console.log(`[BUILT-DETECTOR] ⚠️ Missing build metadata (non-critical)`);
-          }
-          
+          confidence += 30;
         } else {
-          conflicts.push(`Project state is ${projectData.state || 'undefined'}, not BUILT`);
-          console.log(`[BUILT-DETECTOR] ❌ State is ${projectData.state}, not BUILT`);
+          conflicts.push(`State is ${projectData.state}, expected BUILT`);
         }
         
+        if (projectData.build) {
+          evidence.push('Build metadata present');
+          confidence += 10;
+        }
       } else {
-        conflicts.push('Project file exists but contains no parseable content');
-        console.log(`[BUILT-DETECTOR] ❌ Project file not parseable`);
+        conflicts.push('Invalid JSON in project file');
       }
+    } else {
+      conflicts.push('Project file not found');
     }
     
-    // CRITÈRE 4: Doit avoir des artifacts de build (fichiers générés)
-    console.log(`[BUILT-DETECTOR] 🔧 Checking build artifacts...`);
-    const buildArtifactsCheck = await checkBuildArtifacts(projectPath);
-    if (buildArtifactsCheck.hasArtifacts) {
-      evidence.push(`Build artifacts found: ${buildArtifactsCheck.foundArtifacts.length} files`);
-      buildArtifacts = buildArtifactsCheck.foundArtifacts;
-      console.log(`[BUILT-DETECTOR] ✅ ${buildArtifacts.length} build artifacts found`);
+    // CRITÈRE 2: Vérification des artifacts de build
+    const artifactsResult = await scanForBuildArtifacts(projectPath);
+    buildArtifacts = artifactsResult.foundArtifacts;
+    
+    let hasArtifacts = false;
+    if (artifactsResult.hasArtifacts) {
+      hasArtifacts = true;
+      evidence.push(`Build artifacts found: ${buildArtifacts.length} files`);
+      confidence += 20;
     } else {
       conflicts.push('No build artifacts found');
-      console.log(`[BUILT-DETECTOR] ❌ No build artifacts found`);
     }
     
-    // CRITÈRE 5: Validation de la cohérence des artifacts (NON-BLOQUANT)
-    if (buildArtifacts.length > 0 && projectData?.build) {
-      const expectedFiles = projectData.build.generatedFiles || 0;
-      if (expectedFiles === 0 || buildArtifacts.length >= expectedFiles) {
-        evidence.push('Build artifacts count matches metadata');
-        console.log(`[BUILT-DETECTOR] ✅ Artifacts count OK: ${buildArtifacts.length} >= ${expectedFiles}`);
-      } else {
-        console.log(`[BUILT-DETECTOR] ⚠️ Expected ${expectedFiles} files, found ${buildArtifacts.length} (non-critical)`);
-      }
-    }
-    
-    // CRITÈRE 6: Dossier de build doit exister et contenir des fichiers
-    console.log(`[BUILT-DETECTOR] 📁 Analyzing directory structure...`);
+    // CRITÈRE 3: Analyse de la structure de répertoire  
     const directoryAnalysis = await analyzeBuiltDirectoryStructure(projectPath);
-    console.log(`[BUILT-DETECTOR] 📊 Directory analysis:`, directoryAnalysis);
-    
     if (directoryAnalysis.isBuiltLike) {
       evidence.push('Directory structure indicates BUILT state');
-      console.log(`[BUILT-DETECTOR] ✅ Directory structure looks BUILT-like`);
-    } else {
-      // CHANGEMENT: Warning au lieu de conflit bloquant
-      console.log(`[BUILT-DETECTOR] ⚠️ Directory structure concern: ${directoryAnalysis.reason}`);
+      confidence += 8;
     }
     
-    // NOUVELLE LOGIQUE DE DÉTERMINATION FINALE
-    console.log(`[BUILT-DETECTOR] 🎯 Computing final decision...`);
-    console.log(`[BUILT-DETECTOR] 📈 Evidence collected: ${evidence.length} items`);
-    evidence.forEach((item, i) => console.log(`[BUILT-DETECTOR]    ${i+1}. ${item}`));
-    console.log(`[BUILT-DETECTOR] ⚠️ Conflicts found: ${conflicts.length} items`);
-    conflicts.forEach((item, i) => console.log(`[BUILT-DETECTOR]    ${i+1}. ${item}`));
-    
-    // LOGIQUE PONDÉRÉE: Au lieu de tout-ou-rien
-    let score = 0;
-    
-    // Critères OBLIGATOIRES (bloquants)
-    const hasProjectFile = evidence.some(e => e.includes('Project file exists'));
-    const hasValidJson = evidence.some(e => e.includes('valid JSON'));
-    const hasBuiltState = evidence.some(e => e.includes('state is BUILT'));
-    const hasArtifacts = evidence.some(e => e.includes('Build artifacts found'));
-    
-    if (hasProjectFile) score += 25;
-    if (hasValidJson) score += 25; 
-    if (hasBuiltState) score += 30; // Critère le plus important
-    if (hasArtifacts) score += 20;
-    
-    // BONUS pour les critères secondaires
-    if (evidence.some(e => e.includes('build metadata'))) score += 5;
-    if (evidence.some(e => e.includes('Directory structure indicates'))) score += 10;
-    if (evidence.some(e => e.includes('Build timestamp'))) score += 3;
-    if (evidence.some(e => e.includes('Build version'))) score += 2;
-    
-    // MALUS pour les conflicts CRITIQUES seulement
+    // Calcul de la décision finale
     const criticalConflicts = conflicts.filter(c => 
-      c.includes('does not exist') || 
-      c.includes('invalid JSON') || 
-      c.includes('not BUILT') ||
-      c.includes('No build artifacts')
+      c.includes('not found') || c.includes('Invalid JSON')
     );
     
-    score -= criticalConflicts.length * 30;
+    confidence = Math.max(0, confidence - (criticalConflicts.length * 30));
+    const isBuilt = confidence >= 75 && hasProjectFile && hasValidJson && hasBuiltState;
     
-    console.log(`[BUILT-DETECTOR] 🎲 Score calculation:`);
-    console.log(`[BUILT-DETECTOR]    - Base criteria: ${hasProjectFile ? 25 : 0} + ${hasValidJson ? 25 : 0} + ${hasBuiltState ? 30 : 0} + ${hasArtifacts ? 20 : 0}`);
-    console.log(`[BUILT-DETECTOR]    - Bonus points: ${score - (hasProjectFile ? 25 : 0) - (hasValidJson ? 25 : 0) - (hasBuiltState ? 30 : 0) - (hasArtifacts ? 20 : 0) + (criticalConflicts.length * 30)}`);
-    console.log(`[BUILT-DETECTOR]    - Critical penalties: -${criticalConflicts.length * 30}`);
-    console.log(`[BUILT-DETECTOR]    - Final score: ${score}/100`);
-    
-    // Seuil ajusté: 70/100 au lieu de "zéro conflit"
-    const isBuilt = score >= 70;
-    const confidence = Math.max(0, Math.min(100, score));
-    
-    console.log(`[BUILT-DETECTOR] 🎯 Final decision: ${isBuilt ? '✅ BUILT' : '❌ NOT_BUILT'} (${confidence}% confidence)`);
+    // 2. RÉSULTAT (succès ou échec)
+    if (isBuilt) {
+      console.log(`${LOG_COLORS.success}[BUILT-DETECTOR] BUILT confirmed (${confidence}% confidence)${LOG_COLORS.reset}`);
+    } else if (conflicts.length > 0) {
+      console.log(`${LOG_COLORS.error}[BUILT-DETECTOR] Not BUILT: ${conflicts[0]}${LOG_COLORS.reset}`);
+    } else {
+      console.log(`${LOG_COLORS.warning}[BUILT-DETECTOR] Not BUILT (${confidence}% confidence)${LOG_COLORS.reset}`);
+    }
     
     const result = {
       isBuilt,
@@ -193,7 +121,7 @@ export async function detectBuiltState(projectPath) {
       evidence,
       conflicts,
       score: {
-        total: score,
+        total: confidence,
         breakdown: {
           projectFile: hasProjectFile ? 25 : 0,
           validJson: hasValidJson ? 25 : 0,
@@ -213,7 +141,7 @@ export async function detectBuiltState(projectPath) {
       } : null,
       buildArtifacts: {
         found: buildArtifacts.length,
-        files: buildArtifacts.slice(0, 10), // Limite à 10 pour éviter surcharge
+        files: buildArtifacts.slice(0, 10),
         hasMore: buildArtifacts.length > 10
       },
       criteria: {
@@ -239,7 +167,7 @@ export async function detectBuiltState(projectPath) {
     };
     
   } catch (error) {
-    console.log(`[BUILT-DETECTOR] ❌ Detection failed: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[BUILT-DETECTOR] Detection failed: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `BUILT state detection failed: ${error.message}`,
@@ -254,8 +182,6 @@ export async function detectBuiltState(projectPath) {
  * @returns {Promise<{success: boolean, data: object}>} Résultat de détection
  */
 export async function detectBuiltStateById(projectId) {
-  console.log(`[BUILT-DETECTOR] Detecting BUILT state by ID: ${projectId}`);
-  
   if (!projectId || typeof projectId !== 'string') {
     return {
       success: false,
@@ -273,61 +199,31 @@ export async function detectBuiltStateById(projectId) {
  * @returns {Promise<{success: boolean, data: {isBuilt: boolean}}>} Résultat simplifié
  */
 export async function quickBuiltCheck(projectPath) {
-  console.log(`[BUILT-DETECTOR] ⚡ Quick BUILT check for: ${projectPath}`);
-  
   try {
     const projectId = basename(projectPath);
     const projectFilePath = getProjectFilePath(projectId);
     
-    // Check minimal : existence + parsing + state + artifacts
-    const fileResult = await readPath(projectFilePath, { parseJson: true });
+    const projectFile = await readPath(projectFilePath, { 
+      parseJson: true, 
+      required: false 
+    });
     
-    if (!fileResult.success || !fileResult.data.exists) {
-      return {
-        success: true,
-        data: {
-          isBuilt: false,
-          reason: 'Project file does not exist'
-        }
-      };
+    if (!projectFile.success || !projectFile.data.exists || projectFile.data.jsonError) {
+      return { success: true, data: { isBuilt: false } };
     }
     
-    if (fileResult.data.jsonError || !fileResult.data.parsed) {
-      return {
-        success: true,
-        data: {
-          isBuilt: false,
-          reason: 'Project file has invalid JSON'
-        }
-      };
-    }
-    
-    const projectData = fileResult.data.parsed;
-    if (projectData.state !== 'BUILT') {
-      return {
-        success: true,
-        data: {
-          isBuilt: false,
-          reason: `Project state is ${projectData.state}, not BUILT`
-        }
-      };
-    }
-    
-    // Vérification rapide des artifacts
+    const projectData = projectFile.data.parsed;
+    const stateIsBuilt = projectData.state === 'BUILT';
     const hasArtifacts = await quickArtifactsCheck(projectPath);
     
     return {
       success: true,
       data: {
-        isBuilt: hasArtifacts,
-        reason: hasArtifacts ? 
-          'Project state is BUILT with artifacts' : 
-          'Project state is BUILT but no artifacts found'
+        isBuilt: stateIsBuilt && hasArtifacts
       }
     };
     
   } catch (error) {
-    console.log(`[BUILT-DETECTOR] Quick check failed: ${error.message}`);
     return {
       success: false,
       error: `Quick BUILT check failed: ${error.message}`
@@ -336,40 +232,38 @@ export async function quickBuiltCheck(projectPath) {
 }
 
 /**
- * Vérifie la présence d'artifacts de build avec nouvelle structure
+ * Recherche les artifacts de build dans le projet
  * @param {string} projectPath - Chemin du projet
- * @returns {Promise<{hasArtifacts: boolean, foundArtifacts: string[]}>}
+ * @returns {Promise<{hasArtifacts: boolean, foundArtifacts: Array}>} Résultat de scan
  * @private
  */
-async function checkBuildArtifacts(projectPath) {
-  // NOUVELLE STRUCTURE - Services générés : front/, api/, back/, database/, admin/
-  const serviceDirectories = ['front', 'api', 'back', 'database', 'admin'];
+async function scanForBuildArtifacts(projectPath) {
   const foundArtifacts = [];
   
-  console.log(`[BUILT-DETECTOR] Scanning for service directories...`);
-  
-  // Scan des services générés
-  for (const service of serviceDirectories) {
-    const servicePath = `${projectPath}/${service}`;
+  try {
+    // Services possibles générés par le build
+    const possibleServices = ['front', 'api', 'back', 'database', 'admin'];
     
-    const serviceExists = await checkFileAccess(servicePath);
-    if (serviceExists.accessible) {
-      console.log(`[BUILT-DETECTOR] Found service: ${service}`);
+    for (const service of possibleServices) {
+      const servicePath = `${projectPath}/${service}`;
       
       try {
+        const serviceExists = await checkFileAccess(servicePath);
+        if (!serviceExists.accessible) continue;
+        
+        // Scanner le service
         const serviceContent = await readDirectory(servicePath);
-        if (serviceContent.success && serviceContent.data.items.length > 0) {
-          
-          // Scan des fichiers dans le service
+        if (serviceContent.success) {
+          // Ajouter tous les fichiers du service
           for (const item of serviceContent.data.items) {
             foundArtifacts.push({
               path: `${service}/${item.name}`,
-              type: item.isFile ? 'file' : 'directory',
+              type: item.isDirectory ? 'directory' : 'file',
               fullPath: `${servicePath}/${item.name}`
             });
           }
           
-          // Scan des sous-dossiers (components, containers, etc.)
+          // Scanner les sous-dossiers
           const subDirs = serviceContent.data.items.filter(item => item.isDirectory);
           for (const subDir of subDirs) {
             const subDirPath = `${servicePath}/${subDir.name}`;
@@ -385,17 +279,17 @@ async function checkBuildArtifacts(projectPath) {
                 }
               }
             } catch (error) {
-              console.log(`[BUILT-DETECTOR] Error scanning ${service}/${subDir.name}: ${error.message}`);
+              // Ignorer les erreurs de sous-dossiers
             }
           }
         }
       } catch (error) {
-        console.log(`[BUILT-DETECTOR] Error scanning service ${service}: ${error.message}`);
+        // Ignorer les erreurs de services
       }
     }
+  } catch (error) {
+    // Ignorer les erreurs générales
   }
-  
-  console.log(`[BUILT-DETECTOR] Found ${foundArtifacts.length} build artifacts`);
   
   return {
     hasArtifacts: foundArtifacts.length > 0,
@@ -404,7 +298,10 @@ async function checkBuildArtifacts(projectPath) {
 }
 
 /**
- * AUSSI, corrige analyzeBuiltDirectoryStructure() pour reconnaître les services
+ * Analyse la structure de répertoire pour détecter un état BUILT
+ * @param {string} projectPath - Chemin du projet
+ * @returns {Promise<{isBuiltLike: boolean, reason: string}>} Analyse
+ * @private
  */
 async function analyzeBuiltDirectoryStructure(projectPath) {
   try {
@@ -420,19 +317,8 @@ async function analyzeBuiltDirectoryStructure(projectPath) {
     const files = dirContent.data.items.filter(item => item.isFile);
     const dirs = dirContent.data.items.filter(item => item.isDirectory);
     
-    console.log(`[BUILT-DETECTOR] Directory contains: ${files.length} files, ${dirs.length} directories`);
-    
-    // Doit avoir le project.json
+    // Doit avoir project.json
     const hasProjectFile = files.some(file => file.name === 'project.json');
-    
-    // NOUVELLE LOGIQUE : Chercher les services générés
-    const serviceDirectories = ['front', 'api', 'back', 'database', 'admin'];
-    const foundServices = dirs.filter(dir => serviceDirectories.includes(dir.name));
-    
-    console.log(`[BUILT-DETECTOR] Structure analysis:`);
-    console.log(`[BUILT-DETECTOR]    - Has project.json: ${hasProjectFile}`);
-    console.log(`[BUILT-DETECTOR]    - Found services: ${foundServices.map(s => s.name).join(', ')}`);
-    console.log(`[BUILT-DETECTOR]    - Service count: ${foundServices.length}/${serviceDirectories.length}`);
     
     if (!hasProjectFile) {
       return {
@@ -440,6 +326,10 @@ async function analyzeBuiltDirectoryStructure(projectPath) {
         reason: 'Missing project.json file'
       };
     }
+    
+    // Chercher les services générés
+    const serviceDirectories = ['front', 'api', 'back', 'database', 'admin'];
+    const foundServices = dirs.filter(dir => serviceDirectories.includes(dir.name));
     
     if (foundServices.length > 0) {
       return {
@@ -457,7 +347,7 @@ async function analyzeBuiltDirectoryStructure(projectPath) {
     
     return {
       isBuiltLike: false,
-      reason: `No generated services found (expected: ${serviceDirectories.join(', ')})`
+      reason: `No generated services found`
     };
     
   } catch (error) {
@@ -475,12 +365,11 @@ async function analyzeBuiltDirectoryStructure(projectPath) {
  * @private
  */
 async function quickArtifactsCheck(projectPath) {
-  // Check juste les indicateurs principaux
-  const mainIndicators = ['package.json', 'index.js', 'src/', 'components/', 'containers/'];
+  const serviceDirectories = ['front', 'api', 'back', 'database', 'admin'];
   
-  for (const indicator of mainIndicators) {
-    const indicatorPath = `${projectPath}/${indicator}`;
-    const exists = await checkFileAccess(indicatorPath);
+  for (const service of serviceDirectories) {
+    const servicePath = `${projectPath}/${service}`;
+    const exists = await checkFileAccess(servicePath);
     if (exists.accessible) {
       return true;
     }
@@ -513,4 +402,4 @@ function validateBuiltDetectionInput(projectPath) {
   return { valid: true };
 }
 
-console.log(`[BUILT-DETECTOR] ✨ BUILT detector loaded successfully - PIXEL PERFECT VERSION CORRIGÉE`);
+console.log(`${LOG_COLORS.BUILT}[BUILT-DETECTOR] BUILT detector loaded${LOG_COLORS.reset}`);

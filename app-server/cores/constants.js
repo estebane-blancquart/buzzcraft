@@ -364,17 +364,36 @@ export function validateConfig(config, requiredFields = []) {
     };
   }
 
-  for (const field of requiredFields) {
-    if (!(field in config)) {
-      return {
-        valid: false,
-        error: `Missing required field: ${field}`,
-      };
-    }
+for (const field of requiredFields) {
+  if (!(field in config)) {
+    return {
+      valid: false,
+      error: `Missing required field: ${field}`,
+    };
   }
-
-  return { valid: true };
 }
+
+return { valid: true };
+}
+
+// === COULEURS LOGS ===
+export const LOG_COLORS = {
+  // Couleurs de base
+  reset: '\x1b[0m',
+  
+  // États projets (cohérent avec dashboard)
+  DRAFT: '\x1b[35m',      // Magenta (comme --color-primary violet)
+  BUILT: '\x1b[34m',      // Bleu (comme #3b82f6)  
+  OFFLINE: '\x1b[33m',    // Jaune (comme --color-warning)
+  ONLINE: '\x1b[32m',     // Vert (comme --color-success)
+  
+  // Actions/logs génériques
+  success: '\x1b[32m',    // Vert
+  error: '\x1b[31m',      // Rouge
+  warning: '\x1b[33m',    // Jaune
+  info: '\x1b[36m',       // Cyan
+  debug: '\x1b[90m'       // Gris
+};
 
 console.log(`[CONSTANTS] Constants loaded successfully - PIXEL PERFECT VERSION`);
 console.log(`[CONSTANTS] Project templates path: ${PATHS.projectTemplates}`);

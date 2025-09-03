@@ -9,6 +9,7 @@ import { detectDraftState } from '../probes/draft-detector.js';
 import { getProjectPath, getProjectFilePath } from '../cores/paths.js';
 import { readPath } from '../cores/reader.js';
 import { writePath } from '../cores/writer.js';
+import { LOG_COLORS } from '../cores/constants.js';
 
 /**
  * Orchestre le workflow complet REVERT (BUILT → DRAFT)
@@ -16,23 +17,17 @@ import { writePath } from '../cores/writer.js';
  * @param {object} [config={}] - Configuration de revert
  * @param {boolean} [config.keepBackup=true] - Garder une sauvegarde des artifacts
  * @returns {Promise<{success: boolean, data: object}>} Résultat du workflow
- * 
- * @example
- * const result = await revertWorkflow('mon-site', {
- *   keepBackup: true
- * });
- * 
- * if (result.success) {
- *   console.log(`Projet reverté: BUILT → DRAFT`);
- * }
  */
 export async function revertWorkflow(projectId, config = {}) {
-  console.log(`[REVERT] 🔄 CALL 3: revertWorkflow called for project: ${projectId}`);
+  const startTime = Date.now();
   
-  // CALL 1: Validation des paramètres d'entrée
+  // 1. DÉBUT
+  console.log(`${LOG_COLORS.DRAFT}[REVERT] Starting BUILT → DRAFT for ${projectId}${LOG_COLORS.reset}`);
+  
+  // Validation des paramètres d'entrée
   const validation = validateRevertParameters(projectId, config);
   if (!validation.valid) {
-    console.log(`[REVERT] ❌ Parameter validation failed: ${validation.error}`);
+    console.log(`${LOG_COLORS.error}[REVERT] Validation failed: ${validation.error}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `Parameter validation failed: ${validation.error}`
@@ -40,112 +35,73 @@ export async function revertWorkflow(projectId, config = {}) {
   }
 
   const projectPath = getProjectPath(projectId);
-  const startTime = Date.now();
-  
-  console.log(`[REVERT] 📂 Project path resolved: ${projectPath}`);
   
   try {
-    // CALL 4: Détection de l'état actuel (doit être BUILT)
-    console.log(`[REVERT] CALL 4: Detecting current state...`);
+    // Détection de l'état actuel (doit être BUILT)
     const currentState = await detectBuiltState(projectPath);
     
-    if (!currentState.success) {
-      console.log(`[REVERT] Current state detection failed: ${currentState.error}`);
+    if (!currentState.success || !currentState.data.isBuilt) {
+      console.log(`${LOG_COLORS.error}[REVERT] Not in BUILT state (confidence: ${currentState.data?.confidence || 0}%)${LOG_COLORS.reset}`);
       return {
         success: false,
-        error: `Current state detection failed: ${currentState.error}`
+        error: `Project must be in BUILT state`
       };
     }
     
-    if (!currentState.data.isBuilt) {
-      console.log(`[REVERT] Project is not in BUILT state (confidence: ${currentState.data.confidence}%)`);
-      return {
-        success: false,
-        error: `Project must be in BUILT state. Current confidence: ${currentState.data.confidence}%`
-      };
-    }
-    
-    console.log(`[REVERT] Current state confirmed: BUILT (${currentState.data.confidence}% confidence)`);
-    
-    // CALL 5: Chargement des données projet
-    console.log(`[REVERT] CALL 5: Loading project data...`);
+    // Chargement des données projet
     const projectData = await loadProjectForRevert(projectId);
-    
     if (!projectData.success) {
-      console.log(`[REVERT] Project loading failed: ${projectData.error}`);
+      console.log(`${LOG_COLORS.error}[REVERT] Project loading failed: ${projectData.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Project loading failed: ${projectData.error}`
       };
     }
     
-    console.log(`[REVERT] Project data loaded: ${projectData.data.name}`);
-    
-    // CALL 6: Sauvegarde des artifacts (si demandée)
+    // Sauvegarde des artifacts (si demandée)
     let backupResult = null;
     if (config.keepBackup !== false) {
-      console.log(`[REVERT] CALL 6: Creating artifacts backup...`);
       backupResult = await backupBuildArtifacts(projectId, projectData.data);
-      
-      if (!backupResult.success) {
-        console.log(`[REVERT] Backup creation failed: ${backupResult.error}`);
-        // On continue quand même, le backup n'est pas critique
-      } else {
-        console.log(`[REVERT] Backup created: ${backupResult.data.backupPath}`);
-      }
     }
     
-    // CALL 7: Suppression des artifacts de build
-    console.log(`[REVERT] CALL 7: Removing build artifacts...`);
+    // Suppression des artifacts de build
     const cleanupResult = await removeBuildArtifacts(projectPath, projectData.data);
     
     if (!cleanupResult.success) {
-      console.log(`[REVERT] Artifacts cleanup failed: ${cleanupResult.error}`);
+      console.log(`${LOG_COLORS.error}[REVERT] Cleanup failed: ${cleanupResult.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Artifacts cleanup failed: ${cleanupResult.error}`
       };
     }
     
-    console.log(`[REVERT] Build artifacts removed: ${cleanupResult.data.removedCount} items`);
+    console.log(`${LOG_COLORS.info}[REVERT] Removed ${cleanupResult.data.removedCount} artifacts${LOG_COLORS.reset}`);
     
-    // CALL 8: Mise à jour des métadonnées projet vers DRAFT
-    console.log(`[REVERT] CALL 8: Updating project to DRAFT state...`);
+    // Mise à jour des métadonnées projet vers DRAFT
     const updatedProject = await updateProjectToDraft(projectId, projectData.data);
     
     if (!updatedProject.success) {
-      console.log(`[REVERT] Project update failed: ${updatedProject.error}`);
+      console.log(`${LOG_COLORS.error}[REVERT] Project update failed: ${updatedProject.error}${LOG_COLORS.reset}`);
       return {
         success: false,
         error: `Project update failed: ${updatedProject.error}`
       };
     }
     
-    console.log(`[REVERT] Project updated to DRAFT state`);
-    
-    // CALL 9: Vérification finale (doit être DRAFT)
-    console.log(`[REVERT] CALL 9: Verifying final state...`);
-    const finalState = await detectDraftState(projectPath);
-    
-    if (!finalState.success || !finalState.data.isDraft) {
-      console.log(`[REVERT] Final state verification failed but proceeding`);
-      // On continue car la suppression a réussi
-    }
+    // Vérification finale (optionnelle)
+    await detectDraftState(projectPath);
     
     const duration = Date.now() - startTime;
-    console.log(`[REVERT] Workflow completed successfully in ${duration}ms`);
+    console.log(`${LOG_COLORS.success}[REVERT] Completed in ${duration}ms${LOG_COLORS.reset}`);
     
-    // CALL 10: Construction de la réponse (COMPATIBLE RESPONSE-PARSER)
+    // Construction de la réponse
     return {
       success: true,
       data: {
-        // CHAMPS REQUIS PAR RESPONSE-PARSER
         projectId,
         fromState: 'BUILT',
         toState: 'DRAFT',
         duration,
-        
-        // DONNÉES COMPLÉMENTAIRES
         project: updatedProject.data,
         workflow: {
           action: 'REVERT',
@@ -168,7 +124,7 @@ export async function revertWorkflow(projectId, config = {}) {
     };
     
   } catch (error) {
-    console.log(`[REVERT] ❌ Unexpected workflow error: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[REVERT] Unexpected error: ${error.message}${LOG_COLORS.reset}`);
     
     return {
       success: false,
@@ -185,8 +141,6 @@ export async function revertWorkflow(projectId, config = {}) {
  * @private
  */
 async function loadProjectForRevert(projectId) {
-  console.log(`[REVERT] Loading project for revert: ${projectId}`);
-  
   try {
     const projectFilePath = getProjectFilePath(projectId);
     
@@ -215,13 +169,9 @@ async function loadProjectForRevert(projectId) {
       };
     }
     
-    const project = projectFile.data.parsed;
-    
-    console.log(`[REVERT] Project loaded: ${project.name}`);
-    
     return {
       success: true,
-      data: project
+      data: projectFile.data.parsed
     };
     
   } catch (error) {
@@ -240,20 +190,16 @@ async function loadProjectForRevert(projectId) {
  * @private
  */
 async function backupBuildArtifacts(projectId, projectData) {
-  console.log(`[REVERT] MOCK: Creating backup for build artifacts: ${projectId}`);
-  
   // Simulation d'une sauvegarde
   await new Promise(resolve => setTimeout(resolve, 150));
   
   const backupPath = `./backups/${projectId}-build-${Date.now()}.backup`;
   
-  console.log(`[REVERT] MOCK: Backup created at ${backupPath}`);
-  
   return {
     success: true,
     data: {
       backupPath,
-      size: (projectData.build?.generatedFiles || 0) * 512, // Size simulée
+      size: (projectData.build?.generatedFiles || 0) * 512,
       itemCount: projectData.build?.generatedFiles || 0,
       createdAt: new Date().toISOString()
     }
@@ -268,55 +214,40 @@ async function backupBuildArtifacts(projectId, projectData) {
  * @private
  */
 async function removeBuildArtifacts(projectPath, projectData) {
-  console.log(`[REVERT] Removing build artifacts from: ${projectPath}`);
-  
   try {
-    // Import moderne pour Node.js 14+
-    const { rm } = await import('fs/promises');
+    const { rm, readdir } = await import('fs/promises');
     
     const removedItems = [];
     const failedItems = [];
     
-    // Liste des artifacts à supprimer
-    const artifactPaths = [
-      'components',
-      'containers', 
-      'index.js',
-      'package.json'
-      // On garde project.json car on va le modifier
-    ];
+    // Lire tout le contenu du dossier projet
+    const items = await readdir(projectPath);
     
-    for (const artifactPath of artifactPaths) {
+    // Supprimer tout sauf project.json
+    for (const item of items) {
+      if (item === 'project.json') {
+        continue; // Garder project.json
+      }
+      
       try {
-        const fullPath = `${projectPath}/${artifactPath}`;
-        console.log(`[REVERT] Removing: ${artifactPath}`);
-        
-        // Supprimer fichier ou dossier
+        const fullPath = `${projectPath}/${item}`;
         await rm(fullPath, { recursive: true, force: true });
-        
-        removedItems.push(artifactPath);
-        console.log(`[REVERT] Removed: ${artifactPath}`);
+        removedItems.push(item);
         
       } catch (itemError) {
-        // Ignorer les erreurs ENOENT (fichier déjà supprimé)
         if (itemError.code !== 'ENOENT') {
-          console.log(`[REVERT] Failed to remove ${artifactPath}: ${itemError.message}`);
           failedItems.push({
-            path: artifactPath,
+            path: item,
             error: itemError.message
           });
         } else {
-          console.log(`[REVERT] ${artifactPath} was already removed`);
-          removedItems.push(artifactPath);
+          removedItems.push(item);
         }
       }
     }
     
-    const success = failedItems.length === 0;
-    console.log(`[REVERT] Cleanup summary: ${removedItems.length} removed, ${failedItems.length} failed`);
-    
     return {
-      success,
+      success: failedItems.length === 0,
       data: {
         removedItems,
         removedCount: removedItems.length,
@@ -325,7 +256,6 @@ async function removeBuildArtifacts(projectPath, projectData) {
     };
     
   } catch (error) {
-    console.log(`[REVERT] Cleanup process failed: ${error.message}`);
     return {
       success: false,
       error: `Artifacts cleanup failed: ${error.message}`
@@ -341,7 +271,6 @@ async function removeBuildArtifacts(projectPath, projectData) {
  * @private
  */
 function validateRevertParameters(projectId, config) {
-  // Validation projectId
   if (!projectId || typeof projectId !== 'string') {
     return { valid: false, error: 'projectId must be non-empty string' };
   }
@@ -350,12 +279,10 @@ function validateRevertParameters(projectId, config) {
     return { valid: false, error: 'projectId cannot be empty or whitespace only' };
   }
   
-  // Validation config
   if (!config || typeof config !== 'object') {
     return { valid: false, error: 'config must be an object' };
   }
   
-  // Validation keepBackup optionnelle
   if (config.keepBackup !== undefined && typeof config.keepBackup !== 'boolean') {
     return { valid: false, error: 'config.keepBackup must be a boolean' };
   }
@@ -364,35 +291,28 @@ function validateRevertParameters(projectId, config) {
 }
 
 /**
- * Met à jour le projet vers l'état DRAFT (VERSION SIMPLIFIÉE)
+ * Met à jour le projet vers l'état DRAFT
  * @param {string} projectId - ID du projet
  * @param {object} projectData - Données du projet
  * @returns {Promise<{success: boolean, data: object}>} Projet mis à jour
  * @private
  */
 async function updateProjectToDraft(projectId, projectData) {
-  console.log(`[REVERT] Updating project to DRAFT state...`);
-  
   try {
     const projectFilePath = getProjectFilePath(projectId);
     
-    // Mise à jour des données projet (SIMPLE)
     const updatedProject = {
       ...projectData,
       state: 'DRAFT',
-      // Supprimer les métadonnées de build
       build: undefined,
-      // Ajouter des métadonnées de revert
       reverted: {
         fromState: 'BUILT',
         revertedAt: new Date().toISOString(),
         reason: 'Manual revert from BUILT to DRAFT state'
       },
-      // Mise à jour du timestamp
       updated: new Date().toISOString()
     };
     
-    // Sauvegarde du fichier projet
     const saveResult = await writePath(projectFilePath, JSON.stringify(updatedProject, null, 2));
     
     if (!saveResult.success) {
@@ -402,15 +322,12 @@ async function updateProjectToDraft(projectId, projectData) {
       };
     }
     
-    console.log(`[REVERT] Project state updated and saved`);
-    
     return {
       success: true,
       data: updatedProject
     };
     
   } catch (error) {
-    console.log(`[REVERT] State update failed: ${error.message}`);
     return {
       success: false,
       error: `State update failed: ${error.message}`
@@ -418,4 +335,4 @@ async function updateProjectToDraft(projectId, projectData) {
   }
 }
 
-console.log(`[REVERT] Revert coordinator loaded successfully - PIXEL PERFECT VERSION`);
+console.log(`${LOG_COLORS.DRAFT}[REVERT] Revert coordinator loaded${LOG_COLORS.reset}`);

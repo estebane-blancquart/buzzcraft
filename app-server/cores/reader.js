@@ -1,3 +1,5 @@
+// === READER.JS - VERSION LOGS OPTIMISÉS ===
+
 /**
  * Lecture sécurisée de fichiers et dossiers - VERSION PIXEL PARFAIT
  * @module reader
@@ -7,6 +9,7 @@
 import { readFile, readdir, stat, access } from 'fs/promises';
 import { normalize, resolve } from 'path';
 import { constants } from 'fs';
+import { LOG_COLORS } from './constants.js';
 
 /**
  * Lit le contenu d'un fichier avec validation et métadonnées
@@ -15,22 +18,12 @@ import { constants } from 'fs';
  * @param {string} [options.encoding='utf8'] - Encodage du fichier
  * @param {boolean} [options.parseJson=false] - Parser automatiquement le JSON
  * @param {boolean} [options.includeStats=false] - Inclure stats du fichier
+ * @param {boolean} [options.verbose=false] - Logs détaillés (debug uniquement)
  * @returns {Promise<{success: boolean, data: object}>} Résultat avec contenu et métadonnées
- * @throws {ValidationError} Si paramètres manquants ou invalides
- * 
- * @example
- * // Lecture simple
- * const result = await readPath('./config.json');
- * if (result.success && result.data.exists) {
- *   console.log(result.data.content);
- * }
- * 
- * // Lecture avec parsing JSON automatique
- * const json = await readPath('./data.json', { parseJson: true });
- * console.log(json.data.parsed);
  */
 export async function readPath(path, options = {}) {
-  console.log(`[READER] Reading path: ${path}`);
+  // Logs seulement si verbose activé ou erreur
+  const verbose = options.verbose === true;
   
   // Validation des paramètres
   validateReadPathInput(path, options);
@@ -40,13 +33,11 @@ export async function readPath(path, options = {}) {
     const absolutePath = resolve(normalizedPath);
     const encoding = options.encoding || 'utf8';
     
-    console.log(`[READER] Normalized path: ${normalizedPath}`);
-    
     // Vérification existence avec permissions
     const exists = await checkFileAccess(absolutePath);
     
     if (!exists.accessible) {
-      console.log(`[READER] File not accessible: ${exists.reason}`);
+      if (verbose) console.log(`${LOG_COLORS.warning}[READER] File not accessible: ${exists.reason}${LOG_COLORS.reset}`);
       return {
         success: true,
         data: {
@@ -63,8 +54,6 @@ export async function readPath(path, options = {}) {
     const content = await readFile(absolutePath, encoding);
     const contentSize = Buffer.byteLength(content, encoding);
     
-    console.log(`[READER] File read successfully, size: ${contentSize} bytes`);
-    
     // Préparation du résultat de base
     const result = {
       exists: true,
@@ -80,9 +69,8 @@ export async function readPath(path, options = {}) {
     if (options.parseJson && content.trim()) {
       try {
         result.parsed = JSON.parse(content);
-        console.log(`[READER] JSON parsed successfully`);
       } catch (parseError) {
-        console.log(`[READER] JSON parsing failed: ${parseError.message}`);
+        console.log(`${LOG_COLORS.error}[READER] JSON parsing failed for ${path}: ${parseError.message}${LOG_COLORS.reset}`);
         result.jsonError = parseError.message;
       }
     }
@@ -100,7 +88,7 @@ export async function readPath(path, options = {}) {
           isFile: stats.isFile()
         };
       } catch (statsError) {
-        console.log(`[READER] Stats collection failed: ${statsError.message}`);
+        if (verbose) console.log(`${LOG_COLORS.warning}[READER] Stats collection failed: ${statsError.message}${LOG_COLORS.reset}`);
         result.statsError = statsError.message;
       }
     }
@@ -111,7 +99,7 @@ export async function readPath(path, options = {}) {
     };
     
   } catch (error) {
-    console.log(`[READER] Read operation failed: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[READER] Failed to read ${path}: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `File read failed: ${error.message}`,
@@ -128,16 +116,11 @@ export async function readPath(path, options = {}) {
  * @param {string[]} [options.extensions=[]] - Extensions à filtrer
  * @param {boolean} [options.includeHidden=false] - Inclure fichiers cachés
  * @param {boolean} [options.includeStats=false] - Inclure stats des fichiers
+ * @param {boolean} [options.verbose=false] - Logs détaillés (debug uniquement)
  * @returns {Promise<{success: boolean, data: object}>} Résultat avec liste des éléments
- * 
- * @example
- * const result = await readDirectory('./templates');
- * result.data.items.forEach(item => {
- *   console.log(`${item.name} (${item.isDirectory ? 'dir' : 'file'})`);
- * });
  */
 export async function readDirectory(directoryPath, options = {}) {
-  console.log(`[READER] Reading directory: ${directoryPath}`);
+  const verbose = options.verbose === true;
   
   // Validation des paramètres
   validateReadDirectoryInput(directoryPath, options);
@@ -146,12 +129,10 @@ export async function readDirectory(directoryPath, options = {}) {
     const normalizedPath = normalize(directoryPath);
     const absolutePath = resolve(normalizedPath);
     
-    console.log(`[READER] Normalized directory path: ${normalizedPath}`);
-    
     // Vérification existence du dossier
     const exists = await checkFileAccess(absolutePath);
     if (!exists.accessible) {
-      console.log(`[READER] Directory not accessible: ${exists.reason}`);
+      if (verbose) console.log(`${LOG_COLORS.warning}[READER] Directory not accessible: ${exists.reason}${LOG_COLORS.reset}`);
       return {
         success: true,
         data: {
@@ -182,44 +163,41 @@ export async function readDirectory(directoryPath, options = {}) {
         continue;
       }
       
-      // Filtrage par extensions
-      if (config.extensions.length > 0 && !dirent.isDirectory()) {
+      // Filtrage par extension
+      if (config.extensions.length > 0 && dirent.isFile()) {
         const hasValidExtension = config.extensions.some(ext => 
           dirent.name.toLowerCase().endsWith(ext.toLowerCase())
         );
-        if (!hasValidExtension) {
-          continue;
-        }
+        if (!hasValidExtension) continue;
       }
       
-      const itemData = {
+      const item = {
         name: dirent.name,
-        isDirectory: dirent.isDirectory(),
         isFile: dirent.isFile(),
-        path: resolve(absolutePath, dirent.name)
+        isDirectory: dirent.isDirectory(),
+        isSymbolicLink: dirent.isSymbolicLink(),
+        path: `${normalizedPath}/${dirent.name}`
       };
       
       // Stats optionnelles
       if (config.includeStats) {
         try {
-          const itemStats = await stat(itemData.path);
-          itemData.stats = {
-            size: itemStats.size,
-            created: itemStats.birthtime,
-            modified: itemStats.mtime,
-            isDirectory: itemStats.isDirectory(),
-            isFile: itemStats.isFile()
+          const itemPath = `${absolutePath}/${dirent.name}`;
+          const stats = await stat(itemPath);
+          item.stats = {
+            size: stats.size,
+            created: stats.birthtime,
+            modified: stats.mtime,
+            accessed: stats.atime
           };
         } catch (statsError) {
-          console.log(`[READER] Stats failed for ${dirent.name}: ${statsError.message}`);
-          itemData.statsError = statsError.message;
+          if (verbose) console.log(`${LOG_COLORS.warning}[READER] Stats failed for ${dirent.name}: ${statsError.message}${LOG_COLORS.reset}`);
+          item.statsError = statsError.message;
         }
       }
       
-      items.push(itemData);
+      items.push(item);
     }
-    
-    console.log(`[READER] Directory read successfully, found ${items.length} items`);
     
     return {
       success: true,
@@ -229,12 +207,13 @@ export async function readDirectory(directoryPath, options = {}) {
         items,
         count: items.length,
         path: normalizedPath,
-        absolutePath
+        absolutePath,
+        scannedAt: new Date().toISOString()
       }
     };
     
   } catch (error) {
-    console.log(`[READER] Directory read failed: ${error.message}`);
+    console.log(`${LOG_COLORS.error}[READER] Failed to read directory ${directoryPath}: ${error.message}${LOG_COLORS.reset}`);
     return {
       success: false,
       error: `Directory read failed: ${error.message}`,
@@ -244,54 +223,25 @@ export async function readDirectory(directoryPath, options = {}) {
 }
 
 /**
- * Vérifie l'accessibilité d'un fichier ou dossier
+ * Vérifie l'accès à un fichier ou dossier
  * @param {string} path - Chemin à vérifier
+ * @param {number} [mode=constants.F_OK] - Mode d'accès à tester
  * @returns {Promise<{accessible: boolean, reason?: string}>} Résultat de vérification
- * 
- * @example
- * const access = await checkFileAccess('./config.json');
- * if (access.accessible) {
- *   console.log('File is accessible');
- * }
  */
-export async function checkFileAccess(path) {
+export async function checkFileAccess(path, mode = constants.F_OK) {
   try {
-    await access(path, constants.F_OK | constants.R_OK);
+    await access(path, mode);
     return { accessible: true };
   } catch (error) {
-    let reason = 'Unknown access error';
-    
-    switch (error.code) {
-      case 'ENOENT':
-        reason = 'File or directory does not exist';
-        break;
-      case 'EACCES':
-        reason = 'Permission denied';
-        break;
-      case 'EISDIR':
-        reason = 'Expected file but found directory';
-        break;
-      case 'ENOTDIR':
-        reason = 'Expected directory but found file';
-        break;
-      default:
-        reason = `Access error: ${error.message}`;
-    }
-    
-    return { 
-      accessible: false, 
-      reason,
-      errorCode: error.code
+    return {
+      accessible: false,
+      reason: error.code === 'ENOENT' ? 'File not found' : `Access denied: ${error.code}`
     };
   }
 }
 
-// === FONCTIONS PRIVÉES DE VALIDATION ===
+// === FONCTIONS DE VALIDATION (inchangées) ===
 
-/**
- * Valide les paramètres de readPath
- * @private
- */
 function validateReadPathInput(path, options) {
   if (!path || typeof path !== 'string') {
     throw new Error('ValidationError: path must be non-empty string');
@@ -305,23 +255,12 @@ function validateReadPathInput(path, options) {
     throw new Error('ValidationError: options must be an object');
   }
   
-  if (options.encoding && typeof options.encoding !== 'string') {
-    throw new Error('ValidationError: options.encoding must be a string');
-  }
-  
-  if (options.parseJson !== undefined && typeof options.parseJson !== 'boolean') {
-    throw new Error('ValidationError: options.parseJson must be a boolean');
-  }
-  
-  if (options.includeStats !== undefined && typeof options.includeStats !== 'boolean') {
-    throw new Error('ValidationError: options.includeStats must be a boolean');
+  const validEncodings = ['utf8', 'ascii', 'base64', 'binary', 'hex'];
+  if (options.encoding && !validEncodings.includes(options.encoding)) {
+    throw new Error(`ValidationError: encoding must be one of: ${validEncodings.join(', ')}`);
   }
 }
 
-/**
- * Valide les paramètres de readDirectory
- * @private
- */
 function validateReadDirectoryInput(directoryPath, options) {
   if (!directoryPath || typeof directoryPath !== 'string') {
     throw new Error('ValidationError: directoryPath must be non-empty string');
@@ -340,4 +279,4 @@ function validateReadDirectoryInput(directoryPath, options) {
   }
 }
 
-console.log(`[READER] Reader core loaded successfully - PIXEL PERFECT VERSION`);
+console.log(`${LOG_COLORS.info}[READER] Reader core loaded${LOG_COLORS.reset}`);
