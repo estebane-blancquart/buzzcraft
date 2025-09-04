@@ -2,6 +2,39 @@ import React, { useState } from 'react';
 import PropertyField from './PropertyField.jsx';
 import { DEVICES } from '@config/constants.js';
 
+// ✅ DEFAULTS POUR PROJECT
+const PROJECT_DEFAULTS = {
+  created: new Date().toISOString(),
+  updated: new Date().toISOString(),
+  protocol: 'https',
+  
+  // Header defaults
+  headerEnabled: true,
+  headerHeight: '60px',
+  headerPosition: 'static',
+  headerBackgroundColor: '#ffffff',
+  
+  // Footer defaults  
+  footerEnabled: true,
+  footerHeight: '80px',
+  footerPosition: 'static',
+  footerBackgroundColor: '#f8f9fa',
+  
+  // Breakpoints defaults
+  breakpointDesktop: '1200px',
+  breakpointTablet: '768px', 
+  breakpointMobile: '480px'
+};
+
+// ✅ FONCTION POUR INITIALISER PROJET AVEC DEFAULTS
+export function initializeProjectWithDefaults(projectData) {
+  return {
+    ...PROJECT_DEFAULTS,
+    ...projectData,
+    updated: new Date().toISOString() // Always update timestamp
+  };
+}
+
 /*
  * FAIT QUOI : Panel propriétés avec onglets horizontaux
  * REÇOIT : selectedElement, device, onElementUpdate
@@ -37,6 +70,15 @@ function PropertiesModule({
         ...updatedElement.properties,
         text: value,
         content: value
+      };
+    }
+    
+    // ✅ MISE À JOUR AUTO DU TIMESTAMP POUR PROJECT
+    if (selectedElement.type === 'project') {
+      updatedElement.updated = new Date().toISOString();
+      updatedElement.properties = {
+        ...updatedElement.properties,
+        updated: updatedElement.updated
       };
     }
     
@@ -87,7 +129,7 @@ function PropertiesModule({
       }
     };
 
-    // Fonctions pour générer les champs selon le type
+    // ✅ FONCTIONS CORRIGÉES POUR GÉNÉRER LES CHAMPS SELON LE TYPE
     function getContentFields() {
       switch(selectedElement.type) {
         case 'project':
@@ -95,12 +137,22 @@ function PropertiesModule({
             { key: 'description', label: 'Description', type: 'textarea' },
             { key: 'author', label: 'Author', type: 'text' },
             { key: 'version', label: 'Version', type: 'text' },
-            { key: 'language', label: 'Language', type: 'text' },
-            { key: 'charset', label: 'Charset', type: 'text' },
-            { key: 'domain', label: 'Domain', type: 'url' },
+            
+            // ✅ AJOUT DES CHAMPS MANQUANTS
+            { key: 'created', label: 'Created', type: 'datetime-local', disabled: true },
+            { key: 'updated', label: 'Updated', type: 'datetime-local', disabled: true },
+            
+            { key: 'language', label: 'Language', type: 'text', placeholder: 'fr' },
+            { key: 'charset', label: 'Charset', type: 'text', placeholder: 'UTF-8' },
+            { key: 'domain', label: 'Domain', type: 'url', placeholder: 'https://example.com' },
+            
+            // ✅ AJOUT PROTOCOL MANQUANT
+            { key: 'protocol', label: 'Protocol', type: 'select', options: ['https', 'http'] },
+            
             { key: 'favicon', label: 'Favicon URL', type: 'url' },
             { key: 'previewImage', label: 'Preview Image', type: 'url' }
           ];
+
         case 'page':
           return [
             { key: 'title', label: 'Page Title', type: 'text' },
@@ -109,53 +161,101 @@ function PropertiesModule({
             { key: 'previewImage', label: 'Preview Image', type: 'url' },
             { key: 'index', label: 'Index Page', type: 'checkbox' }
           ];
-        case 'heading':
+
+        // ✅ HARMONISATION title/heading -> title partout
         case 'title':
           return [
-            { key: 'content', label: 'Text', type: 'text' }, // Unifié sur 'content'
-            { key: 'level', label: 'Level', type: 'select', options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] },
-            { key: 'tag', label: 'HTML Tag', type: 'select', options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }
+            // ✅ PROPRIÉTÉS CORRIGÉES SELON SPEC
+            { key: 'text', label: 'Text', type: 'text' }, 
+            { key: 'level', label: 'Level', type: 'select', options: ['1', '2', '3', '4', '5', '6'] },
+            // ✅ AJOUT lineHeight et letterSpacing manquants
+            { key: 'lineHeight', label: 'Line Height', type: 'text', placeholder: '1.5' },
+            { key: 'letterSpacing', label: 'Letter Spacing', type: 'text', placeholder: '0px' }
           ];
+
         case 'paragraph':
           return [
-            { key: 'content', label: 'Text', type: 'textarea' }, // Unifié sur 'content'
+            { key: 'text', label: 'Text', type: 'textarea' },
+            // ✅ AJOUT PROPRIÉTÉS SPEC MANQUANTES
             { key: 'maxLines', label: 'Max Lines', type: 'number' },
+            { key: 'wordBreak', label: 'Word Break', type: 'select', options: ['normal', 'break-all', 'break-word'] },
             { key: 'allowHtml', label: 'Allow HTML', type: 'checkbox' }
           ];
+
         case 'button':
           return [
-            { key: 'content', label: 'Button Text', type: 'text' }, // Unifié sur 'content'
-            { key: 'action', label: 'Action', type: 'text' },
-            { key: 'href', label: 'Link URL', type: 'url' },
-            { key: 'target', label: 'Link Target', type: 'select', options: ['_self', '_blank'] },
-            { key: 'buttonType', label: 'Type', type: 'select', options: ['button', 'submit', 'reset'] },
-            { key: 'icon', label: 'Icon', type: 'text' },
-            { key: 'iconPosition', label: 'Icon Position', type: 'select', options: ['left', 'right'] }
+            { key: 'text', label: 'Button Text', type: 'text' },
+            // ✅ PROPRIÉTÉS SPEC COMPLÈTES
+            { key: 'icon', label: 'Icon', type: 'text', placeholder: 'fa-home' },
+            { key: 'iconPosition', label: 'Icon Position', type: 'select', options: ['left', 'right'] },
+            { key: 'buttonType', label: 'Button Type', type: 'select', options: ['button', 'submit', 'reset'] },
+            { key: 'action', label: 'Action', type: 'text' }
           ];
+
         case 'link':
           return [
-            { key: 'content', label: 'Link Text', type: 'text' }, // Unifié sur 'content'
+            { key: 'text', label: 'Link Text', type: 'text' },
             { key: 'href', label: 'URL', type: 'url' },
             { key: 'target', label: 'Target', type: 'select', options: ['_self', '_blank', '_parent', '_top'] }
           ];
+
+        // ✅ AJOUT TYPE ICON MANQUANT
+        case 'icon':
+          return [
+            { key: 'iconName', label: 'Icon Name', type: 'text', placeholder: 'fa-home' },
+            { key: 'iconFamily', label: 'Icon Family', type: 'select', options: ['fontawesome', 'material', 'feather'] },
+            { key: 'alt', label: 'Alt Text', type: 'text' }
+          ];
+
         case 'image':
           return [
             { key: 'src', label: 'Image URL', type: 'url' },
             { key: 'alt', label: 'Alt Text', type: 'text' },
-            { key: 'width', label: 'Width', type: 'text' },
-            { key: 'height', label: 'Height', type: 'text' },
-            { key: 'lazy', label: 'Lazy Loading', type: 'checkbox' }
+            // ✅ AJOUT PROPRIÉTÉS SPEC
+            { key: 'lazy', label: 'Lazy Loading', type: 'checkbox' },
+            { key: 'objectFit', label: 'Object Fit', type: 'select', options: ['contain', 'cover', 'fill', 'none', 'scale-down'] }
           ];
+
+        case 'video':
+          return [
+            { key: 'src', label: 'Video URL', type: 'url' },
+            { key: 'poster', label: 'Poster Image', type: 'url' },
+            { key: 'autoplay', label: 'Autoplay', type: 'checkbox' },
+            { key: 'controls', label: 'Controls', type: 'checkbox' },
+            { key: 'loop', label: 'Loop', type: 'checkbox' },
+            { key: 'muted', label: 'Muted', type: 'checkbox' }
+          ];
+
         case 'input':
           return [
             { key: 'value', label: 'Value', type: 'text' },
             { key: 'placeholder', label: 'Placeholder', type: 'text' },
-            { key: 'inputType', label: 'Input Type', type: 'select', options: ['text', 'email', 'password', 'number', 'tel'] },
+            { key: 'inputType', label: 'Input Type', type: 'select', options: ['text', 'email', 'password', 'number', 'tel', 'url', 'search'] },
             { key: 'required', label: 'Required', type: 'checkbox' }
           ];
+
+        // ✅ AJOUT TYPE TEXTAREA MANQUANT  
+        case 'textarea':
+          return [
+            { key: 'value', label: 'Value', type: 'textarea' },
+            { key: 'placeholder', label: 'Placeholder', type: 'text' },
+            { key: 'rows', label: 'Rows', type: 'number', placeholder: '4' },
+            { key: 'maxLength', label: 'Max Length', type: 'number' },
+            { key: 'required', label: 'Required', type: 'checkbox' }
+          ];
+
+        // ✅ AJOUT TYPE SELECT MANQUANT
+        case 'select':
+          return [
+            { key: 'options', label: 'Options (JSON)', type: 'textarea', placeholder: '["Option 1", "Option 2"]' },
+            { key: 'value', label: 'Selected Value', type: 'text' },
+            { key: 'multiple', label: 'Multiple', type: 'checkbox' },
+            { key: 'required', label: 'Required', type: 'checkbox' }
+          ];
+
         default:
           return [
-            { key: 'content', label: 'Content', type: 'textarea' },
+            { key: 'text', label: 'Content', type: 'textarea' },
             { key: 'classname', label: 'CSS Classes', type: 'text' }
           ];
       }
@@ -163,31 +263,46 @@ function PropertiesModule({
 
     function getLayoutFields() {
       const commonLayout = [
-        { key: 'widthDesktop', label: 'Width Desktop', type: 'text' },
-        { key: 'widthTablet', label: 'Width Tablet', type: 'text' },
-        { key: 'widthMobile', label: 'Width Mobile', type: 'text' },
-        { key: 'heightDesktop', label: 'Height Desktop', type: 'text' },
-        { key: 'heightTablet', label: 'Height Tablet', type: 'text' },
-        { key: 'heightMobile', label: 'Height Mobile', type: 'text' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'margin', label: 'Margin', type: 'text' }
+        { key: 'widthDesktop', label: 'Width Desktop', type: 'text', placeholder: '100%' },
+        { key: 'widthTablet', label: 'Width Tablet', type: 'text', placeholder: '100%' },
+        { key: 'widthMobile', label: 'Width Mobile', type: 'text', placeholder: '100%' },
+        { key: 'heightDesktop', label: 'Height Desktop', type: 'text', placeholder: 'auto' },
+        { key: 'heightTablet', label: 'Height Tablet', type: 'text', placeholder: 'auto' },
+        { key: 'heightMobile', label: 'Height Mobile', type: 'text', placeholder: 'auto' },
+        { key: 'padding', label: 'Padding', type: 'text', placeholder: '0px' },
+        { key: 'margin', label: 'Margin', type: 'text', placeholder: '0px' }
       ];
 
       switch(selectedElement.type) {
         case 'project':
           return [
-            { key: 'breakpointDesktop', label: 'Desktop Breakpoint', type: 'text' },
-            { key: 'breakpointTablet', label: 'Tablet Breakpoint', type: 'text' },
-            { key: 'breakpointMobile', label: 'Mobile Breakpoint', type: 'text' }
+            // ✅ BREAKPOINTS EXISTANTS avec placeholders
+            { key: 'breakpointDesktop', label: 'Desktop Breakpoint', type: 'text', placeholder: '1200px' },
+            { key: 'breakpointTablet', label: 'Tablet Breakpoint', type: 'text', placeholder: '768px' },
+            { key: 'breakpointMobile', label: 'Mobile Breakpoint', type: 'text', placeholder: '480px' },
+            
+            // ✅ AJOUT HEADER CONFIGURATION MANQUANT
+            { key: 'headerEnabled', label: 'Header Enabled', type: 'checkbox' },
+            { key: 'headerHeight', label: 'Header Height', type: 'text', placeholder: '60px' },
+            { key: 'headerPosition', label: 'Header Position', type: 'select', options: ['static', 'fixed', 'sticky'] },
+            { key: 'headerBackgroundColor', label: 'Header Background', type: 'color' },
+            
+            // ✅ AJOUT FOOTER CONFIGURATION MANQUANT  
+            { key: 'footerEnabled', label: 'Footer Enabled', type: 'checkbox' },
+            { key: 'footerHeight', label: 'Footer Height', type: 'text', placeholder: '80px' },
+            { key: 'footerPosition', label: 'Footer Position', type: 'select', options: ['static', 'fixed', 'sticky'] },
+            { key: 'footerBackgroundColor', label: 'Footer Background', type: 'color' }
           ];
+
         case 'section':
           return [
-            { key: 'desktopColumns', label: 'Desktop Columns', type: 'number' },
-            { key: 'tabletColumns', label: 'Tablet Columns', type: 'number' },
-            { key: 'mobileColumns', label: 'Mobile Columns', type: 'number' },
-            { key: 'gap', label: 'Gap', type: 'text' },
+            { key: 'desktopColumns', label: 'Desktop Columns', type: 'number', placeholder: '12' },
+            { key: 'tabletColumns', label: 'Tablet Columns', type: 'number', placeholder: '6' },
+            { key: 'mobileColumns', label: 'Mobile Columns', type: 'number', placeholder: '1' },
+            { key: 'gap', label: 'Gap', type: 'text', placeholder: '16px' },
             ...commonLayout
           ];
+
         case 'div':
         case 'list':
         case 'form':
@@ -198,6 +313,7 @@ function PropertiesModule({
             { key: 'justifyContent', label: 'Justify Content', type: 'select', options: ['flex-start', 'center', 'flex-end', 'space-between'] },
             { key: 'alignItems', label: 'Align Items', type: 'select', options: ['flex-start', 'center', 'flex-end', 'stretch'] }
           ];
+
         default:
           return commonLayout;
       }
@@ -207,42 +323,43 @@ function PropertiesModule({
       const commonStyle = [
         { key: 'backgroundColor', label: 'Background Color', type: 'color' },
         { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
+        { key: 'border', label: 'Border', type: 'text', placeholder: '1px solid #ccc' },
+        { key: 'borderRadius', label: 'Border Radius', type: 'text', placeholder: '4px' },
         { key: 'boxShadow', label: 'Box Shadow', type: 'text' },
-        { key: 'opacity', label: 'Opacity', type: 'number' }
+        { key: 'opacity', label: 'Opacity', type: 'number', min: '0', max: '1', step: '0.1' }
       ];
 
       switch(selectedElement.type) {
         case 'project':
           return [
             { key: 'theme', label: 'Theme', type: 'select', options: ['light', 'dark', 'auto'] },
-            { key: 'fontFamily', label: 'Font Family', type: 'text' },
+            { key: 'fontFamily', label: 'Font Family', type: 'text', placeholder: 'Arial, sans-serif' },
+            // ✅ COULEURS THEME COMPLÈTES
             { key: 'lightPrimaryColor', label: 'Primary Light', type: 'color' },
             { key: 'lightSecondaryColor', label: 'Secondary Light', type: 'color' },
             { key: 'darkPrimaryColor', label: 'Primary Dark', type: 'color' },
             { key: 'darkSecondaryColor', label: 'Secondary Dark', type: 'color' }
           ];
-        case 'heading':
-        case 'paragraph':
+
         case 'title':
+        case 'paragraph':
           return [
             ...commonStyle,
-            { key: 'fontSize', label: 'Font Size', type: 'text' },
+            { key: 'fontSize', label: 'Font Size', type: 'text', placeholder: '16px' },
             { key: 'fontWeight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '300', '400', '500', '600', '700'] },
-            { key: 'textAlign', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] },
-            { key: 'lineHeight', label: 'Line Height', type: 'text' },
-            { key: 'letterSpacing', label: 'Letter Spacing', type: 'text' }
+            { key: 'textAlign', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] }
           ];
+
         case 'image':
           return [
             ...commonStyle,
-            { key: 'objectFit', label: 'Object Fit', type: 'select', options: ['contain', 'cover', 'fill', 'none'] }
+            { key: 'objectFit', label: 'Object Fit', type: 'select', options: ['contain', 'cover', 'fill', 'none', 'scale-down'] }
           ];
+
         default:
           return commonStyle;
       }
-    };
+    }
 
     return Object.entries(tabs).map(([key, tab]) => ({
       key,
@@ -259,7 +376,7 @@ function PropertiesModule({
     return (
       <div className="properties-tab-content">
         {currentTab.fields.map(field => {
-          const value = getPropertyValue(field.key); // Utilise la fonction de récupération
+          const value = getPropertyValue(field.key);
 
           if (field.type === 'select') {
             return (
@@ -268,6 +385,7 @@ function PropertiesModule({
                 label={field.label}
                 value={value}
                 type="select"
+                placeholder={field.placeholder}
                 onChange={(newValue) => handlePropertyChange(field.key, newValue)}
                 disabled={field.disabled}
               >
@@ -284,6 +402,10 @@ function PropertiesModule({
               label={field.label}
               value={field.type === 'checkbox' ? !!value : value}
               type={field.type}
+              placeholder={field.placeholder}
+              min={field.min}
+              max={field.max}
+              step={field.step}
               onChange={(newValue) => handlePropertyChange(field.key, newValue)}
               disabled={field.disabled}
             />
@@ -293,8 +415,8 @@ function PropertiesModule({
         {/* Debug en développement */}
         {process.env.NODE_ENV === 'development' && (
           <details className="properties-debug" style={{ marginTop: '16px', fontSize: '11px' }}>
-            <summary>Debug Selected Element</summary>
-            <pre style={{ maxHeight: '150px', overflow: 'auto', background: '#f5f5f5', padding: '8px' }}>
+            <summary>🔍 Debug Selected Element</summary>
+            <pre style={{ maxHeight: '200px', overflow: 'auto', background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
               {JSON.stringify(selectedElement, null, 2)}
             </pre>
           </details>
