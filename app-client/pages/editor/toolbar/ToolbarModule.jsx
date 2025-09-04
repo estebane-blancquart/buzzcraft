@@ -43,7 +43,6 @@ function ToolbarModule({
       <div className="editor-title">
         <h1>{project.name}</h1>
         {isDirty && <span className="dirty-indicator">●</span>}
-        <span className="project-state">{project.state}</span>
       </div>
 
       <div className="editor-controls">

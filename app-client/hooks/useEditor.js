@@ -150,6 +150,7 @@ export function useEditor() {
 
   // Handlers éditeur
   const handleElementSelect = (element) => {
+      console.log('🎯 ELEMENT SELECTED:', element); // <- Ajoute cette ligne
     console.log('Element selected:', element);
     setSelectedElement(element);
   };
