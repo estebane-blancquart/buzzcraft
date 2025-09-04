@@ -2,10 +2,10 @@ import React from 'react';
 import { DEVICES } from '@config/constants.js';
 
 /*
- * FAIT QUOI : Rendu propre type site web fini
+ * FAIT QUOI : Rendu depuis project.json structure réelle
  * REÇOIT : project, device, selectedElement, onElementSelect
- * RETOURNE : Preview réaliste avec sélection discrète
- * NOUVEAU : Plus de bruit visuel, rendu final
+ * RETOURNE : Preview basée sur project.pages[].sections[].containers[].components[]
+ * NOUVEAU : Plus de hardcodé - lecture vraie config
  */
 
 function CanvasFrame({ 
@@ -26,293 +26,254 @@ function CanvasFrame({
   };
 
   const renderComponent = (component) => {
+    if (!component || !component.type) return null;
+
     const isComponentSelected = isSelected(component);
-    const baseClass = isComponentSelected ? 'selected' : '';
+    const baseClass = `preview-element ${isComponentSelected ? 'selected' : ''}`;
     
-    return (
-      <div
-        key={component.id}
-        className={`preview-element ${baseClass}`}
-        onClick={(e) => handleElementClick(component, e)}
-        style={{ cursor: 'pointer' }}
-      >
-        {component.type === 'heading' && (
-          React.createElement(component.tag || 'h2', {
-            className: component.classname || '',
-            style: {
-              fontSize: component.fontSize || '2rem',
-              fontWeight: component.fontWeight || '600',
-              color: component.textColor || '#1a1a1a',
-              textAlign: component.textAlign || 'left',
-              lineHeight: component.lineHeight || '1.2',
-              margin: component.margin || '0 0 1rem 0'
-            }
-          }, component.text || component.content || 'Heading')
-        )}
-        
-        {component.type === 'paragraph' && (
+    const clickHandler = (e) => handleElementClick(component, e);
+
+    switch (component.type) {
+      case 'heading':
+        const HeadingTag = component.tag || 'h2';
+        return (
+          <HeadingTag
+            key={component.id}
+            className={baseClass}
+            onClick={clickHandler}
+            style={{
+              fontSize: component.fontSize || component.properties?.fontSize || '2rem',
+              fontWeight: component.fontWeight || component.properties?.fontWeight || '600',
+              color: component.textColor || component.properties?.textColor || '#1a1a1a',
+              textAlign: component.textAlign || component.properties?.textAlign || 'left',
+              lineHeight: component.lineHeight || component.properties?.lineHeight || '1.2',
+              margin: component.margin || component.properties?.margin || '0 0 1rem 0',
+              cursor: 'pointer'
+            }}
+          >
+            {component.content || component.text || 'Titre'}
+          </HeadingTag>
+        );
+
+      case 'paragraph':
+        return (
           <p 
-            className={component.classname || ''}
+            key={component.id}
+            className={baseClass}
+            onClick={clickHandler}
             style={{
-              fontSize: component.fontSize || '1rem',
-              fontWeight: component.fontWeight || '400',
-              color: component.textColor || '#333',
-              textAlign: component.textAlign || 'left',
-              lineHeight: component.lineHeight || '1.6',
-              margin: component.margin || '0 0 1rem 0'
+              fontSize: component.fontSize || component.properties?.fontSize || '1rem',
+              fontWeight: component.fontWeight || component.properties?.fontWeight || '400',
+              color: component.textColor || component.properties?.textColor || '#333',
+              textAlign: component.textAlign || component.properties?.textAlign || 'left',
+              lineHeight: component.lineHeight || component.properties?.lineHeight || '1.6',
+              margin: component.margin || component.properties?.margin || '0 0 1rem 0',
+              cursor: 'pointer'
             }}
           >
-            {component.text || component.content || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'}
+            {component.content || component.text || 'Paragraphe'}
           </p>
-        )}
-        
-        {component.type === 'button' && (
-          <button 
-            className={component.classname || ''}
+        );
+
+      case 'button':
+        return (
+          <button
+            key={component.id}
+            className={baseClass}
+            onClick={clickHandler}
             style={{
-              backgroundColor: component.backgroundColor || '#007bff',
-              color: component.textColor || 'white',
-              fontSize: component.fontSize || '1rem',
-              fontWeight: component.fontWeight || '500',
-              padding: component.padding || '12px 24px',
-              border: component.border || 'none',
-              borderRadius: component.borderRadius || '6px',
+              padding: component.padding || component.properties?.padding || '12px 24px',
+              fontSize: component.fontSize || component.properties?.fontSize || '1rem',
+              fontWeight: component.fontWeight || component.properties?.fontWeight || '500',
+              color: component.textColor || component.properties?.textColor || '#fff',
+              backgroundColor: component.backgroundColor || component.properties?.backgroundColor || '#007bff',
+              border: component.border || component.properties?.border || 'none',
+              borderRadius: component.borderRadius || component.properties?.borderRadius || '6px',
               cursor: 'pointer',
-              margin: component.margin || '0 0 1rem 0'
+              transition: 'all 0.2s ease'
             }}
           >
-            {component.text || component.content || 'Button'}
+            {component.content || component.text || 'Bouton'}
           </button>
-        )}
-        
-        {component.type === 'image' && (
-          <img 
-            src={component.src || 'https://via.placeholder.com/300x200?text=Image'}
-            alt={component.alt || 'Image'}
-            className={component.classname || ''}
+        );
+
+      case 'image':
+        return (
+          <img
+            key={component.id}
+            className={baseClass}
+            onClick={clickHandler}
+            src={component.src || component.properties?.src || '/placeholder.jpg'}
+            alt={component.alt || component.properties?.alt || 'Image'}
             style={{
-              width: component.width || 'auto',
-              height: component.height || 'auto',
+              width: component.width || component.properties?.width || 'auto',
+              height: component.height || component.properties?.height || 'auto',
               maxWidth: '100%',
-              borderRadius: component.borderRadius || '0',
-              margin: component.margin || '0 0 1rem 0',
-              objectFit: component.objectFit || 'cover'
+              borderRadius: component.borderRadius || component.properties?.borderRadius || '0',
+              cursor: 'pointer'
             }}
           />
-        )}
-        
-        {component.type === 'link' && (
-          <a 
-            href={component.href || '#'}
-            target={component.target || '_self'}
-            className={component.classname || ''}
+        );
+
+      case 'link':
+        return (
+          <a
+            key={component.id}
+            className={baseClass}
+            onClick={clickHandler}
+            href={component.href || component.properties?.href || '#'}
             style={{
-              color: component.textColor || '#007bff',
-              fontSize: component.fontSize || '1rem',
-              fontWeight: component.fontWeight || '400',
-              textDecoration: component.textDecoration || 'underline',
-              margin: component.margin || '0 0 1rem 0'
+              color: component.textColor || component.properties?.textColor || '#007bff',
+              textDecoration: component.textDecoration || component.properties?.textDecoration || 'underline',
+              cursor: 'pointer'
             }}
           >
-            {component.text || component.content || 'Link'}
+            {component.content || component.text || 'Lien'}
           </a>
-        )}
+        );
 
-        {component.type === 'input' && (
-          <input 
-            type={component.inputType || 'text'}
-            placeholder={component.placeholder || 'Enter text...'}
-            value={component.value || ''}
-            className={component.classname || ''}
+      case 'input':
+        return (
+          <input
+            key={component.id}
+            className={baseClass}
+            onClick={clickHandler}
+            type={component.inputType || component.properties?.inputType || 'text'}
+            placeholder={component.placeholder || component.properties?.placeholder || ''}
             style={{
-              width: component.width || '100%',
-              padding: component.padding || '12px',
-              border: component.border || '1px solid #ddd',
-              borderRadius: component.borderRadius || '4px',
-              fontSize: component.fontSize || '1rem',
-              margin: component.margin || '0 0 1rem 0'
+              padding: component.padding || component.properties?.padding || '12px',
+              fontSize: component.fontSize || component.properties?.fontSize || '1rem',
+              border: component.border || component.properties?.border || '1px solid #ddd',
+              borderRadius: component.borderRadius || component.properties?.borderRadius || '4px',
+              width: component.width || component.properties?.width || '100%',
+              cursor: 'pointer'
             }}
-            readOnly
           />
-        )}
+        );
 
-        {component.type === 'textarea' && (
-          <textarea 
-            placeholder={component.placeholder || 'Enter text...'}
-            value={component.value || ''}
-            className={component.classname || ''}
-            style={{
-              width: component.width || '100%',
-              padding: component.padding || '12px',
-              border: component.border || '1px solid #ddd',
-              borderRadius: component.borderRadius || '4px',
-              fontSize: component.fontSize || '1rem',
-              margin: component.margin || '0 0 1rem 0',
-              minHeight: '100px',
-              resize: 'vertical'
-            }}
-            readOnly
-          />
-        )}
-      </div>
-    );
+      default:
+        return (
+          <div
+            key={component.id}
+            className={baseClass}
+            onClick={clickHandler}
+            style={{ cursor: 'pointer', padding: '8px', border: '1px dashed #ccc' }}
+          >
+            {component.type} ({component.id})
+          </div>
+        );
+    }
   };
 
   const renderContainer = (container) => {
+    if (!container) return null;
+
+    const components = container.components || [];
     const isContainerSelected = isSelected(container);
-    const baseClass = isContainerSelected ? 'selected' : '';
     
     return (
       <div
         key={container.id}
-        className={`preview-element ${baseClass}`}
+        className={`preview-element container ${isContainerSelected ? 'selected' : ''}`}
         onClick={(e) => handleElementClick(container, e)}
         style={{
-          backgroundColor: container.backgroundColor || 'transparent',
-          padding: container.padding || '20px',
-          margin: container.margin || '0 0 2rem 0',
-          borderRadius: container.borderRadius || '0',
-          border: container.border || 'none',
-          display: container.display || 'block',
-          flexDirection: container.flexDirection || 'column',
-          justifyContent: container.justifyContent || 'flex-start',
-          alignItems: container.alignItems || 'flex-start',
-          gap: container.gap || '1rem',
+          padding: container.padding || container.properties?.padding || '16px',
+          margin: container.margin || container.properties?.margin || '0',
+          backgroundColor: container.backgroundColor || container.properties?.backgroundColor || 'transparent',
+          borderRadius: container.borderRadius || container.properties?.borderRadius || '0',
           cursor: 'pointer'
         }}
       >
-        {container.components?.map(renderComponent)}
-        {(!container.components || container.components.length === 0) && (
-          <div className="empty-placeholder">
-            Click to add components
-          </div>
-        )}
+        {components.map(renderComponent)}
       </div>
     );
   };
 
   const renderSection = (section) => {
-    const isSectionSelected = isSelected(section);
-    const baseClass = isSectionSelected ? 'selected' : '';
-    
-    // Gestion responsive des colonnes
-    const getColumns = () => {
-      switch(device) {
-        case DEVICES.MOBILE:
-          return section.mobileColumns || 1;
-        case DEVICES.TABLET:
-          return section.tabletColumns || 2;
-        default:
-          return section.desktopColumns || 3;
-      }
-    };
+    if (!section) return null;
 
-    const columns = getColumns();
-    const containers = [
-      ...(section.divs || []).map(div => ({ ...div, type: 'div' })),
-      ...(section.lists || []).map(list => ({ ...list, type: 'list' })),
-      ...(section.forms || []).map(form => ({ ...form, type: 'form' })),
-      ...(section.containers || [])
-    ];
+    // Collecter tous les containers de la section
+    const containers = [];
     
+    if (section.divs) containers.push(...section.divs.map(div => ({ ...div, type: 'div' })));
+    if (section.lists) containers.push(...section.lists.map(list => ({ ...list, type: 'list' })));
+    if (section.forms) containers.push(...section.forms.map(form => ({ ...form, type: 'form' })));
+    if (section.containers) containers.push(...section.containers);
+
+    const isSectionSelected = isSelected(section);
+
     return (
       <section
         key={section.id}
-        className={`preview-element ${baseClass}`}
+        className={`preview-element section ${isSectionSelected ? 'selected' : ''}`}
         onClick={(e) => handleElementClick(section, e)}
         style={{
-          backgroundColor: section.backgroundColor || 'transparent',
-          backgroundImage: section.backgroundImage ? `url(${section.backgroundImage})` : 'none',
-          padding: section.padding || '40px 20px',
-          margin: section.margin || '0 0 3rem 0',
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: section.gap || '2rem',
+          padding: section.padding || section.properties?.padding || '24px',
+          margin: section.margin || section.properties?.margin || '0',
+          backgroundColor: section.backgroundColor || section.properties?.backgroundColor || 'transparent',
           cursor: 'pointer'
         }}
       >
         {containers.map(renderContainer)}
-        {containers.length === 0 && (
-          <div className="empty-placeholder" style={{ gridColumn: '1 / -1' }}>
-            Click to add containers
-          </div>
-        )}
       </section>
     );
   };
 
+  const renderPage = (page) => {
+    if (!page) return null;
+
+    const sections = page.layout?.sections || page.sections || [];
+    const isPageSelected = isSelected(page);
+
+    return (
+      <div
+        key={page.id}
+        className={`preview-element page ${isPageSelected ? 'selected' : ''}`}
+        onClick={(e) => handleElementClick(page, e)}
+        style={{ cursor: 'pointer' }}
+      >
+        {sections.map(renderSection)}
+      </div>
+    );
+  };
+
+  // Si pas de projet, afficher état vide
   if (!project) {
     return (
       <div className="preview-content">
-        <div className="empty-state">
-          <h2>No project loaded</h2>
-          <p>Select a project to start designing</p>
+        <div className={`preview-viewport device-${device}`}>
+          <div className="empty-state">
+            <h2>Aucun projet</h2>
+            <p>Sélectionnez un projet pour voir la prévisualisation</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  const currentPage = project.pages?.[0]; // Première page pour l'instant
+  // Si pas de pages, afficher placeholder
+  const pages = project.pages || [];
+  if (pages.length === 0) {
+    return (
+      <div className="preview-content">
+        <div className={`preview-viewport device-${device}`}>
+          <div className="empty-state">
+            <h2>Projet vide</h2>
+            <p>Ajoutez des pages pour voir le contenu</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Fonction pour obtenir les sections selon la structure
-  const getPageSections = (page) => {
-    if (!page) return [];
-    return page.layout?.sections || page.sections || [];
-  };
+  // Rendre la première page (ou celle sélectionnée)
+  const currentPage = pages[0]; // TODO: Gérer la sélection de page
 
   return (
     <div className="preview-content">
       <div className={`preview-viewport device-${device}`}>
-        <div 
-          className="preview-website"
-          style={{
-            fontFamily: project.fontFamily || 'system-ui, sans-serif',
-            backgroundColor: '#ffffff',
-            minHeight: '100vh'
-          }}
-        >
-          {/* Header du site si configuré */}
-          {project.header && (
-            <header style={{ 
-              backgroundColor: project.header.backgroundColor || '#f8f9fa',
-              padding: '1rem 2rem',
-              borderBottom: '1px solid #e9ecef'
-            }}>
-              <h1 style={{ margin: 0, fontSize: '1.5rem' }}>
-                {project.name}
-              </h1>
-            </header>
-          )}
-
-          {/* Contenu principal */}
-          <main style={{ padding: '2rem' }}>
-            {currentPage && getPageSections(currentPage).map(renderSection)}
-            {(!currentPage || getPageSections(currentPage).length === 0) && (
-              <div className="empty-state">
-                <h2>Empty Page</h2>
-                <p>Add sections to start building your page</p>
-                <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#666' }}>
-                  Current page: {currentPage?.name || 'No page'}
-                  <br />
-                  Sections found: {currentPage ? getPageSections(currentPage).length : 0}
-                </div>
-              </div>
-            )}
-          </main>
-
-          {/* Footer du site si configuré */}
-          {project.footer && (
-            <footer style={{ 
-              backgroundColor: project.footer.backgroundColor || '#f8f9fa',
-              padding: '2rem',
-              borderTop: '1px solid #e9ecef',
-              textAlign: 'center'
-            }}>
-              <p style={{ margin: 0, color: '#6c757d' }}>
-                © 2024 {project.name}
-              </p>
-            </footer>
-          )}
+        <div className="preview-website">
+          {renderPage(currentPage)}
         </div>
       </div>
     </div>

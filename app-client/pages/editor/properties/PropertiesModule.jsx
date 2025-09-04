@@ -6,7 +6,7 @@ import { DEVICES } from '@config/constants.js';
  * FAIT QUOI : Panel propriétés avec onglets horizontaux
  * REÇOIT : selectedElement, device, onElementUpdate
  * RETOURNE : Interface clean avec navigation par onglets
- * NOUVEAU : Pas de header + onglets horizontaux
+ * NOUVEAU : Sync avec project.json + garde le style onglets
  */
 
 function PropertiesModule({ 
@@ -18,7 +18,40 @@ function PropertiesModule({
 
   const handlePropertyChange = (propertyName, value) => {
     if (!selectedElement || !onElementUpdate) return;
-    onElementUpdate(selectedElement.id, { [propertyName]: value });
+    
+    // Créer l'élément mis à jour avec sync properties + props directes
+    const updatedElement = {
+      ...selectedElement,
+      [propertyName]: value, // Propriété directe
+      properties: {
+        ...selectedElement.properties,
+        [propertyName]: value // Dans properties aussi
+      }
+    };
+    
+    // Sync spéciale pour le contenu
+    if (propertyName === 'text' || propertyName === 'content') {
+      updatedElement.text = value;
+      updatedElement.content = value;
+      updatedElement.properties = {
+        ...updatedElement.properties,
+        text: value,
+        content: value
+      };
+    }
+    
+    onElementUpdate(selectedElement.id, updatedElement);
+  };
+
+  const getPropertyValue = (key) => {
+    if (!selectedElement) return '';
+    
+    // Priorité : propriété directe > properties > défaut
+    return selectedElement[key] || 
+           selectedElement.properties?.[key] || 
+           (key === 'content' ? selectedElement.text : '') ||
+           (key === 'text' ? selectedElement.content : '') ||
+           '';
   };
 
   const getPropertyTabs = () => {
@@ -79,26 +112,29 @@ function PropertiesModule({
         case 'heading':
         case 'title':
           return [
-            { key: 'text', label: 'Text', type: 'text' },
-            { key: 'level', label: 'Level', type: 'select', options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }
+            { key: 'content', label: 'Text', type: 'text' }, // Unifié sur 'content'
+            { key: 'level', label: 'Level', type: 'select', options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] },
+            { key: 'tag', label: 'HTML Tag', type: 'select', options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }
           ];
         case 'paragraph':
           return [
-            { key: 'text', label: 'Text', type: 'textarea' },
+            { key: 'content', label: 'Text', type: 'textarea' }, // Unifié sur 'content'
             { key: 'maxLines', label: 'Max Lines', type: 'number' },
             { key: 'allowHtml', label: 'Allow HTML', type: 'checkbox' }
           ];
         case 'button':
           return [
-            { key: 'text', label: 'Button Text', type: 'text' },
+            { key: 'content', label: 'Button Text', type: 'text' }, // Unifié sur 'content'
             { key: 'action', label: 'Action', type: 'text' },
+            { key: 'href', label: 'Link URL', type: 'url' },
+            { key: 'target', label: 'Link Target', type: 'select', options: ['_self', '_blank'] },
             { key: 'buttonType', label: 'Type', type: 'select', options: ['button', 'submit', 'reset'] },
             { key: 'icon', label: 'Icon', type: 'text' },
             { key: 'iconPosition', label: 'Icon Position', type: 'select', options: ['left', 'right'] }
           ];
         case 'link':
           return [
-            { key: 'text', label: 'Link Text', type: 'text' },
+            { key: 'content', label: 'Link Text', type: 'text' }, // Unifié sur 'content'
             { key: 'href', label: 'URL', type: 'url' },
             { key: 'target', label: 'Target', type: 'select', options: ['_self', '_blank', '_parent', '_top'] }
           ];
@@ -106,6 +142,8 @@ function PropertiesModule({
           return [
             { key: 'src', label: 'Image URL', type: 'url' },
             { key: 'alt', label: 'Alt Text', type: 'text' },
+            { key: 'width', label: 'Width', type: 'text' },
+            { key: 'height', label: 'Height', type: 'text' },
             { key: 'lazy', label: 'Lazy Loading', type: 'checkbox' }
           ];
         case 'input':
@@ -117,6 +155,7 @@ function PropertiesModule({
           ];
         default:
           return [
+            { key: 'content', label: 'Content', type: 'textarea' },
             { key: 'classname', label: 'CSS Classes', type: 'text' }
           ];
       }
@@ -129,7 +168,9 @@ function PropertiesModule({
         { key: 'widthMobile', label: 'Width Mobile', type: 'text' },
         { key: 'heightDesktop', label: 'Height Desktop', type: 'text' },
         { key: 'heightTablet', label: 'Height Tablet', type: 'text' },
-        { key: 'heightMobile', label: 'Height Mobile', type: 'text' }
+        { key: 'heightMobile', label: 'Height Mobile', type: 'text' },
+        { key: 'padding', label: 'Padding', type: 'text' },
+        { key: 'margin', label: 'Margin', type: 'text' }
       ];
 
       switch(selectedElement.type) {
@@ -144,7 +185,8 @@ function PropertiesModule({
             { key: 'desktopColumns', label: 'Desktop Columns', type: 'number' },
             { key: 'tabletColumns', label: 'Tablet Columns', type: 'number' },
             { key: 'mobileColumns', label: 'Mobile Columns', type: 'number' },
-            { key: 'gap', label: 'Gap', type: 'text' }
+            { key: 'gap', label: 'Gap', type: 'text' },
+            ...commonLayout
           ];
         case 'div':
         case 'list':
@@ -217,7 +259,7 @@ function PropertiesModule({
     return (
       <div className="properties-tab-content">
         {currentTab.fields.map(field => {
-          const value = selectedElement[field.key] || '';
+          const value = getPropertyValue(field.key); // Utilise la fonction de récupération
 
           if (field.type === 'select') {
             return (
@@ -247,6 +289,16 @@ function PropertiesModule({
             />
           );
         })}
+        
+        {/* Debug en développement */}
+        {process.env.NODE_ENV === 'development' && (
+          <details className="properties-debug" style={{ marginTop: '16px', fontSize: '11px' }}>
+            <summary>Debug Selected Element</summary>
+            <pre style={{ maxHeight: '150px', overflow: 'auto', background: '#f5f5f5', padding: '8px' }}>
+              {JSON.stringify(selectedElement, null, 2)}
+            </pre>
+          </details>
+        )}
       </div>
     );
   };
