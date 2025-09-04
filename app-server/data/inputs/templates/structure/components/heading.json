@@ -1,0 +1,65 @@
+{
+  "id": "heading",
+  "type": "heading",
+  "name": "Heading Component",
+  "schema": {
+    "text": {
+      "type": "string",
+      "default": "Heading text",
+      "required": true
+    },
+    "level": {
+      "type": "enum",
+      "options": ["h1", "h2", "h3", "h4", "h5", "h6"],
+      "default": "h2",
+      "required": false
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    },
+    
+    "backgroundColor": {
+      "type": "color",
+      "default": ""
+    },
+    "textColor": {
+      "type": "color", 
+      "default": "#1a1a1a"
+    },
+    "fontSize": {
+      "type": "string",
+      "default": "2rem"
+    },
+    "fontWeight": {
+      "type": "enum",
+      "options": ["300", "400", "500", "600", "700"],
+      "default": "600"
+    },
+    "textAlign": {
+      "type": "enum",
+      "options": ["left", "center", "right", "justify"],
+      "default": "left"
+    },
+    "lineHeight": {
+      "type": "string",
+      "default": "1.2"
+    },
+    "letterSpacing": {
+      "type": "string",
+      "default": "normal"
+    },
+    "border": {
+      "type": "string",
+      "default": ""
+    },
+    "borderRadius": {
+      "type": "string",
+      "default": "0"
+    },
+    "boxShadow": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

@@ -13,19 +13,49 @@
       "default": "Image description",
       "required": true
     },
-    "width": {
-      "type": "number",
-      "default": 400,
-      "required": false
+    "lazy": {
+      "type": "boolean",
+      "default": true
     },
-    "height": {
-      "type": "number", 
-      "default": 300,
-      "required": false
+    "objectFit": {
+      "type": "enum",
+      "options": ["contain", "cover", "fill", "none"],
+      "default": "cover"
     },
     "classname": {
       "type": "string",
       "default": ""
+    },
+    
+    "width": {
+      "type": "string",
+      "default": "auto"
+    },
+    "height": {
+      "type": "string",
+      "default": "auto"
+    },
+    "backgroundColor": {
+      "type": "color",
+      "default": ""
+    },
+    "border": {
+      "type": "string",
+      "default": ""
+    },
+    "borderRadius": {
+      "type": "string",
+      "default": "0"
+    },
+    "boxShadow": {
+      "type": "string",
+      "default": ""
+    },
+    "opacity": {
+      "type": "number",
+      "default": 1,
+      "min": 0,
+      "max": 1
     }
   }
 }

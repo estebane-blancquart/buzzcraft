@@ -1,0 +1,67 @@
+{
+  "id": "paragraph",
+  "type": "paragraph",
+  "name": "Paragraph Component",
+  "schema": {
+    "text": {
+      "type": "string",
+      "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "required": true
+    },
+    "maxLines": {
+      "type": "number",
+      "default": null
+    },
+    "allowHtml": {
+      "type": "boolean",
+      "default": false
+    },
+    "classname": {
+      "type": "string",
+      "default": ""
+    },
+    
+    "backgroundColor": {
+      "type": "color",
+      "default": ""
+    },
+    "textColor": {
+      "type": "color",
+      "default": "#333"
+    },
+    "fontSize": {
+      "type": "string",
+      "default": "1rem"
+    },
+    "fontWeight": {
+      "type": "enum",
+      "options": ["300", "400", "500", "600", "700"],
+      "default": "400"
+    },
+    "textAlign": {
+      "type": "enum",
+      "options": ["left", "center", "right", "justify"],
+      "default": "left"
+    },
+    "lineHeight": {
+      "type": "string",
+      "default": "1.6"
+    },
+    "letterSpacing": {
+      "type": "string",
+      "default": "normal"
+    },
+    "border": {
+      "type": "string",
+      "default": ""
+    },
+    "borderRadius": {
+      "type": "string",
+      "default": "0"
+    },
+    "boxShadow": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

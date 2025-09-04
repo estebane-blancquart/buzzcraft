@@ -307,14 +307,6 @@ function PropertiesModule({
 
   return (
     <div className="project-properties">
-      {device !== DEVICES.DESKTOP && (
-        <div className="properties-device-indicator">
-          <span className="device-label">
-            Editing for {device === DEVICES.TABLET ? 'Tablet' : 'Mobile'}
-          </span>
-        </div>
-      )}
-
       <div className="properties-content">
         {selectedElement ? (
           <>

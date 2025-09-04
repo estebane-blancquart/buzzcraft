@@ -1,5 +1,5 @@
-import React from 'react';
-import { DEVICES } from '@config/constants.js';
+import React from "react";
+import { DEVICES } from "@config/constants.js";
 
 /*
  * FAIT QUOI : Rendu depuis project.json structure réelle
@@ -8,11 +8,11 @@ import { DEVICES } from '@config/constants.js';
  * NOUVEAU : Plus de hardcodé - lecture vraie config
  */
 
-function CanvasFrame({ 
-  project = null, 
-  device = DEVICES.DESKTOP, 
-  selectedElement = null, 
-  onElementSelect = () => {} 
+function CanvasFrame({
+  project = null,
+  device = DEVICES.DESKTOP,
+  selectedElement = null,
+  onElementSelect = () => {},
 }) {
   const handleElementClick = (element, event) => {
     event.stopPropagation();
@@ -26,199 +26,261 @@ function CanvasFrame({
   };
 
   const renderComponent = (component) => {
-    if (!component || !component.type) return null;
-
     const isComponentSelected = isSelected(component);
-    const baseClass = `preview-element ${isComponentSelected ? 'selected' : ''}`;
-    
-    const clickHandler = (e) => handleElementClick(component, e);
+    const baseClass = isComponentSelected ? "selected" : "";
 
-    switch (component.type) {
-      case 'heading':
-        const HeadingTag = component.tag || 'h2';
-        return (
-          <HeadingTag
-            key={component.id}
-            className={baseClass}
-            onClick={clickHandler}
-            style={{
-              fontSize: component.fontSize || component.properties?.fontSize || '2rem',
-              fontWeight: component.fontWeight || component.properties?.fontWeight || '600',
-              color: component.textColor || component.properties?.textColor || '#1a1a1a',
-              textAlign: component.textAlign || component.properties?.textAlign || 'left',
-              lineHeight: component.lineHeight || component.properties?.lineHeight || '1.2',
-              margin: component.margin || component.properties?.margin || '0 0 1rem 0',
-              cursor: 'pointer'
-            }}
-          >
-            {component.content || component.text || 'Titre'}
-          </HeadingTag>
-        );
-
-      case 'paragraph':
-        return (
-          <p 
-            key={component.id}
-            className={baseClass}
-            onClick={clickHandler}
-            style={{
-              fontSize: component.fontSize || component.properties?.fontSize || '1rem',
-              fontWeight: component.fontWeight || component.properties?.fontWeight || '400',
-              color: component.textColor || component.properties?.textColor || '#333',
-              textAlign: component.textAlign || component.properties?.textAlign || 'left',
-              lineHeight: component.lineHeight || component.properties?.lineHeight || '1.6',
-              margin: component.margin || component.properties?.margin || '0 0 1rem 0',
-              cursor: 'pointer'
-            }}
-          >
-            {component.content || component.text || 'Paragraphe'}
-          </p>
-        );
-
-      case 'button':
-        return (
-          <button
-            key={component.id}
-            className={baseClass}
-            onClick={clickHandler}
-            style={{
-              padding: component.padding || component.properties?.padding || '12px 24px',
-              fontSize: component.fontSize || component.properties?.fontSize || '1rem',
-              fontWeight: component.fontWeight || component.properties?.fontWeight || '500',
-              color: component.textColor || component.properties?.textColor || '#fff',
-              backgroundColor: component.backgroundColor || component.properties?.backgroundColor || '#007bff',
-              border: component.border || component.properties?.border || 'none',
-              borderRadius: component.borderRadius || component.properties?.borderRadius || '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {component.content || component.text || 'Bouton'}
-          </button>
-        );
-
-      case 'image':
-        return (
-          <img
-            key={component.id}
-            className={baseClass}
-            onClick={clickHandler}
-            src={component.src || component.properties?.src || '/placeholder.jpg'}
-            alt={component.alt || component.properties?.alt || 'Image'}
-            style={{
-              width: component.width || component.properties?.width || 'auto',
-              height: component.height || component.properties?.height || 'auto',
-              maxWidth: '100%',
-              borderRadius: component.borderRadius || component.properties?.borderRadius || '0',
-              cursor: 'pointer'
-            }}
-          />
-        );
-
-      case 'link':
-        return (
-          <a
-            key={component.id}
-            className={baseClass}
-            onClick={clickHandler}
-            href={component.href || component.properties?.href || '#'}
-            style={{
-              color: component.textColor || component.properties?.textColor || '#007bff',
-              textDecoration: component.textDecoration || component.properties?.textDecoration || 'underline',
-              cursor: 'pointer'
-            }}
-          >
-            {component.content || component.text || 'Lien'}
-          </a>
-        );
-
-      case 'input':
-        return (
-          <input
-            key={component.id}
-            className={baseClass}
-            onClick={clickHandler}
-            type={component.inputType || component.properties?.inputType || 'text'}
-            placeholder={component.placeholder || component.properties?.placeholder || ''}
-            style={{
-              padding: component.padding || component.properties?.padding || '12px',
-              fontSize: component.fontSize || component.properties?.fontSize || '1rem',
-              border: component.border || component.properties?.border || '1px solid #ddd',
-              borderRadius: component.borderRadius || component.properties?.borderRadius || '4px',
-              width: component.width || component.properties?.width || '100%',
-              cursor: 'pointer'
-            }}
-          />
-        );
-
-      default:
-        return (
-          <div
-            key={component.id}
-            className={baseClass}
-            onClick={clickHandler}
-            style={{ cursor: 'pointer', padding: '8px', border: '1px dashed #ccc' }}
-          >
-            {component.type} ({component.id})
-          </div>
-        );
-    }
-  };
-
-  const renderContainer = (container) => {
-    if (!container) return null;
-
-    const components = container.components || [];
-    const isContainerSelected = isSelected(container);
-    
     return (
       <div
-        key={container.id}
-        className={`preview-element container ${isContainerSelected ? 'selected' : ''}`}
-        onClick={(e) => handleElementClick(container, e)}
-        style={{
-          padding: container.padding || container.properties?.padding || '16px',
-          margin: container.margin || container.properties?.margin || '0',
-          backgroundColor: container.backgroundColor || container.properties?.backgroundColor || 'transparent',
-          borderRadius: container.borderRadius || container.properties?.borderRadius || '0',
-          cursor: 'pointer'
-        }}
+        key={component.id}
+        className={`preview-element ${baseClass}`}
+        onClick={(e) => handleElementClick(component, e)}
+        style={{ cursor: "pointer" }}
       >
-        {components.map(renderComponent)}
+        {component.type === "heading" &&
+          React.createElement(
+            component.tag || component.level || "h2",
+            {
+              className: component.classname || "",
+              style: {
+                fontSize: component.fontSize || "2rem",
+                fontWeight: component.fontWeight || "600",
+                color: component.textColor || "#1a1a1a",
+                textAlign: component.textAlign || "left",
+                lineHeight: component.lineHeight || "1.2",
+                letterSpacing: component.letterSpacing || "normal",
+                backgroundColor: component.backgroundColor || "transparent",
+                border: component.border || "none",
+                borderRadius: component.borderRadius || "0",
+                boxShadow: component.boxShadow || "none",
+                // ✅ PLUS DE MARGIN PAR DÉFAUT
+                margin: component.margin || "0",
+                padding: component.padding || "0",
+              },
+            },
+            component.text || "Heading"
+          )}
+
+        {component.type === "paragraph" && (
+          <p
+            className={component.classname || ""}
+            style={{
+              fontSize: component.fontSize || "1rem",
+              fontWeight: component.fontWeight || "400",
+              color: component.textColor || "#333",
+              textAlign: component.textAlign || "left",
+              lineHeight: component.lineHeight || "1.6",
+              letterSpacing: component.letterSpacing || "normal",
+              backgroundColor: component.backgroundColor || "transparent",
+              border: component.border || "none",
+              borderRadius: component.borderRadius || "0",
+              boxShadow: component.boxShadow || "none",
+              // ✅ PLUS DE MARGIN PAR DÉFAUT
+              margin: component.margin || "0",
+              padding: component.padding || "0",
+            }}
+          >
+            {component.text ||
+              "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}
+          </p>
+        )}
+
+        {component.type === "button" && (
+          <button
+            className={component.classname || ""}
+            style={{
+              backgroundColor: component.backgroundColor || "#007bff",
+              color: component.textColor || "white",
+              fontSize: component.fontSize || "1rem",
+              fontWeight: component.fontWeight || "500",
+              textAlign: component.textAlign || "center",
+              border: component.border || "none",
+              borderRadius: component.borderRadius || "6px",
+              boxShadow: component.boxShadow || "none",
+              cursor: "pointer",
+              // ✅ PLUS DE MARGIN PAR DÉFAUT
+              margin: component.margin || "0",
+              padding: component.padding || "12px 24px",
+            }}
+          >
+            {component.icon && component.iconPosition === "left" && (
+              <span style={{ marginRight: "8px" }}>{component.icon}</span>
+            )}
+            {component.text || "Button"}
+            {component.icon && component.iconPosition === "right" && (
+              <span style={{ marginLeft: "8px" }}>{component.icon}</span>
+            )}
+          </button>
+        )}
+
+        {component.type === "image" && (
+          <img
+            src={component.src || "https://picsum.photos/400/300"}
+            alt={component.alt || "Image"}
+            className={component.classname || ""}
+            style={{
+              width: component.width || "auto",
+              height: component.height || "auto",
+              maxWidth: "100%",
+              backgroundColor: component.backgroundColor || "transparent",
+              border: component.border || "none",
+              borderRadius: component.borderRadius || "0",
+              boxShadow: component.boxShadow || "none",
+              objectFit: component.objectFit || "cover",
+              opacity: component.opacity || 1,
+              // ✅ PLUS DE MARGIN PAR DÉFAUT
+              margin: component.margin || "0",
+              padding: component.padding || "0",
+            }}
+          />
+        )}
+
+        {component.type === "link" && (
+          <a
+            href={component.href || "#"}
+            target={component.target || "_self"}
+            className={component.classname || ""}
+            style={{
+              backgroundColor: component.backgroundColor || "transparent",
+              color: component.textColor || "#007bff",
+              fontSize: component.fontSize || "1rem",
+              fontWeight: component.fontWeight || "400",
+              textAlign: component.textAlign || "left",
+              textDecoration: component.textDecoration || "underline",
+              border: component.border || "none",
+              borderRadius: component.borderRadius || "0",
+              boxShadow: component.boxShadow || "none",
+              // ✅ PLUS DE MARGIN PAR DÉFAUT
+              margin: component.margin || "0",
+              padding: component.padding || "0",
+            }}
+          >
+            {component.text || "Link"}
+          </a>
+        )}
+
+        {component.type === "input" && (
+          <input
+            type={component.inputType || "text"}
+            placeholder={component.placeholder || "Enter text..."}
+            value={component.value || ""}
+            className={component.classname || ""}
+            style={{
+              width: component.width || "100%",
+              backgroundColor: component.backgroundColor || "white",
+              color: component.textColor || "#333",
+              fontSize: component.fontSize || "1rem",
+              padding: component.padding || "12px",
+              border: component.border || "1px solid #ddd",
+              borderRadius: component.borderRadius || "4px",
+              boxShadow: component.boxShadow || "none",
+              // ✅ PLUS DE MARGIN PAR DÉFAUT
+              margin: component.margin || "0",
+            }}
+            readOnly
+          />
+        )}
       </div>
     );
   };
 
-  const renderSection = (section) => {
-    if (!section) return null;
+const renderContainer = (container) => {
+  const isContainerSelected = isSelected(container);
+  const baseClass = isContainerSelected ? 'selected' : '';
+  
+  return (
+    <div
+      key={container.id}
+      className={`preview-element ${baseClass}`}
+      onClick={(e) => handleElementClick(container, e)}
+      style={{
+        backgroundColor: container.backgroundColor || 'transparent',
+        backgroundImage: container.backgroundImage ? `url(${container.backgroundImage})` : 'none',
+        textColor: container.textColor || 'inherit',
+        border: container.border || 'none',
+        borderRadius: container.borderRadius || '0',
+        boxShadow: container.boxShadow || 'none',
+        opacity: container.opacity || 1,
+        overflow: container.overflow || 'visible',
+        
+        // Layout Flexbox
+        display: container.display || 'block',
+        flexDirection: container.flexDirection || 'column',
+        justifyContent: container.justifyContent || 'flex-start',
+        alignItems: container.alignItems || 'flex-start',
+        flexWrap: container.flexWrap || 'nowrap',
+        gap: container.gap || '0',
+        
+        // ✅ PLUS DE MARGES/PADDING PAR DÉFAUT
+        margin: container.margin || '0',
+        padding: container.padding || '0',
+        
+        cursor: 'pointer'
+      }}
+    >
+      {container.components?.map(renderComponent)}
+      {(!container.components || container.components.length === 0) && (
+        <div className="empty-placeholder">
+          Click to add components
+        </div>
+      )}
+    </div>
+  );
+};
 
-    // Collecter tous les containers de la section
-    const containers = [];
-    
-    if (section.divs) containers.push(...section.divs.map(div => ({ ...div, type: 'div' })));
-    if (section.lists) containers.push(...section.lists.map(list => ({ ...list, type: 'list' })));
-    if (section.forms) containers.push(...section.forms.map(form => ({ ...form, type: 'form' })));
-    if (section.containers) containers.push(...section.containers);
-
-    const isSectionSelected = isSelected(section);
-
-    return (
-      <section
-        key={section.id}
-        className={`preview-element section ${isSectionSelected ? 'selected' : ''}`}
-        onClick={(e) => handleElementClick(section, e)}
-        style={{
-          padding: section.padding || section.properties?.padding || '24px',
-          margin: section.margin || section.properties?.margin || '0',
-          backgroundColor: section.backgroundColor || section.properties?.backgroundColor || 'transparent',
-          cursor: 'pointer'
-        }}
-      >
-        {containers.map(renderContainer)}
-      </section>
-    );
+const renderSection = (section) => {
+  const isSectionSelected = isSelected(section);
+  const baseClass = isSectionSelected ? 'selected' : '';
+  
+  // Gestion responsive des colonnes
+  const getColumns = () => {
+    switch(device) {
+      case DEVICES.MOBILE:
+        return section.mobileColumns || 1;
+      case DEVICES.TABLET:
+        return section.tabletColumns || 2;
+      default:
+        return section.desktopColumns || 3;
+    }
   };
 
+  const columns = getColumns();
+  const containers = [
+    ...(section.divs || []).map(div => ({ ...div, type: 'div' })),
+    ...(section.lists || []).map(list => ({ ...list, type: 'list' })),
+    ...(section.forms || []).map(form => ({ ...form, type: 'form' })),
+    ...(section.containers || [])
+  ];
+  
+  return (
+    <section
+      key={section.id}
+      className={`preview-element ${baseClass}`}
+      onClick={(e) => handleElementClick(section, e)}
+      style={{
+        backgroundColor: section.backgroundColor || 'transparent',
+        backgroundImage: section.backgroundImage ? `url(${section.backgroundImage})` : 'none',
+        
+        // Grid Layout pour responsive
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: section.gap || '0',
+        
+        // ✅ PLUS DE MARGES/PADDING PAR DÉFAUT
+        margin: section.margin || '0',
+        padding: section.padding || '0',
+        
+        cursor: 'pointer'
+      }}
+    >
+      {containers.map(renderContainer)}
+      {containers.length === 0 && (
+        <div className="empty-placeholder" style={{ gridColumn: '1 / -1' }}>
+          Click to add containers
+        </div>
+      )}
+    </section>
+  );
+};
   const renderPage = (page) => {
     if (!page) return null;
 
@@ -228,9 +290,9 @@ function CanvasFrame({
     return (
       <div
         key={page.id}
-        className={`preview-element page ${isPageSelected ? 'selected' : ''}`}
+        className={`preview-element page ${isPageSelected ? "selected" : ""}`}
         onClick={(e) => handleElementClick(page, e)}
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: "pointer" }}
       >
         {sections.map(renderSection)}
       </div>
@@ -272,9 +334,7 @@ function CanvasFrame({
   return (
     <div className="preview-content">
       <div className={`preview-viewport device-${device}`}>
-        <div className="preview-website">
-          {renderPage(currentPage)}
-        </div>
+        <div className="preview-website">{renderPage(currentPage)}</div>
       </div>
     </div>
   );
