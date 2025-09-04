@@ -2,44 +2,32 @@ import React, { useState } from 'react';
 import PropertyField from './PropertyField.jsx';
 import { DEVICES } from '@config/constants.js';
 
-// ✅ DEFAULTS POUR PROJECT
-const PROJECT_DEFAULTS = {
-  created: new Date().toISOString(),
-  updated: new Date().toISOString(),
-  protocol: 'https',
-  
-  // Header defaults
-  headerEnabled: true,
-  headerHeight: '60px',
-  headerPosition: 'static',
-  headerBackgroundColor: '#ffffff',
-  
-  // Footer defaults  
-  footerEnabled: true,
-  footerHeight: '80px',
-  footerPosition: 'static',
-  footerBackgroundColor: '#f8f9fa',
-  
-  // Breakpoints defaults
-  breakpointDesktop: '1200px',
-  breakpointTablet: '768px', 
-  breakpointMobile: '480px'
-};
-
-// ✅ FONCTION POUR INITIALISER PROJET AVEC DEFAULTS
-export function initializeProjectWithDefaults(projectData) {
-  return {
-    ...PROJECT_DEFAULTS,
-    ...projectData,
-    updated: new Date().toISOString() // Always update timestamp
-  };
+// Composant section pliable
+function CollapsibleSection({ title, isOpen, onToggle, children }) {
+  return (
+    <div className="collapsible-section">
+      <button 
+        className={`section-header ${isOpen ? 'open' : ''}`}
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="section-title">{title}</span>
+        <span className="section-arrow">{isOpen ? '▼' : '▶'}</span>
+      </button>
+      {isOpen && (
+        <div className="section-content">
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /*
- * FAIT QUOI : Panel propriétés avec onglets horizontaux
+ * FAIT QUOI : Panel propriétés avec 3 onglets + sous-sections pliables
  * REÇOIT : selectedElement, device, onElementUpdate
- * RETOURNE : Interface clean avec navigation par onglets
- * NOUVEAU : Sync avec project.json + garde le style onglets
+ * RETOURNE : Interface organisée Content/Style/Layout
+ * NOUVEAU : Sections pliables + progression par niveau DOM
  */
 
 function PropertiesModule({ 
@@ -47,33 +35,44 @@ function PropertiesModule({
   device = DEVICES.DESKTOP, 
   onElementUpdate = () => {} 
 }) {
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('content');
+  const [openSections, setOpenSections] = useState({
+    // Content sections
+    metadata: true,
+    seo: false,
+    behavior: false,
+    // Style sections  
+    colors: false,
+    typography: false,
+    visual: false,
+    states: false,
+    // Layout sections
+    dimensions: false,
+    spacing: false,
+    flexbox: false,
+    advanced: false
+  });
+
+  const toggleSection = (sectionKey) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
 
   const handlePropertyChange = (propertyName, value) => {
     if (!selectedElement || !onElementUpdate) return;
     
-    // Créer l'élément mis à jour avec sync properties + props directes
     const updatedElement = {
       ...selectedElement,
-      [propertyName]: value, // Propriété directe
+      [propertyName]: value,
       properties: {
         ...selectedElement.properties,
-        [propertyName]: value // Dans properties aussi
+        [propertyName]: value
       }
     };
     
-    // Sync spéciale pour le contenu
-    if (propertyName === 'text' || propertyName === 'content') {
-      updatedElement.text = value;
-      updatedElement.content = value;
-      updatedElement.properties = {
-        ...updatedElement.properties,
-        text: value,
-        content: value
-      };
-    }
-    
-    // ✅ MISE À JOUR AUTO DU TIMESTAMP POUR PROJECT
+    // Auto-update timestamp pour PROJECT
     if (selectedElement.type === 'project') {
       updatedElement.updated = new Date().toISOString();
       updatedElement.properties = {
@@ -87,331 +86,605 @@ function PropertiesModule({
 
   const getPropertyValue = (key) => {
     if (!selectedElement) return '';
-    
-    // Priorité : propriété directe > properties > défaut
     return selectedElement[key] || 
            selectedElement.properties?.[key] || 
-           (key === 'content' ? selectedElement.text : '') ||
-           (key === 'text' ? selectedElement.content : '') ||
            '';
   };
 
-  const getPropertyTabs = () => {
-    if (!selectedElement) return [];
+  // Rendu du contenu selon le type d'élément et l'onglet actif
+  const renderTabContent = () => {
+    if (!selectedElement) return null;
 
-    const tabs = {
-      // === 4 ONGLETS POUR TOUS ===
-      general: {
-        title: 'General',
-        icon: '📋',
-        fields: [
-          { key: 'id', label: 'ID', type: 'text', disabled: true },
-          { key: 'name', label: 'Name', type: 'text' }
-        ]
-      },
-
-      content: {
-        title: 'Content',
-        icon: '📝',
-        fields: getContentFields()
-      },
-
-      layout: {
-        title: 'Layout',
-        icon: '📐',
-        fields: getLayoutFields()
-      },
-
-      style: {
-        title: 'Style',
-        icon: '🎨',
-        fields: getStyleFields()
-      }
-    };
-
-    // ✅ FONCTIONS CORRIGÉES POUR GÉNÉRER LES CHAMPS SELON LE TYPE
-    function getContentFields() {
-      switch(selectedElement.type) {
-        case 'project':
-          return [
-            { key: 'description', label: 'Description', type: 'textarea' },
-            { key: 'author', label: 'Author', type: 'text' },
-            { key: 'version', label: 'Version', type: 'text' },
-            
-            // ✅ AJOUT DES CHAMPS MANQUANTS
-            { key: 'created', label: 'Created', type: 'datetime-local', disabled: true },
-            { key: 'updated', label: 'Updated', type: 'datetime-local', disabled: true },
-            
-            { key: 'language', label: 'Language', type: 'text', placeholder: 'fr' },
-            { key: 'charset', label: 'Charset', type: 'text', placeholder: 'UTF-8' },
-            { key: 'domain', label: 'Domain', type: 'url', placeholder: 'https://example.com' },
-            
-            // ✅ AJOUT PROTOCOL MANQUANT
-            { key: 'protocol', label: 'Protocol', type: 'select', options: ['https', 'http'] },
-            
-            { key: 'favicon', label: 'Favicon URL', type: 'url' },
-            { key: 'previewImage', label: 'Preview Image', type: 'url' }
-          ];
-
-        case 'page':
-          return [
-            { key: 'title', label: 'Page Title', type: 'text' },
-            { key: 'slug', label: 'URL Slug', type: 'text' },
-            { key: 'metaDescription', label: 'Meta Description', type: 'textarea' },
-            { key: 'previewImage', label: 'Preview Image', type: 'url' },
-            { key: 'index', label: 'Index Page', type: 'checkbox' }
-          ];
-
-        // ✅ HARMONISATION title/heading -> title partout
-        case 'title':
-          return [
-            // ✅ PROPRIÉTÉS CORRIGÉES SELON SPEC
-            { key: 'text', label: 'Text', type: 'text' }, 
-            { key: 'level', label: 'Level', type: 'select', options: ['1', '2', '3', '4', '5', '6'] },
-            // ✅ AJOUT lineHeight et letterSpacing manquants
-            { key: 'lineHeight', label: 'Line Height', type: 'text', placeholder: '1.5' },
-            { key: 'letterSpacing', label: 'Letter Spacing', type: 'text', placeholder: '0px' }
-          ];
-
-        case 'paragraph':
-          return [
-            { key: 'text', label: 'Text', type: 'textarea' },
-            // ✅ AJOUT PROPRIÉTÉS SPEC MANQUANTES
-            { key: 'maxLines', label: 'Max Lines', type: 'number' },
-            { key: 'wordBreak', label: 'Word Break', type: 'select', options: ['normal', 'break-all', 'break-word'] },
-            { key: 'allowHtml', label: 'Allow HTML', type: 'checkbox' }
-          ];
-
-        case 'button':
-          return [
-            { key: 'text', label: 'Button Text', type: 'text' },
-            // ✅ PROPRIÉTÉS SPEC COMPLÈTES
-            { key: 'icon', label: 'Icon', type: 'text', placeholder: 'fa-home' },
-            { key: 'iconPosition', label: 'Icon Position', type: 'select', options: ['left', 'right'] },
-            { key: 'buttonType', label: 'Button Type', type: 'select', options: ['button', 'submit', 'reset'] },
-            { key: 'action', label: 'Action', type: 'text' }
-          ];
-
-        case 'link':
-          return [
-            { key: 'text', label: 'Link Text', type: 'text' },
-            { key: 'href', label: 'URL', type: 'url' },
-            { key: 'target', label: 'Target', type: 'select', options: ['_self', '_blank', '_parent', '_top'] }
-          ];
-
-        // ✅ AJOUT TYPE ICON MANQUANT
-        case 'icon':
-          return [
-            { key: 'iconName', label: 'Icon Name', type: 'text', placeholder: 'fa-home' },
-            { key: 'iconFamily', label: 'Icon Family', type: 'select', options: ['fontawesome', 'material', 'feather'] },
-            { key: 'alt', label: 'Alt Text', type: 'text' }
-          ];
-
-        case 'image':
-          return [
-            { key: 'src', label: 'Image URL', type: 'url' },
-            { key: 'alt', label: 'Alt Text', type: 'text' },
-            // ✅ AJOUT PROPRIÉTÉS SPEC
-            { key: 'lazy', label: 'Lazy Loading', type: 'checkbox' },
-            { key: 'objectFit', label: 'Object Fit', type: 'select', options: ['contain', 'cover', 'fill', 'none', 'scale-down'] }
-          ];
-
-        case 'video':
-          return [
-            { key: 'src', label: 'Video URL', type: 'url' },
-            { key: 'poster', label: 'Poster Image', type: 'url' },
-            { key: 'autoplay', label: 'Autoplay', type: 'checkbox' },
-            { key: 'controls', label: 'Controls', type: 'checkbox' },
-            { key: 'loop', label: 'Loop', type: 'checkbox' },
-            { key: 'muted', label: 'Muted', type: 'checkbox' }
-          ];
-
-        case 'input':
-          return [
-            { key: 'value', label: 'Value', type: 'text' },
-            { key: 'placeholder', label: 'Placeholder', type: 'text' },
-            { key: 'inputType', label: 'Input Type', type: 'select', options: ['text', 'email', 'password', 'number', 'tel', 'url', 'search'] },
-            { key: 'required', label: 'Required', type: 'checkbox' }
-          ];
-
-        // ✅ AJOUT TYPE TEXTAREA MANQUANT  
-        case 'textarea':
-          return [
-            { key: 'value', label: 'Value', type: 'textarea' },
-            { key: 'placeholder', label: 'Placeholder', type: 'text' },
-            { key: 'rows', label: 'Rows', type: 'number', placeholder: '4' },
-            { key: 'maxLength', label: 'Max Length', type: 'number' },
-            { key: 'required', label: 'Required', type: 'checkbox' }
-          ];
-
-        // ✅ AJOUT TYPE SELECT MANQUANT
-        case 'select':
-          return [
-            { key: 'options', label: 'Options (JSON)', type: 'textarea', placeholder: '["Option 1", "Option 2"]' },
-            { key: 'value', label: 'Selected Value', type: 'text' },
-            { key: 'multiple', label: 'Multiple', type: 'checkbox' },
-            { key: 'required', label: 'Required', type: 'checkbox' }
-          ];
-
-        default:
-          return [
-            { key: 'text', label: 'Content', type: 'textarea' },
-            { key: 'classname', label: 'CSS Classes', type: 'text' }
-          ];
-      }
+    switch (activeTab) {
+      case 'content':
+        return renderContentTab();
+      case 'style':
+        return renderStyleTab();
+      case 'layout':
+        return renderLayoutTab();
+      default:
+        return null;
     }
-
-    function getLayoutFields() {
-      const commonLayout = [
-        { key: 'widthDesktop', label: 'Width Desktop', type: 'text', placeholder: '100%' },
-        { key: 'widthTablet', label: 'Width Tablet', type: 'text', placeholder: '100%' },
-        { key: 'widthMobile', label: 'Width Mobile', type: 'text', placeholder: '100%' },
-        { key: 'heightDesktop', label: 'Height Desktop', type: 'text', placeholder: 'auto' },
-        { key: 'heightTablet', label: 'Height Tablet', type: 'text', placeholder: 'auto' },
-        { key: 'heightMobile', label: 'Height Mobile', type: 'text', placeholder: 'auto' },
-        { key: 'padding', label: 'Padding', type: 'text', placeholder: '0px' },
-        { key: 'margin', label: 'Margin', type: 'text', placeholder: '0px' }
-      ];
-
-      switch(selectedElement.type) {
-        case 'project':
-          return [
-            // ✅ BREAKPOINTS EXISTANTS avec placeholders
-            { key: 'breakpointDesktop', label: 'Desktop Breakpoint', type: 'text', placeholder: '1200px' },
-            { key: 'breakpointTablet', label: 'Tablet Breakpoint', type: 'text', placeholder: '768px' },
-            { key: 'breakpointMobile', label: 'Mobile Breakpoint', type: 'text', placeholder: '480px' },
-            
-            // ✅ AJOUT HEADER CONFIGURATION MANQUANT
-            { key: 'headerEnabled', label: 'Header Enabled', type: 'checkbox' },
-            { key: 'headerHeight', label: 'Header Height', type: 'text', placeholder: '60px' },
-            { key: 'headerPosition', label: 'Header Position', type: 'select', options: ['static', 'fixed', 'sticky'] },
-            { key: 'headerBackgroundColor', label: 'Header Background', type: 'color' },
-            
-            // ✅ AJOUT FOOTER CONFIGURATION MANQUANT  
-            { key: 'footerEnabled', label: 'Footer Enabled', type: 'checkbox' },
-            { key: 'footerHeight', label: 'Footer Height', type: 'text', placeholder: '80px' },
-            { key: 'footerPosition', label: 'Footer Position', type: 'select', options: ['static', 'fixed', 'sticky'] },
-            { key: 'footerBackgroundColor', label: 'Footer Background', type: 'color' }
-          ];
-
-        case 'section':
-          return [
-            { key: 'desktopColumns', label: 'Desktop Columns', type: 'number', placeholder: '12' },
-            { key: 'tabletColumns', label: 'Tablet Columns', type: 'number', placeholder: '6' },
-            { key: 'mobileColumns', label: 'Mobile Columns', type: 'number', placeholder: '1' },
-            { key: 'gap', label: 'Gap', type: 'text', placeholder: '16px' },
-            ...commonLayout
-          ];
-
-        case 'div':
-        case 'list':
-        case 'form':
-          return [
-            ...commonLayout,
-            { key: 'display', label: 'Display', type: 'select', options: ['block', 'flex', 'grid', 'inline-block'] },
-            { key: 'flexDirection', label: 'Flex Direction', type: 'select', options: ['row', 'column'] },
-            { key: 'justifyContent', label: 'Justify Content', type: 'select', options: ['flex-start', 'center', 'flex-end', 'space-between'] },
-            { key: 'alignItems', label: 'Align Items', type: 'select', options: ['flex-start', 'center', 'flex-end', 'stretch'] }
-          ];
-
-        default:
-          return commonLayout;
-      }
-    }
-
-    function getStyleFields() {
-      const commonStyle = [
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'border', label: 'Border', type: 'text', placeholder: '1px solid #ccc' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text', placeholder: '4px' },
-        { key: 'boxShadow', label: 'Box Shadow', type: 'text' },
-        { key: 'opacity', label: 'Opacity', type: 'number', min: '0', max: '1', step: '0.1' }
-      ];
-
-      switch(selectedElement.type) {
-        case 'project':
-          return [
-            { key: 'theme', label: 'Theme', type: 'select', options: ['light', 'dark', 'auto'] },
-            { key: 'fontFamily', label: 'Font Family', type: 'text', placeholder: 'Arial, sans-serif' },
-            // ✅ COULEURS THEME COMPLÈTES
-            { key: 'lightPrimaryColor', label: 'Primary Light', type: 'color' },
-            { key: 'lightSecondaryColor', label: 'Secondary Light', type: 'color' },
-            { key: 'darkPrimaryColor', label: 'Primary Dark', type: 'color' },
-            { key: 'darkSecondaryColor', label: 'Secondary Dark', type: 'color' }
-          ];
-
-        case 'title':
-        case 'paragraph':
-          return [
-            ...commonStyle,
-            { key: 'fontSize', label: 'Font Size', type: 'text', placeholder: '16px' },
-            { key: 'fontWeight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '300', '400', '500', '600', '700'] },
-            { key: 'textAlign', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] }
-          ];
-
-        case 'image':
-          return [
-            ...commonStyle,
-            { key: 'objectFit', label: 'Object Fit', type: 'select', options: ['contain', 'cover', 'fill', 'none', 'scale-down'] }
-          ];
-
-        default:
-          return commonStyle;
-      }
-    }
-
-    return Object.entries(tabs).map(([key, tab]) => ({
-      key,
-      ...tab
-    }));
   };
 
-  const renderActiveTab = () => {
-    const tabs = getPropertyTabs();
-    const currentTab = tabs.find(tab => tab.key === activeTab);
-    
-    if (!currentTab) return null;
+  const renderContentTab = () => {
+    const elementType = selectedElement.type;
 
     return (
-      <div className="properties-tab-content">
-        {currentTab.fields.map(field => {
-          const value = getPropertyValue(field.key);
-
-          if (field.type === 'select') {
-            return (
+      <div className="tab-content">
+        {/* Metadata section - Pour tous les éléments */}
+        <CollapsibleSection
+          title="Metadata"
+          isOpen={openSections.metadata}
+          onToggle={() => toggleSection('metadata')}
+        >
+          {elementType === 'project' && (
+            <>
               <PropertyField
-                key={field.key}
-                label={field.label}
-                value={value}
+                label="Name"
+                value={getPropertyValue('name')}
+                type="text"
+                onChange={(value) => handlePropertyChange('name', value)}
+              />
+              <PropertyField
+                label="Description"
+                value={getPropertyValue('description')}
+                type="textarea"
+                onChange={(value) => handlePropertyChange('description', value)}
+              />
+              <PropertyField
+                label="Author"
+                value={getPropertyValue('author')}
+                type="text"
+                onChange={(value) => handlePropertyChange('author', value)}
+              />
+              <PropertyField
+                label="Version"
+                value={getPropertyValue('version')}
+                type="text"
+                onChange={(value) => handlePropertyChange('version', value)}
+              />
+              <PropertyField
+                label="Domain"
+                value={getPropertyValue('domain')}
+                type="text"
+                onChange={(value) => handlePropertyChange('domain', value)}
+              />
+              <PropertyField
+                label="Protocol"
+                value={getPropertyValue('protocol')}
                 type="select"
-                placeholder={field.placeholder}
-                onChange={(newValue) => handlePropertyChange(field.key, newValue)}
-                disabled={field.disabled}
+                onChange={(value) => handlePropertyChange('protocol', value)}
               >
-                {field.options?.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
+                <option value="https">HTTPS</option>
+                <option value="http">HTTP</option>
               </PropertyField>
-            );
-          }
+            </>
+          )}
+          
+          {elementType === 'page' && (
+            <>
+              <PropertyField
+                label="Name"
+                value={getPropertyValue('name')}
+                type="text"
+                onChange={(value) => handlePropertyChange('name', value)}
+              />
+              <PropertyField
+                label="Slug"
+                value={getPropertyValue('slug')}
+                type="text"
+                onChange={(value) => handlePropertyChange('slug', value)}
+              />
+            </>
+          )}
 
-          return (
+          {(elementType === 'section' || elementType === 'div' || elementType === 'list' || elementType === 'form') && (
             <PropertyField
-              key={field.key}
-              label={field.label}
-              value={field.type === 'checkbox' ? !!value : value}
-              type={field.type}
-              placeholder={field.placeholder}
-              min={field.min}
-              max={field.max}
-              step={field.step}
-              onChange={(newValue) => handlePropertyChange(field.key, newValue)}
-              disabled={field.disabled}
+              label="Name"
+              value={getPropertyValue('name')}
+              type="text"
+              onChange={(value) => handlePropertyChange('name', value)}
             />
-          );
-        })}
-        
+          )}
+
+          {(elementType === 'title' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link') && (
+            <PropertyField
+              label="Text"
+              value={getPropertyValue('text')}
+              type={elementType === 'paragraph' ? 'textarea' : 'text'}
+              onChange={(value) => handlePropertyChange('text', value)}
+            />
+          )}
+        </CollapsibleSection>
+
+        {/* SEO section - Pages seulement */}
+        {selectedElement.type === 'page' && (
+          <CollapsibleSection
+            title="SEO"
+            isOpen={openSections.seo}
+            onToggle={() => toggleSection('seo')}
+          >
+            <PropertyField
+              label="Title"
+              value={getPropertyValue('title')}
+              type="text"
+              onChange={(value) => handlePropertyChange('title', value)}
+            />
+            <PropertyField
+              label="Meta Description"
+              value={getPropertyValue('metaDescription')}
+              type="textarea"
+              onChange={(value) => handlePropertyChange('metaDescription', value)}
+            />
+            <PropertyField
+              label="Index Page"
+              value={getPropertyValue('index')}
+              type="checkbox"
+              onChange={(value) => handlePropertyChange('index', value)}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* Behavior section - Composants interactifs */}
+        {(selectedElement.type === 'button' || selectedElement.type === 'link' || selectedElement.type === 'form') && (
+          <CollapsibleSection
+            title="Behavior"
+            isOpen={openSections.behavior}
+            onToggle={() => toggleSection('behavior')}
+          >
+            {selectedElement.type === 'button' && (
+              <>
+                <PropertyField
+                  label="Action"
+                  value={getPropertyValue('action')}
+                  type="text"
+                  onChange={(value) => handlePropertyChange('action', value)}
+                />
+                <PropertyField
+                  label="Button Type"
+                  value={getPropertyValue('buttonType')}
+                  type="select"
+                  onChange={(value) => handlePropertyChange('buttonType', value)}
+                >
+                  <option value="button">Button</option>
+                  <option value="submit">Submit</option>
+                  <option value="reset">Reset</option>
+                </PropertyField>
+              </>
+            )}
+            
+            {selectedElement.type === 'link' && (
+              <>
+                <PropertyField
+                  label="URL"
+                  value={getPropertyValue('href')}
+                  type="url"
+                  onChange={(value) => handlePropertyChange('href', value)}
+                />
+                <PropertyField
+                  label="Target"
+                  value={getPropertyValue('target')}
+                  type="select"
+                  onChange={(value) => handlePropertyChange('target', value)}
+                >
+                  <option value="_self">Same Window</option>
+                  <option value="_blank">New Window</option>
+                </PropertyField>
+              </>
+            )}
+          </CollapsibleSection>
+        )}
+      </div>
+    );
+  };
+
+  const renderStyleTab = () => {
+    return (
+      <div className="tab-content">
+        {/* Colors section */}
+        <CollapsibleSection
+          title="Colors"
+          isOpen={openSections.colors}
+          onToggle={() => toggleSection('colors')}
+        >
+          {selectedElement.type === 'project' && (
+            <>
+              <PropertyField
+                label="Light Primary Color"
+                value={getPropertyValue('lightPrimaryColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('lightPrimaryColor', value)}
+              />
+              <PropertyField
+                label="Light Secondary Color"
+                value={getPropertyValue('lightSecondaryColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('lightSecondaryColor', value)}
+              />
+              <PropertyField
+                label="Dark Primary Color"
+                value={getPropertyValue('darkPrimaryColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('darkPrimaryColor', value)}
+              />
+              <PropertyField
+                label="Dark Secondary Color"
+                value={getPropertyValue('darkSecondaryColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('darkSecondaryColor', value)}
+              />
+            </>
+          )}
+          
+          {selectedElement.type !== 'project' && (
+            <>
+              <PropertyField
+                label="Background Color"
+                value={getPropertyValue('backgroundColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('backgroundColor', value)}
+              />
+              <PropertyField
+                label="Text Color"
+                value={getPropertyValue('textColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('textColor', value)}
+              />
+              <PropertyField
+                label="Border Color"
+                value={getPropertyValue('borderColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('borderColor', value)}
+              />
+            </>
+          )}
+        </CollapsibleSection>
+
+        {/* Typography section */}
+        <CollapsibleSection
+          title="Typography"
+          isOpen={openSections.typography}
+          onToggle={() => toggleSection('typography')}
+        >
+          {selectedElement.type === 'project' && (
+            <PropertyField
+              label="Font Family"
+              value={getPropertyValue('fontFamily')}
+              type="text"
+              onChange={(value) => handlePropertyChange('fontFamily', value)}
+            />
+          )}
+          
+          {selectedElement.type !== 'project' && (
+            <>
+              <PropertyField
+                label="Font Size"
+                value={getPropertyValue('fontSize')}
+                type="text"
+                onChange={(value) => handlePropertyChange('fontSize', value)}
+              />
+              <PropertyField
+                label="Font Weight"
+                value={getPropertyValue('fontWeight')}
+                type="select"
+                onChange={(value) => handlePropertyChange('fontWeight', value)}
+              >
+                <option value="normal">Normal</option>
+                <option value="bold">Bold</option>
+                <option value="lighter">Lighter</option>
+              </PropertyField>
+              <PropertyField
+                label="Text Align"
+                value={getPropertyValue('textAlign')}
+                type="select"
+                onChange={(value) => handlePropertyChange('textAlign', value)}
+              >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+                <option value="justify">Justify</option>
+              </PropertyField>
+            </>
+          )}
+        </CollapsibleSection>
+
+        {/* Visual section */}
+        <CollapsibleSection
+          title="Visual"
+          isOpen={openSections.visual}
+          onToggle={() => toggleSection('visual')}
+        >
+          <PropertyField
+            label="Border Radius"
+            value={getPropertyValue('borderRadius')}
+            type="text"
+            onChange={(value) => handlePropertyChange('borderRadius', value)}
+          />
+          <PropertyField
+            label="Box Shadow"
+            value={getPropertyValue('boxShadow')}
+            type="text"
+            onChange={(value) => handlePropertyChange('boxShadow', value)}
+          />
+          <PropertyField
+            label="Opacity"
+            value={getPropertyValue('opacity')}
+            type="number"
+            onChange={(value) => handlePropertyChange('opacity', value)}
+          />
+        </CollapsibleSection>
+
+        {/* States section - Composants interactifs seulement */}
+        {(selectedElement.type === 'button' || selectedElement.type === 'link') && (
+          <CollapsibleSection
+            title="States"
+            isOpen={openSections.states}
+            onToggle={() => toggleSection('states')}
+          >
+            <PropertyField
+              label="Hover Background"
+              value={getPropertyValue('hoverBackgroundColor')}
+              type="color"
+              onChange={(value) => handlePropertyChange('hoverBackgroundColor', value)}
+            />
+            <PropertyField
+              label="Hover Text Color"
+              value={getPropertyValue('hoverTextColor')}
+              type="color"
+              onChange={(value) => handlePropertyChange('hoverTextColor', value)}
+            />
+            <PropertyField
+              label="Focus Box Shadow"
+              value={getPropertyValue('focusBoxShadow')}
+              type="text"
+              onChange={(value) => handlePropertyChange('focusBoxShadow', value)}
+            />
+          </CollapsibleSection>
+        )}
+      </div>
+    );
+  };
+
+  const renderLayoutTab = () => {
+    return (
+      <div className="tab-content">
+        {/* Dimensions section */}
+        <CollapsibleSection
+          title="Dimensions"
+          isOpen={openSections.dimensions}
+          onToggle={() => toggleSection('dimensions')}
+        >
+          {selectedElement.type === 'project' && (
+            <>
+              <PropertyField
+                label="Desktop Breakpoint"
+                value={getPropertyValue('breakpointDesktop')}
+                type="text"
+                onChange={(value) => handlePropertyChange('breakpointDesktop', value)}
+              />
+              <PropertyField
+                label="Tablet Breakpoint"
+                value={getPropertyValue('breakpointTablet')}
+                type="text"
+                onChange={(value) => handlePropertyChange('breakpointTablet', value)}
+              />
+              <PropertyField
+                label="Mobile Breakpoint"
+                value={getPropertyValue('breakpointMobile')}
+                type="text"
+                onChange={(value) => handlePropertyChange('breakpointMobile', value)}
+              />
+            </>
+          )}
+          
+          {selectedElement.type !== 'project' && (
+            <>
+              <PropertyField
+                label={`Width (${device})`}
+                value={getPropertyValue(`width${device.charAt(0).toUpperCase() + device.slice(1)}`)}
+                type="text"
+                onChange={(value) => handlePropertyChange(`width${device.charAt(0).toUpperCase() + device.slice(1)}`, value)}
+              />
+              <PropertyField
+                label={`Height (${device})`}
+                value={getPropertyValue(`height${device.charAt(0).toUpperCase() + device.slice(1)}`)}
+                type="text"
+                onChange={(value) => handlePropertyChange(`height${device.charAt(0).toUpperCase() + device.slice(1)}`, value)}
+              />
+            </>
+          )}
+        </CollapsibleSection>
+
+        {/* Spacing section */}
+        {selectedElement.type !== 'project' && (
+          <CollapsibleSection
+            title="Spacing"
+            isOpen={openSections.spacing}
+            onToggle={() => toggleSection('spacing')}
+          >
+            <PropertyField
+              label="Padding Top"
+              value={getPropertyValue('paddingTop')}
+              type="text"
+              onChange={(value) => handlePropertyChange('paddingTop', value)}
+            />
+            <PropertyField
+              label="Padding Right"
+              value={getPropertyValue('paddingRight')}
+              type="text"
+              onChange={(value) => handlePropertyChange('paddingRight', value)}
+            />
+            <PropertyField
+              label="Padding Bottom"
+              value={getPropertyValue('paddingBottom')}
+              type="text"
+              onChange={(value) => handlePropertyChange('paddingBottom', value)}
+            />
+            <PropertyField
+              label="Padding Left"
+              value={getPropertyValue('paddingLeft')}
+              type="text"
+              onChange={(value) => handlePropertyChange('paddingLeft', value)}
+            />
+            <PropertyField
+              label="Margin Top"
+              value={getPropertyValue('marginTop')}
+              type="text"
+              onChange={(value) => handlePropertyChange('marginTop', value)}
+            />
+            <PropertyField
+              label="Margin Right"
+              value={getPropertyValue('marginRight')}
+              type="text"
+              onChange={(value) => handlePropertyChange('marginRight', value)}
+            />
+            <PropertyField
+              label="Margin Bottom"
+              value={getPropertyValue('marginBottom')}
+              type="text"
+              onChange={(value) => handlePropertyChange('marginBottom', value)}
+            />
+            <PropertyField
+              label="Margin Left"
+              value={getPropertyValue('marginLeft')}
+              type="text"
+              onChange={(value) => handlePropertyChange('marginLeft', value)}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* Flexbox section - Containers seulement */}
+        {(selectedElement.type === 'div' || selectedElement.type === 'section' || selectedElement.type === 'form') && (
+          <CollapsibleSection
+            title="Flexbox"
+            isOpen={openSections.flexbox}
+            onToggle={() => toggleSection('flexbox')}
+          >
+            <PropertyField
+              label="Display"
+              value={getPropertyValue('display')}
+              type="select"
+              onChange={(value) => handlePropertyChange('display', value)}
+            >
+              <option value="block">Block</option>
+              <option value="flex">Flex</option>
+              <option value="grid">Grid</option>
+            </PropertyField>
+            <PropertyField
+              label="Flex Direction"
+              value={getPropertyValue('flexDirection')}
+              type="select"
+              onChange={(value) => handlePropertyChange('flexDirection', value)}
+            >
+              <option value="row">Row</option>
+              <option value="column">Column</option>
+            </PropertyField>
+            <PropertyField
+              label="Justify Content"
+              value={getPropertyValue('justifyContent')}
+              type="select"
+              onChange={(value) => handlePropertyChange('justifyContent', value)}
+            >
+              <option value="flex-start">Start</option>
+              <option value="center">Center</option>
+              <option value="flex-end">End</option>
+              <option value="space-between">Space Between</option>
+            </PropertyField>
+            <PropertyField
+              label="Align Items"
+              value={getPropertyValue('alignItems')}
+              type="select"
+              onChange={(value) => handlePropertyChange('alignItems', value)}
+            >
+              <option value="stretch">Stretch</option>
+              <option value="center">Center</option>
+              <option value="flex-start">Start</option>
+              <option value="flex-end">End</option>
+            </PropertyField>
+            <PropertyField
+              label="Gap"
+              value={getPropertyValue('gap')}
+              type="text"
+              onChange={(value) => handlePropertyChange('gap', value)}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* Advanced section */}
+        <CollapsibleSection
+          title="Advanced"
+          isOpen={openSections.advanced}
+          onToggle={() => toggleSection('advanced')}
+        >
+          <PropertyField
+            label="CSS Classes"
+            value={getPropertyValue('cssClasses')}
+            type="text"
+            onChange={(value) => handlePropertyChange('cssClasses', value)}
+          />
+          {selectedElement.type !== 'project' && (
+            <PropertyField
+              label="Overflow"
+              value={getPropertyValue('overflow')}
+              type="select"
+              onChange={(value) => handlePropertyChange('overflow', value)}
+            >
+              <option value="visible">Visible</option>
+              <option value="hidden">Hidden</option>
+              <option value="scroll">Scroll</option>
+              <option value="auto">Auto</option>
+            </PropertyField>
+          )}
+        </CollapsibleSection>
+      </div>
+    );
+  };
+
+  if (!selectedElement) {
+    return (
+      <div className="project-properties">
+        <div className="properties-content">
+          <div className="properties-empty">
+            <div className="empty-icon">🎯</div>
+            <div className="empty-text">
+              <h4>No Element Selected</h4>
+              <p>Select an element from the structure or preview to edit its properties</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="project-properties">
+      <div className="properties-content">
+        {/* Tabs Navigation */}
+        <div className="properties-tabs">
+          <button
+            className={`properties-tab ${activeTab === 'content' ? 'active' : ''}`}
+            onClick={() => setActiveTab('content')}
+          >
+            CONTENT
+          </button>
+          <button
+            className={`properties-tab ${activeTab === 'style' ? 'active' : ''}`}
+            onClick={() => setActiveTab('style')}
+          >
+            STYLE
+          </button>
+          <button
+            className={`properties-tab ${activeTab === 'layout' ? 'active' : ''}`}
+            onClick={() => setActiveTab('layout')}
+          >
+            LAYOUT
+          </button>
+        </div>
+
+        {/* Active Tab Content */}
+        {renderTabContent()}
+
         {/* Debug en développement */}
         {process.env.NODE_ENV === 'development' && (
           <details className="properties-debug" style={{ marginTop: '16px', fontSize: '11px' }}>
@@ -420,43 +693,6 @@ function PropertiesModule({
               {JSON.stringify(selectedElement, null, 2)}
             </pre>
           </details>
-        )}
-      </div>
-    );
-  };
-
-  const tabs = getPropertyTabs();
-
-  return (
-    <div className="project-properties">
-      <div className="properties-content">
-        {selectedElement ? (
-          <>
-            {/* Tabs Navigation */}
-            <div className="properties-tabs">
-              {tabs.map(tab => (
-                <button
-                  key={tab.key}
-                  className={`properties-tab ${activeTab === tab.key ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.key)}
-                  title={tab.title}
-                >
-                  <span className="tab-icon">{tab.icon}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Active Tab Content */}
-            {renderActiveTab()}
-          </>
-        ) : (
-          <div className="properties-empty">
-            <div className="empty-icon">🎯</div>
-            <div className="empty-text">
-              <h4>No Element Selected</h4>
-              <p>Select an element from the structure or preview to edit its properties</p>
-            </div>
-          </div>
         )}
       </div>
     </div>

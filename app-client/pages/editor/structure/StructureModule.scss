@@ -9,7 +9,7 @@
 .tree-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2) 0;
+  padding: var(--space-2);
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%) transparent;
 
