@@ -1,58 +1,40 @@
+// === CONTAINER PRINCIPAL ===
 .project-properties {
   background: var(--color-bg-secondary);
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
-.properties-header {
-  height: 6%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
-  flex-shrink: 0;
-
-  h3 {
-    font-size: var(--size-md);
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0;
-  }
-
-  .element-type {
-    font-size: var(--size-xs);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-secondary));
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-  }
-}
-
+// === DEVICE INDICATOR ===
 .properties-device-indicator {
   padding: var(--space-2) var(--space-6);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
-  background: color-mix(in srgb, var(--color-bg-secondary) 97%, white 3%);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+  background: color-mix(
+    in srgb,
+    var(--color-warning) 8%,
+    var(--color-bg-secondary)
+  );
 
   .device-label {
     font-size: var(--size-xs);
-    color: var(--color-text-secondary);
+    color: var(--color-warning);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 500;
+    font-weight: 600;
   }
 }
 
+// === CONTENT ===
 .properties-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-4);
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%)
+    transparent;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -63,172 +45,273 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%);
+    background: color-mix(in srgb, var(--color-bg-secondary) 60%, white 40%);
     border-radius: 3px;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-bg-secondary) 50%, white 50%);
+    }
   }
 }
 
-.properties-form {
+// === TABS ===
+.properties-tabs {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
+  background: color-mix(in srgb, var(--color-bg-secondary) 95%, black 5%);
+  padding: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
 
-.property-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-
-  label {
-    font-size: var(--size-sm);
-    font-weight: 500;
-    color: var(--color-text-primary);
-    margin-bottom: var(--space-1);
-  }
-
-  input,
-  textarea,
-  select {
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 80%, white 20%);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg-primary);
-    color: var(--color-text-primary);
-    font-size: var(--size-sm);
-    transition: all 0.15s ease;
-
-    &:focus {
-      outline: none;
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
-    }
-
-    &:hover:not(:focus) {
-      border-color: color-mix(in srgb, var(--color-bg-secondary) 70%, white 30%);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
-    }
-
-    &.error {
-      border-color: var(--color-danger);
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-danger) 20%, transparent);
-    }
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-
-  select {
-    cursor: pointer;
-  }
-
-  input[type="checkbox"] {
-    width: auto;
-    margin-right: var(--space-2);
-    cursor: pointer;
-  }
-
-  input[type="number"] {
-    -webkit-appearance: textfield;
-    -moz-appearance: textfield;
-    appearance: textfield;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-.property-error {
-  color: var(--color-danger);
-  font-size: var(--size-xs);
-  margin-top: var(--space-1);
-}
-
-.properties-empty {
+.properties-tab {
+  background: none;
+  border: none;
+  padding: var(--space-2) var(--space-3);
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 200px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   color: var(--color-text-secondary);
-  font-style: italic;
-  text-align: center;
   font-size: var(--size-sm);
+  font-weight: 500;
+  flex: 1;
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  margin: 0 var(--space-1);
+
+  &:first-child {
+    margin-left: 0;
+  }
+
+  &:last-child {
+    margin-right: 0;
+  }
+
+  &:hover:not(.active) {
+    background: color-mix(in srgb, var(--color-bg-secondary) 90%, white 10%);
+    color: var(--color-text-primary);
+  }
+
+  &.active {
+    background: color-mix(
+      in srgb,
+      var(--color-primary) 15%,
+      var(--color-bg-secondary)
+    );
+    color: var(--color-text-primary);
+  }
+
+  .tab-icon {
+    font-size: var(--size-md);
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+  }
+
+  &.active .tab-icon {
+    opacity: 1;
+  }
 }
-/* PropertyField styles - ajoutés automatiquement */
+
+// === TAB CONTENT ===
+.properties-tab-content {
+  padding: var(--space-4) var(--space-6);
+}
+
+// === FIELD ===
+.property-field {
+  margin-bottom: var(--space-6);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .property-label {
+    display: block;
+    font-size: var(--size-sm);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-2);
+  }
+
+  // Cas spécial pour checkbox
+  &.property-field-checkbox {
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+
+      .property-checkbox {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--color-primary);
+      }
+
+      .checkbox-label {
+        cursor: pointer;
+        margin: 0;
+        font-size: var(--size-sm);
+        color: var(--color-text-primary);
+      }
+    }
+  }
+}
+
+// === INPUTS ===
 .property-input {
+  width: 100%;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 80%, white 20%);
+  border: 1px solid color-mix(in srgb, var(--color-bg-secondary) 75%, white 25%);
   border-radius: var(--radius-sm);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--size-sm);
-  transition: all 0.15s ease;
-  width: 100%;
+  font-family: inherit;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+  }
 
   &:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+
+  &:hover:not(:focus):not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-bg-secondary) 65%, white 35%);
   }
 
   &:disabled {
     background: color-mix(in srgb, var(--color-bg-secondary) 95%, white 5%);
     color: var(--color-text-secondary);
     cursor: not-allowed;
+    opacity: 0.6;
+
+    &::placeholder {
+      color: var(--color-text-secondary);
+      opacity: 0.5;
+    }
+  }
+
+  // Types spéciaux
+  &.property-input-textarea {
+    min-height: 80px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  &.property-input-number {
+    text-align: right;
+  }
+
+  &.property-input-color {
+    padding: 4px;
+    height: 38px;
+    cursor: pointer;
   }
 }
 
-.property-input-textarea {
-  min-height: 80px;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.property-input-number {
-  text-align: right;
-}
-
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.property-checkbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.checkbox-label {
-  cursor: pointer;
-  margin: 0;
-}
-
+// === COLOR PICKER ===
 .color-input-container {
   display: flex;
   gap: var(--space-2);
   align-items: center;
+
+  .property-color-picker {
+    width: 40px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid
+      color-mix(in srgb, var(--color-bg-secondary) 75%, white 25%);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    background: none;
+    overflow: hidden;
+
+    &:hover {
+      border-color: color-mix(
+        in srgb,
+        var(--color-bg-secondary) 65%,
+        white 35%
+      );
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--color-primary) 15%, transparent);
+    }
+  }
+
+  .property-color-text {
+    flex: 1;
+    min-width: 80px;
+  }
 }
 
-.property-color-picker {
-  width: 40px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  cursor: pointer;
+// === EMPTY STATE ===
+.properties-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  padding: var(--space-8);
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-4);
+    opacity: 0.6;
+  }
+
+  .empty-text {
+    h4 {
+      font-size: var(--size-lg);
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: 0 0 var(--space-2) 0;
+    }
+
+    p {
+      font-size: var(--size-sm);
+      color: var(--color-text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
 }
 
-.property-color-text {
-  flex: 1;
-  min-width: 80px;
-}
-
-.disabled-indicator {
+// === ERROR STATES ===
+.property-error {
+  color: var(--color-danger);
   font-size: var(--size-xs);
-  color: var(--color-text-secondary);
-  font-weight: normal;
+  margin-top: var(--space-1);
+  font-weight: 500;
+}
+
+.property-input.error {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 15%, transparent);
+}
+
+// === RESPONSIVE ===
+@media (max-width: 768px) {
+  .properties-tab {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .properties-tab-content {
+    padding: var(--space-3) var(--space-4);
+  }
 }

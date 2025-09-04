@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropertyField from './PropertyField.jsx';
 import { DEVICES } from '@config/constants.js';
 
 /*
- * FAIT QUOI : Container propriétés avec PropertyField multiples + header
+ * FAIT QUOI : Panel propriétés avec onglets horizontaux
  * REÇOIT : selectedElement, device, onElementUpdate
- * RETOURNE : Module complet édition propriétés
- * ERREURS : Défensif avec élément non sélectionné
+ * RETOURNE : Interface clean avec navigation par onglets
+ * NOUVEAU : Pas de header + onglets horizontaux
  */
 
 function PropertiesModule({ 
@@ -14,253 +14,282 @@ function PropertiesModule({
   device = DEVICES.DESKTOP, 
   onElementUpdate = () => {} 
 }) {
+  const [activeTab, setActiveTab] = useState('general');
+
   const handlePropertyChange = (propertyName, value) => {
     if (!selectedElement || !onElementUpdate) return;
     onElementUpdate(selectedElement.id, { [propertyName]: value });
   };
 
-  const renderPropertyFields = () => {
-    if (!selectedElement) return null;
+  const getPropertyTabs = () => {
+    if (!selectedElement) return [];
 
-    const commonFields = [
-      { key: 'id', label: 'ID', type: 'text', disabled: true },
-      { key: 'classname', label: 'CSS Classes', type: 'text' }
-    ];
+    const tabs = {
+      // === 4 ONGLETS POUR TOUS ===
+      general: {
+        title: 'General',
+        icon: '📋',
+        fields: [
+          { key: 'id', label: 'ID', type: 'text', disabled: true },
+          { key: 'name', label: 'Name', type: 'text' }
+        ]
+      },
 
-    const typeSpecificFields = {
-      // === PROJECT ===
-      project: [
-        { key: 'name', label: 'Project Name', type: 'text' },
-        { key: 'description', label: 'Description', type: 'textarea' },
-        { key: 'theme', label: 'Theme', type: 'select', options: ['light', 'dark', 'auto'] },
-        { key: 'fontFamily', label: 'Font Family', type: 'text' },
-        { key: 'lightPrimaryColor', label: 'Primary Color (Light)', type: 'color' },
-        { key: 'darkPrimaryColor', label: 'Primary Color (Dark)', type: 'color' }
-      ],
+      content: {
+        title: 'Content',
+        icon: '📝',
+        fields: getContentFields()
+      },
 
-      // === PAGE ===
-      page: [
-        { key: 'name', label: 'Page Name', type: 'text' },
-        { key: 'slug', label: 'URL Slug', type: 'text' },
-        { key: 'title', label: 'Page Title', type: 'text' }
-      ],
+      layout: {
+        title: 'Layout',
+        icon: '📐',
+        fields: getLayoutFields()
+      },
 
-      // === SECTION ===
-      section: [
-        { key: 'name', label: 'Section Name', type: 'text' },
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'desktopColumns', label: 'Desktop Columns', type: 'number' },
-        { key: 'tabletColumns', label: 'Tablet Columns', type: 'number' },
-        { key: 'mobileColumns', label: 'Mobile Columns', type: 'number' }
-      ],
-
-      // === CONTAINERS ===
-      div: [
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'margin', label: 'Margin', type: 'text' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'display', label: 'Display', type: 'select', options: ['block', 'flex', 'inline', 'inline-block', 'grid'] },
-        { key: 'flexDirection', label: 'Flex Direction', type: 'select', options: ['row', 'column', 'row-reverse', 'column-reverse'] },
-        { key: 'justifyContent', label: 'Justify Content', type: 'select', options: ['flex-start', 'center', 'flex-end', 'space-between', 'space-around'] },
-        { key: 'alignItems', label: 'Align Items', type: 'select', options: ['flex-start', 'center', 'flex-end', 'stretch', 'baseline'] }
-      ],
-
-      list: [
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'margin', label: 'Margin', type: 'text' },
-        { key: 'gap', label: 'Gap', type: 'text' },
-        { key: 'listStyle', label: 'List Style', type: 'select', options: ['none', 'disc', 'circle', 'square', 'decimal', 'decimal-leading-zero'] }
-      ],
-
-      form: [
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'margin', label: 'Margin', type: 'text' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'gap', label: 'Gap', type: 'text' },
-        { key: 'method', label: 'Method', type: 'select', options: ['GET', 'POST'] },
-        { key: 'action', label: 'Action URL', type: 'url' }
-      ],
-
-      // === COMPONENTS ===
-      heading: [
-        { key: 'content', label: 'Content', type: 'text' },
-        { key: 'tag', label: 'Tag', type: 'select', options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] },
-        { key: 'fontSize', label: 'Font Size', type: 'text' },
-        { key: 'fontWeight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'] },
-        { key: 'textAlign', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'lineHeight', label: 'Line Height', type: 'text' },
-        { key: 'margin', label: 'Margin', type: 'text' }
-      ],
-
-      paragraph: [
-        { key: 'content', label: 'Content', type: 'textarea' },
-        { key: 'fontSize', label: 'Font Size', type: 'text' },
-        { key: 'fontWeight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '300', '400', '500', '600', '700'] },
-        { key: 'textAlign', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'lineHeight', label: 'Line Height', type: 'text' },
-        { key: 'maxLines', label: 'Max Lines', type: 'number' },
-        { key: 'margin', label: 'Margin', type: 'text' }
-      ],
-
-      button: [
-        { key: 'content', label: 'Text', type: 'text' },
-        { key: 'href', label: 'Link URL', type: 'url' },
-        { key: 'target', label: 'Open In', type: 'select', options: ['_self', '_blank'] },
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'fontSize', label: 'Font Size', type: 'text' },
-        { key: 'fontWeight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '400', '500', '600', '700'] },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'buttonType', label: 'Button Type', type: 'select', options: ['button', 'submit', 'reset'] },
-        // États hover
-        { key: 'hoverBackgroundColor', label: 'Hover Background', type: 'color' },
-        { key: 'hoverTextColor', label: 'Hover Text Color', type: 'color' }
-      ],
-
-      link: [
-        { key: 'content', label: 'Text', type: 'text' },
-        { key: 'href', label: 'URL', type: 'url' },
-        { key: 'target', label: 'Target', type: 'select', options: ['_self', '_blank', '_parent', '_top'] },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'fontSize', label: 'Font Size', type: 'text' },
-        { key: 'fontWeight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '400', '500', '600', '700'] },
-        { key: 'textDecoration', label: 'Text Decoration', type: 'select', options: ['none', 'underline', 'overline', 'line-through'] },
-        // États hover
-        { key: 'hoverTextColor', label: 'Hover Text Color', type: 'color' },
-        { key: 'hoverTextDecoration', label: 'Hover Decoration', type: 'select', options: ['none', 'underline', 'overline', 'line-through'] }
-      ],
-
-      image: [
-        { key: 'src', label: 'Image URL', type: 'url' },
-        { key: 'alt', label: 'Alt Text', type: 'text' },
-        { key: 'width', label: 'Width', type: 'text' },
-        { key: 'height', label: 'Height', type: 'text' },
-        { key: 'objectFit', label: 'Object Fit', type: 'select', options: ['fill', 'contain', 'cover', 'scale-down', 'none'] },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'lazy', label: 'Lazy Loading', type: 'checkbox' },
-        { key: 'margin', label: 'Margin', type: 'text' }
-      ],
-
-      video: [
-        { key: 'src', label: 'Video URL', type: 'url' },
-        { key: 'width', label: 'Width', type: 'text' },
-        { key: 'height', label: 'Height', type: 'text' },
-        { key: 'controls', label: 'Show Controls', type: 'checkbox' },
-        { key: 'autoplay', label: 'Autoplay', type: 'checkbox' },
-        { key: 'loop', label: 'Loop', type: 'checkbox' },
-        { key: 'muted', label: 'Muted', type: 'checkbox' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'margin', label: 'Margin', type: 'text' }
-      ],
-
-      // === INPUT COMPONENTS ===
-      input: [
-        { key: 'placeholder', label: 'Placeholder', type: 'text' },
-        { key: 'value', label: 'Default Value', type: 'text' },
-        { key: 'inputType', label: 'Input Type', type: 'select', options: ['text', 'email', 'password', 'number', 'tel', 'url', 'search'] },
-        { key: 'required', label: 'Required', type: 'checkbox' },
-        { key: 'disabled', label: 'Disabled', type: 'checkbox' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'fontSize', label: 'Font Size', type: 'text' },
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'textColor', label: 'Text Color', type: 'color' }
-      ],
-
-      textarea: [
-        { key: 'placeholder', label: 'Placeholder', type: 'text' },
-        { key: 'value', label: 'Default Value', type: 'textarea' },
-        { key: 'rows', label: 'Rows', type: 'number' },
-        { key: 'cols', label: 'Columns', type: 'number' },
-        { key: 'required', label: 'Required', type: 'checkbox' },
-        { key: 'disabled', label: 'Disabled', type: 'checkbox' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'fontSize', label: 'Font Size', type: 'text' },
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'textColor', label: 'Text Color', type: 'color' },
-        { key: 'resize', label: 'Resize', type: 'select', options: ['none', 'both', 'horizontal', 'vertical'] }
-      ],
-
-      select: [
-        { key: 'options', label: 'Options (JSON)', type: 'textarea' },
-        { key: 'defaultValue', label: 'Default Value', type: 'text' },
-        { key: 'required', label: 'Required', type: 'checkbox' },
-        { key: 'disabled', label: 'Disabled', type: 'checkbox' },
-        { key: 'multiple', label: 'Multiple Selection', type: 'checkbox' },
-        { key: 'padding', label: 'Padding', type: 'text' },
-        { key: 'border', label: 'Border', type: 'text' },
-        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
-        { key: 'fontSize', label: 'Font Size', type: 'text' },
-        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
-        { key: 'textColor', label: 'Text Color', type: 'color' }
-      ]
+      style: {
+        title: 'Style',
+        icon: '🎨',
+        fields: getStyleFields()
+      }
     };
 
-    // Obtenir les champs spécifiques au type d'élément
-    const specificFields = typeSpecificFields[selectedElement.type] || [];
-    
-    // Combiner les champs communs et spécifiques
-    const allFields = [...commonFields, ...specificFields];
-
-    return allFields.map(field => {
-      const value = selectedElement[field.key] || '';
-
-      if (field.type === 'select') {
-        return (
-          <PropertyField
-            key={field.key}
-            label={field.label}
-            value={value}
-            type="select"
-            onChange={(newValue) => handlePropertyChange(field.key, newValue)}
-            disabled={field.disabled}
-          >
-            {field.options?.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </PropertyField>
-        );
+    // Fonctions pour générer les champs selon le type
+    function getContentFields() {
+      switch(selectedElement.type) {
+        case 'project':
+          return [
+            { key: 'description', label: 'Description', type: 'textarea' },
+            { key: 'author', label: 'Author', type: 'text' },
+            { key: 'version', label: 'Version', type: 'text' },
+            { key: 'language', label: 'Language', type: 'text' },
+            { key: 'charset', label: 'Charset', type: 'text' },
+            { key: 'domain', label: 'Domain', type: 'url' },
+            { key: 'favicon', label: 'Favicon URL', type: 'url' },
+            { key: 'previewImage', label: 'Preview Image', type: 'url' }
+          ];
+        case 'page':
+          return [
+            { key: 'title', label: 'Page Title', type: 'text' },
+            { key: 'slug', label: 'URL Slug', type: 'text' },
+            { key: 'metaDescription', label: 'Meta Description', type: 'textarea' },
+            { key: 'previewImage', label: 'Preview Image', type: 'url' },
+            { key: 'index', label: 'Index Page', type: 'checkbox' }
+          ];
+        case 'heading':
+        case 'title':
+          return [
+            { key: 'text', label: 'Text', type: 'text' },
+            { key: 'level', label: 'Level', type: 'select', options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }
+          ];
+        case 'paragraph':
+          return [
+            { key: 'text', label: 'Text', type: 'textarea' },
+            { key: 'maxLines', label: 'Max Lines', type: 'number' },
+            { key: 'allowHtml', label: 'Allow HTML', type: 'checkbox' }
+          ];
+        case 'button':
+          return [
+            { key: 'text', label: 'Button Text', type: 'text' },
+            { key: 'action', label: 'Action', type: 'text' },
+            { key: 'buttonType', label: 'Type', type: 'select', options: ['button', 'submit', 'reset'] },
+            { key: 'icon', label: 'Icon', type: 'text' },
+            { key: 'iconPosition', label: 'Icon Position', type: 'select', options: ['left', 'right'] }
+          ];
+        case 'link':
+          return [
+            { key: 'text', label: 'Link Text', type: 'text' },
+            { key: 'href', label: 'URL', type: 'url' },
+            { key: 'target', label: 'Target', type: 'select', options: ['_self', '_blank', '_parent', '_top'] }
+          ];
+        case 'image':
+          return [
+            { key: 'src', label: 'Image URL', type: 'url' },
+            { key: 'alt', label: 'Alt Text', type: 'text' },
+            { key: 'lazy', label: 'Lazy Loading', type: 'checkbox' }
+          ];
+        case 'input':
+          return [
+            { key: 'value', label: 'Value', type: 'text' },
+            { key: 'placeholder', label: 'Placeholder', type: 'text' },
+            { key: 'inputType', label: 'Input Type', type: 'select', options: ['text', 'email', 'password', 'number', 'tel'] },
+            { key: 'required', label: 'Required', type: 'checkbox' }
+          ];
+        default:
+          return [
+            { key: 'classname', label: 'CSS Classes', type: 'text' }
+          ];
       }
+    }
 
-      return (
-        <PropertyField
-          key={field.key}
-          label={field.label}
-          value={field.type === 'checkbox' ? !!value : value}
-          type={field.type}
-          onChange={(newValue) => handlePropertyChange(field.key, newValue)}
-          disabled={field.disabled}
-        />
-      );
-    });
+    function getLayoutFields() {
+      const commonLayout = [
+        { key: 'widthDesktop', label: 'Width Desktop', type: 'text' },
+        { key: 'widthTablet', label: 'Width Tablet', type: 'text' },
+        { key: 'widthMobile', label: 'Width Mobile', type: 'text' },
+        { key: 'heightDesktop', label: 'Height Desktop', type: 'text' },
+        { key: 'heightTablet', label: 'Height Tablet', type: 'text' },
+        { key: 'heightMobile', label: 'Height Mobile', type: 'text' }
+      ];
+
+      switch(selectedElement.type) {
+        case 'project':
+          return [
+            { key: 'breakpointDesktop', label: 'Desktop Breakpoint', type: 'text' },
+            { key: 'breakpointTablet', label: 'Tablet Breakpoint', type: 'text' },
+            { key: 'breakpointMobile', label: 'Mobile Breakpoint', type: 'text' }
+          ];
+        case 'section':
+          return [
+            { key: 'desktopColumns', label: 'Desktop Columns', type: 'number' },
+            { key: 'tabletColumns', label: 'Tablet Columns', type: 'number' },
+            { key: 'mobileColumns', label: 'Mobile Columns', type: 'number' },
+            { key: 'gap', label: 'Gap', type: 'text' }
+          ];
+        case 'div':
+        case 'list':
+        case 'form':
+          return [
+            ...commonLayout,
+            { key: 'display', label: 'Display', type: 'select', options: ['block', 'flex', 'grid', 'inline-block'] },
+            { key: 'flexDirection', label: 'Flex Direction', type: 'select', options: ['row', 'column'] },
+            { key: 'justifyContent', label: 'Justify Content', type: 'select', options: ['flex-start', 'center', 'flex-end', 'space-between'] },
+            { key: 'alignItems', label: 'Align Items', type: 'select', options: ['flex-start', 'center', 'flex-end', 'stretch'] }
+          ];
+        default:
+          return commonLayout;
+      }
+    }
+
+    function getStyleFields() {
+      const commonStyle = [
+        { key: 'backgroundColor', label: 'Background Color', type: 'color' },
+        { key: 'textColor', label: 'Text Color', type: 'color' },
+        { key: 'border', label: 'Border', type: 'text' },
+        { key: 'borderRadius', label: 'Border Radius', type: 'text' },
+        { key: 'boxShadow', label: 'Box Shadow', type: 'text' },
+        { key: 'opacity', label: 'Opacity', type: 'number' }
+      ];
+
+      switch(selectedElement.type) {
+        case 'project':
+          return [
+            { key: 'theme', label: 'Theme', type: 'select', options: ['light', 'dark', 'auto'] },
+            { key: 'fontFamily', label: 'Font Family', type: 'text' },
+            { key: 'lightPrimaryColor', label: 'Primary Light', type: 'color' },
+            { key: 'lightSecondaryColor', label: 'Secondary Light', type: 'color' },
+            { key: 'darkPrimaryColor', label: 'Primary Dark', type: 'color' },
+            { key: 'darkSecondaryColor', label: 'Secondary Dark', type: 'color' }
+          ];
+        case 'heading':
+        case 'paragraph':
+        case 'title':
+          return [
+            ...commonStyle,
+            { key: 'fontSize', label: 'Font Size', type: 'text' },
+            { key: 'fontWeight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '300', '400', '500', '600', '700'] },
+            { key: 'textAlign', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] },
+            { key: 'lineHeight', label: 'Line Height', type: 'text' },
+            { key: 'letterSpacing', label: 'Letter Spacing', type: 'text' }
+          ];
+        case 'image':
+          return [
+            ...commonStyle,
+            { key: 'objectFit', label: 'Object Fit', type: 'select', options: ['contain', 'cover', 'fill', 'none'] }
+          ];
+        default:
+          return commonStyle;
+      }
+    };
+
+    return Object.entries(tabs).map(([key, tab]) => ({
+      key,
+      ...tab
+    }));
   };
 
+  const renderActiveTab = () => {
+    const tabs = getPropertyTabs();
+    const currentTab = tabs.find(tab => tab.key === activeTab);
+    
+    if (!currentTab) return null;
+
+    return (
+      <div className="properties-tab-content">
+        {currentTab.fields.map(field => {
+          const value = selectedElement[field.key] || '';
+
+          if (field.type === 'select') {
+            return (
+              <PropertyField
+                key={field.key}
+                label={field.label}
+                value={value}
+                type="select"
+                onChange={(newValue) => handlePropertyChange(field.key, newValue)}
+                disabled={field.disabled}
+              >
+                {field.options?.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </PropertyField>
+            );
+          }
+
+          return (
+            <PropertyField
+              key={field.key}
+              label={field.label}
+              value={field.type === 'checkbox' ? !!value : value}
+              type={field.type}
+              onChange={(newValue) => handlePropertyChange(field.key, newValue)}
+              disabled={field.disabled}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  const tabs = getPropertyTabs();
+
   return (
-    <div className="project-properties">      
+    <div className="project-properties">
+      {device !== DEVICES.DESKTOP && (
+        <div className="properties-device-indicator">
+          <span className="device-label">
+            Editing for {device === DEVICES.TABLET ? 'Tablet' : 'Mobile'}
+          </span>
+        </div>
+      )}
+
       <div className="properties-content">
         {selectedElement ? (
-          <div className="properties-form">
-            {renderPropertyFields()}
-          </div>
+          <>
+            {/* Tabs Navigation */}
+            <div className="properties-tabs">
+              {tabs.map(tab => (
+                <button
+                  key={tab.key}
+                  className={`properties-tab ${activeTab === tab.key ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.key)}
+                  title={tab.title}
+                >
+                  <span className="tab-icon">{tab.icon}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Active Tab Content */}
+            {renderActiveTab()}
+          </>
         ) : (
           <div className="properties-empty">
-            Select an element to edit properties
+            <div className="empty-icon">🎯</div>
+            <div className="empty-text">
+              <h4>No Element Selected</h4>
+              <p>Select an element from the structure or preview to edit its properties</p>
+            </div>
           </div>
         )}
       </div>

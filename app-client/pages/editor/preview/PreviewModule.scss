@@ -1,243 +1,207 @@
+// === CONTAINER PRINCIPAL ===
 .project-preview {
   background: var(--color-bg-secondary);
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
-.preview-header {
-  height: 6%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-bg-secondary) 85%, white 15%);
-  flex-shrink: 0;
-
-  h3 {
-    font-size: var(--size-md);
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0;
-  }
-
-  .device-indicator {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--size-sm);
-    color: var(--color-text-secondary);
-
-    .device-icon {
-      font-size: var(--size-md);
-    }
-  }
-}
-
+// === CONTENT ===
 .preview-content {
   flex: 1;
-  background: var(--color-bg-primary);
+  background: #f5f5f7;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   overflow: auto;
   padding: var(--space-6);
 }
 
+// === VIEWPORT RESPONSIVE ===
 .preview-viewport {
   background: white;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
   transition: all 0.3s ease;
+  min-height: 600px;
 
   &.device-desktop {
     width: 100%;
     max-width: 1200px;
-    height: 100%;
+    height: fit-content;
   }
 
   &.device-tablet {
-    width: 100%;
-    max-width: 768px;
-    height: 100%;
+    width: 768px;
+    height: fit-content;
   }
 
   &.device-mobile {
-    width: 100%;
-    max-width: 375px;
-    height: 100%;
+    width: 375px;
+    height: fit-content;
   }
 }
 
-.preview-page {
-  padding: var(--space-6);
+// === WEBSITE RENDERING ===
+.preview-website {
+  width: 100%;
   min-height: 100%;
+  overflow: hidden;
+}
 
-  h1 {
-    font-size: var(--size-2xl);
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 var(--space-6) 0;
-    text-align: center;
+// === ÉLÉMENTS SÉLECTIONNABLES ===
+.preview-element {
+  position: relative;
+  transition: all 0.2s ease;
+
+  &:hover:not(.selected)::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid rgba(0, 123, 255, 0.3);
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10;
   }
+
+  &.selected::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid #007bff;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  }
+}
+
+// === PLACEHOLDERS VIDES ===
+.empty-placeholder {
+  padding: var(--space-6);
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  background: rgba(0, 0, 0, 0.02);
+  border: 2px dashed #ddd;
+  border-radius: var(--radius-md);
+  font-size: var(--size-sm);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 123, 255, 0.02);
+    border-color: rgba(0, 123, 255, 0.3);
+    color: #007bff;
+  }
+}
+
+// === ÉTAT VIDE ===
+.empty-state {
+  text-align: center;
+  padding: var(--space-12);
+  color: #666;
 
   h2 {
     font-size: var(--size-xl);
     font-weight: 600;
-    color: #2a2a2a;
-    margin: var(--space-6) 0 var(--space-4) 0;
-  }
-}
-
-.preview-page-content {
-  margin-bottom: var(--space-8);
-}
-
-.preview-section {
-  margin-bottom: var(--space-8);
-  padding: var(--space-4);
-  border: 2px dashed transparent;
-  border-radius: var(--radius-md);
-  transition: border-color 0.15s ease;
-
-  &.selected {
-    border-color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 5%, white);
-  }
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
-  }
-
-  h3 {
-    font-size: var(--size-lg);
-    font-weight: 500;
-    color: #3a3a3a;
+    color: #333;
     margin: 0 0 var(--space-4) 0;
   }
-}
 
-.preview-div {
-  margin-bottom: var(--space-6);
-  padding: var(--space-3);
-  border: 1px dashed transparent;
-  border-radius: var(--radius-sm);
-  transition: border-color 0.15s ease;
-
-  &.selected {
-    border-color: var(--color-success);
-    background: color-mix(in srgb, var(--color-success) 5%, white);
-  }
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--color-success) 50%, transparent);
-  }
-
-  h4 {
+  p {
     font-size: var(--size-md);
-    font-weight: 500;
-    color: #4a4a4a;
-    margin: 0 0 var(--space-3) 0;
+    margin: 0;
+    opacity: 0.8;
   }
 }
 
-.preview-component {
-  margin-bottom: var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  transition: border-color 0.15s ease;
+// === COMPOSANTS SPÉCIFIQUES ===
 
-  &.selected {
-    border-color: var(--color-warning);
-    background: color-mix(in srgb, var(--color-warning) 5%, white);
-  }
-
+// Boutons dans la preview
+.preview-element button {
+  transition: all 0.2s ease;
+  
   &:hover {
-    border-color: color-mix(in srgb, var(--color-warning) 50%, transparent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
-  img {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--radius-sm);
-  }
-
-  video {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--radius-sm);
-  }
-
-  button {
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-
-    &:hover {
-      background: color-mix(in srgb, var(--color-primary) 80%, black 20%);
-    }
-  }
-
-  a {
-    color: var(--color-primary);
-    text-decoration: underline;
-    transition: color 0.15s ease;
-
-    &:hover {
-      color: color-mix(in srgb, var(--color-primary) 80%, black 20%);
-    }
+  &:active {
+    transform: translateY(0);
   }
 }
 
-.empty-project {
-  color: #888;
-  font-style: italic;
-  text-align: center;
-  padding: var(--space-8);
-  font-size: var(--size-lg);
+// Images dans la preview
+.preview-element img {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.02);
+  }
 }
 
-.empty-page {
-  color: #999;
-  font-style: italic;
-  text-align: center;
-  padding: var(--space-6);
-  border: 2px dashed #ddd;
-  border-radius: var(--radius-md);
+// Links dans la preview
+.preview-element a {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    opacity: 0.8;
+  }
 }
 
-.empty-section {
-  color: #aaa;
-  font-style: italic;
-  text-align: center;
-  padding: var(--space-4);
-  border: 1px dashed #ddd;
-  border-radius: var(--radius-sm);
-  background: #fafafa;
+// Inputs dans la preview
+.preview-element input,
+.preview-element textarea {
+  transition: all 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  }
 }
 
-.empty-div {
-  color: #bbb;
-  font-style: italic;
-  text-align: center;
-  padding: var(--space-3);
-  border: 1px dashed #eee;
-  border-radius: var(--radius-sm);
-  background: #f9f9f9;
-  font-size: var(--size-sm);
+// === RESPONSIVE ===
+@media (max-width: 1400px) {
+  .preview-viewport.device-desktop {
+    max-width: 1000px;
+  }
 }
 
-.unknown-component {
-  background: color-mix(in srgb, var(--color-danger) 10%, white);
-  color: var(--color-danger);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--color-danger);
-  font-size: var(--size-sm);
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+@media (max-width: 1200px) {
+  .preview-content {
+    padding: var(--space-4);
+  }
+  
+  .preview-viewport.device-desktop {
+    max-width: 900px;
+  }
+}
+
+@media (max-width: 900px) {
+  .preview-viewport.device-tablet {
+    width: 100%;
+    max-width: 700px;
+  }
+}
+
+@media (max-width: 500px) {
+  .preview-content {
+    padding: var(--space-2);
+  }
+  
+  .preview-viewport.device-mobile {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
 }
