@@ -60,63 +60,60 @@ export function useEditor() {
         setProject(data.data.project);
         console.log('Project loaded:', data.data.project);
       } else {
-        setError(data.error || 'Failed to load project');
+        throw new Error(data.error || 'Failed to load project');
       }
     } catch (error) {
       console.error('Load project error:', error);
-      setError(`Failed to load project: ${error.message}`);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Chargement des templates depuis l'API
+  // Chargement templates
   const loadTemplates = async () => {
     try {
-      const response = await fetch(apiUrl('projects/meta/templates'));
-      const data = await response.json();
+      // Templates components
+      const componentsResponse = await fetch(apiUrl('templates/components'));
+      const componentsData = await componentsResponse.json();
       
-      if (data.success) {
-        // Organiser les templates par type
-        const componentTemplates = new Map();
-        const containerTemplates = new Map();
-        
-        data.data.templates.forEach(template => {
-          // Les templates components sont identifiés par leur type dans le schema
-          if (template.type && ['heading', 'paragraph', 'button', 'image', 'video', 'link'].includes(template.type)) {
-            componentTemplates.set(template.type, template);
-          }
-          // Les templates containers
-          if (template.type && ['div', 'list', 'form'].includes(template.type)) {
-            containerTemplates.set(template.type, template);
-          }
+      if (componentsData.success) {
+        const componentsMap = new Map();
+        componentsData.data.components.forEach(comp => {
+          componentsMap.set(comp.type, comp);
         });
         
-        setTemplatesCache({
-          components: componentTemplates,
-          containers: containerTemplates,
-          loaded: true
-        });
-        
-        console.log(`Templates loaded: ${componentTemplates.size} components, ${containerTemplates.size} containers`);
+        setTemplatesCache(prev => ({
+          ...prev,
+          components: componentsMap
+        }));
       }
+
+      // Templates containers
+      const containersResponse = await fetch(apiUrl('templates/containers'));
+      const containersData = await containersResponse.json();
+      
+      if (containersData.success) {
+        const containersMap = new Map();
+        containersData.data.containers.forEach(container => {
+          containersMap.set(container.type, container);
+        });
+        
+        setTemplatesCache(prev => ({
+          ...prev,
+          containers: containersMap,
+          loaded: true
+        }));
+      }
+      
     } catch (error) {
-      console.error('Template loading error:', error);
-      // Pas d'erreur critique, on peut fonctionner avec des defaults
+      console.error('Load templates error:', error);
     }
   };
 
   // Sauvegarde projet
   const saveProject = async () => {
-    if (!isDirty || !project) {
-      console.log('Nothing to save');
-      return;
-    }
-    
     try {
-      console.log('Saving project...');
-      
-      // CORRECTION: Utiliser PATCH au lieu de PUT + project.id numérique
       const response = await fetch(apiUrl(`projects/${project.id}`), {
         method: 'PATCH',
         headers: {
@@ -148,15 +145,85 @@ export function useEditor() {
     setIsDirty(true);
   };
 
+  // Fonction helper pour trouver un élément par ID dans la structure
+  const findElementById = (structure, targetId) => {
+    console.log('🔍 Searching for element:', targetId);
+    
+    if (!structure || !structure.pages) {
+      console.log('❌ No structure or pages');
+      return null;
+    }
+    
+    // Vérifier si c'est le projet
+    if (structure.id === targetId) {
+      console.log('✅ Found project element');
+      return structure;
+    }
+    
+    for (const page of structure.pages) {
+      // Vérifier si c'est une page
+      if (page.id === targetId) {
+        console.log('✅ Found page element');
+        return page;
+      }
+      
+      if (!page.layout?.sections) continue;
+      
+      for (const section of page.layout.sections) {
+        // Vérifier si c'est une section
+        if (section.id === targetId) {
+          console.log('✅ Found section element');
+          return section;
+        }
+        
+        // Vérifier dans tous les types de containers (div, list, form)
+        for (const containerType of ['divs', 'lists', 'forms']) {
+          const containers = section[containerType];
+          if (!Array.isArray(containers)) continue;
+          
+          for (const container of containers) {
+            // Vérifier si c'est un container
+            if (container.id === targetId) {
+              console.log('✅ Found container element');
+              return container;
+            }
+            
+            // Vérifier dans les components
+            if (Array.isArray(container.components)) {
+              for (const component of container.components) {
+                if (component.id === targetId) {
+                  console.log('✅ Found component element');
+                  return component;
+                }
+              }
+            }
+            
+            // Vérifier dans les items de liste
+            if (Array.isArray(container.items)) {
+              for (const item of container.items) {
+                if (item.id === targetId) {
+                  console.log('✅ Found list item element');
+                  return item;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    console.log('❌ Element not found');
+    return null;
+  };
+
   // Handlers éditeur
   const handleElementSelect = (element) => {
-      console.log('🎯 ELEMENT SELECTED:', element); // <- Ajoute cette ligne
-    console.log('Element selected:', element);
+    console.log('🎯 ELEMENT SELECTED:', element);
     setSelectedElement(element);
   };
 
   const handleElementUpdate = (elementId, updates) => {
-    console.log('Element updated:', elementId, updates);
+    console.log('🚀 Element update requested:', { elementId, updates });
     
     if (!project || !elementId) {
       console.warn('Cannot update element: missing project or elementId');
@@ -173,6 +240,7 @@ export function useEditor() {
         // Vérifier si c'est le projet
         if (structure.id === elementId) {
           Object.assign(structure, updates);
+          console.log('✅ Updated project element');
           return true;
         }
         
@@ -180,6 +248,7 @@ export function useEditor() {
           // Vérifier si c'est une page
           if (page.id === elementId) {
             Object.assign(page, updates);
+            console.log('✅ Updated page element');
             return true;
           }
           
@@ -189,6 +258,7 @@ export function useEditor() {
             // Vérifier si c'est une section
             if (section.id === elementId) {
               Object.assign(section, updates);
+              console.log('✅ Updated section element');
               return true;
             }
             
@@ -201,6 +271,7 @@ export function useEditor() {
                 // Vérifier si c'est un container
                 if (container.id === elementId) {
                   Object.assign(container, updates);
+                  console.log('✅ Updated container element');
                   return true;
                 }
                 
@@ -209,6 +280,7 @@ export function useEditor() {
                   for (const component of container.components) {
                     if (component.id === elementId) {
                       Object.assign(component, updates);
+                      console.log('✅ Updated component element');
                       return true;
                     }
                   }
@@ -219,6 +291,7 @@ export function useEditor() {
                   for (const item of container.items) {
                     if (item.id === elementId) {
                       Object.assign(item, updates);
+                      console.log('✅ Updated list item element');
                       return true;
                     }
                   }
@@ -230,8 +303,25 @@ export function useEditor() {
         return false;
       };
       
-      findAndUpdateElement(updatedProject);
+      const success = findAndUpdateElement(updatedProject);
+      
+      if (success) {
+        console.log('🎉 Element updated in project state');
+      } else {
+        console.error('❌ Failed to find and update element:', elementId);
+      }
+      
       return updatedProject;
+    });
+    
+    // 🔥 FIX CRITIQUE : Mettre à jour selectedElement aussi !
+    setSelectedElement(prevSelected => {
+      if (prevSelected && prevSelected.id === elementId) {
+        const updatedElement = { ...prevSelected, ...updates };
+        console.log('🎯 Updated selectedElement:', updatedElement);
+        return updatedElement;
+      }
+      return prevSelected;
     });
     
     setIsDirty(true);
@@ -256,133 +346,201 @@ export function useEditor() {
     setError(null);
   };
 
-  // Ajout de nouvelle page avec template par défaut
-  const handleAddPage = () => {
-    console.log('Add page clicked');
-    
-    if (!project) {
-      console.warn('Cannot add page: no project loaded');
-      return;
-    }
-    
-    const newPage = createElementFromTemplate('page', {
-      name: 'New Page',
-      title: 'New Page',
-      description: 'A new page'
+  // === GESTION ÉLÉMENTS ===
+
+  // Ajout page
+  const handleAddPage = (pageData) => {
+    if (!project) return;
+
+    const newPage = {
+      ...pageData,
+      id: `page-${Date.now()}`,
+      layout: {
+        sections: []
+      }
+    };
+
+    updateProject({
+      pages: [...(project.pages || []), newPage]
     });
-    
-    setProject(prevProject => ({
-      ...prevProject,
-      pages: [...(prevProject.pages || []), newPage]
-    }));
-    
-    setIsDirty(true);
-    setShowComponentSelector(false);
-    setShowContainerSelector(false);
+
+    console.log('Page added:', newPage.id);
   };
 
-  // Ajout de section à une page
-  const handleAddSection = (pageId) => {
-    console.log('Add section clicked for page:', pageId);
-    
-    if (!project || !pageId) {
-      console.warn('Cannot add section: missing project or pageId');
-      return;
-    }
-    
-    const newSection = createElementFromTemplate('section', {
-      name: 'New Section'
-    });
-    
+  // Ajout section
+  const handleAddSection = (pageId, sectionData) => {
+    if (!project || !pageId) return;
+
+    const newSection = {
+      ...sectionData,
+      id: `section-${Date.now()}`,
+      divs: [],
+      lists: [],
+      forms: []
+    };
+
     setProject(prevProject => {
-      const updatedProject = JSON.parse(JSON.stringify(prevProject)); // Deep clone
+      const updatedProject = JSON.parse(JSON.stringify(prevProject));
       
-      for (const page of updatedProject.pages || []) {
-        if (page.id === pageId) {
-          if (!page.layout) page.layout = {};
-          if (!page.layout.sections) page.layout.sections = [];
-          page.layout.sections.push(newSection);
-          break;
-        }
+      const page = updatedProject.pages?.find(p => p.id === pageId);
+      if (page) {
+        if (!page.layout) page.layout = {};
+        if (!page.layout.sections) page.layout.sections = [];
+        
+        page.layout.sections.push(newSection);
       }
       
       return updatedProject;
     });
-    
+
+    setIsDirty(true);
+    console.log('Section added:', newSection.id);
+  };
+
+  // Ajout div/container
+  const handleAddDiv = (sectionId) => {
+    console.log('Add div to section:', sectionId);
+    setPendingSectionId(sectionId);
+    setShowContainerSelector(true);
+  };
+
+  // Ajout composant
+  const handleAddComponent = (containerId) => {
+    console.log('Add component to container:', containerId);
+    setPendingSectionId(containerId); // Réutilise la même logique
+    setShowComponentSelector(true);
+  };
+
+  // Sélection container
+  const handleContainerSelect = (containerType) => {
+    if (!pendingSectionId || !templatesCache.containers.has(containerType)) {
+      console.error('Cannot add container: missing sectionId or template');
+      return;
+    }
+
+    const template = templatesCache.containers.get(containerType);
+    const newContainer = {
+      ...template,
+      id: `${containerType}-${Date.now()}`,
+      components: []
+    };
+
+    setProject(prevProject => {
+      const updatedProject = JSON.parse(JSON.stringify(prevProject));
+      
+      // Trouver la section et ajouter le container
+      const addContainerToSection = (structure) => {
+        if (!structure.pages) return false;
+        
+        for (const page of structure.pages) {
+          if (!page.layout?.sections) continue;
+          
+          for (const section of page.layout.sections) {
+            if (section.id === pendingSectionId) {
+              // Ajouter au bon array selon le type
+              const arrayKey = containerType === 'div' ? 'divs' : 
+                             containerType === 'list' ? 'lists' : 'forms';
+              
+              if (!section[arrayKey]) section[arrayKey] = [];
+              section[arrayKey].push(newContainer);
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      
+      addContainerToSection(updatedProject);
+      return updatedProject;
+    });
+
+    setIsDirty(true);
+    setShowContainerSelector(false);
+    setPendingSectionId(null);
+    console.log('Container added:', newContainer.id);
+  };
+
+  // Sélection composant
+  const handleComponentSelect = (componentType) => {
+    if (!pendingSectionId || !templatesCache.components.has(componentType)) {
+      console.error('Cannot add component: missing containerId or template');
+      return;
+    }
+
+    const template = templatesCache.components.get(componentType);
+    const newComponent = {
+      ...template,
+      id: `${componentType}-${Date.now()}`
+    };
+
+    setProject(prevProject => {
+      const updatedProject = JSON.parse(JSON.stringify(prevProject));
+      
+      // Trouver le container et ajouter le composant
+      const addComponentToContainer = (structure) => {
+        if (!structure.pages) return false;
+        
+        for (const page of structure.pages) {
+          if (!page.layout?.sections) continue;
+          
+          for (const section of page.layout.sections) {
+            // Vérifier dans tous les types de containers
+            for (const containerType of ['divs', 'lists', 'forms']) {
+              const containers = section[containerType];
+              if (!Array.isArray(containers)) continue;
+              
+              for (const container of containers) {
+                if (container.id === pendingSectionId) {
+                  if (!container.components) container.components = [];
+                  container.components.push(newComponent);
+                  return true;
+                }
+              }
+            }
+          }
+        }
+        return false;
+      };
+      
+      addComponentToContainer(updatedProject);
+      return updatedProject;
+    });
+
     setIsDirty(true);
     setShowComponentSelector(false);
-    setShowContainerSelector(false);
+    setPendingSectionId(null);
+    console.log('Component added:', newComponent.id);
   };
 
-  // CORRIGÉ : Ajout container avec possibilité de spécifier sectionId
-  const handleAddDiv = (sectionId = null) => {
-    console.log('Add div clicked', sectionId ? `for section: ${sectionId}` : '');
-    
-    if (sectionId) {
-      // Si un sectionId est fourni directement, stocker et afficher sélecteur
-      setPendingSectionId(sectionId);
-    } else {
-      // Sinon, utiliser selectedElement comme avant
-      setPendingSectionId(null);
-    }
-    
-    setShowContainerSelector(true);
-    setShowComponentSelector(false);
-  };
-
-  const handleAddComponent = () => {
-    console.log('Add component clicked');
-    setShowComponentSelector(true);
-    setShowContainerSelector(false);
-  };
-
-  // Suppression d'élément avec navigation hiérarchique
+  // Suppression élément
   const handleDeleteElement = (elementId) => {
-    console.log('Delete element:', elementId);
-    
-    if (!project || !elementId) {
-      console.warn('Cannot delete element: missing project or elementId');
-      return;
-    }
-    
-    if (!window.confirm('Delete this element?')) {
-      return;
-    }
-    
+    if (!elementId || !window.confirm('Delete this element?')) return;
+
     setProject(prevProject => {
-      const updatedProject = JSON.parse(JSON.stringify(prevProject)); // Deep clone
+      const updatedProject = JSON.parse(JSON.stringify(prevProject));
       
       // Navigation hiérarchique pour suppression
-      const deleteFromStructure = (structure) => {
-        if (!structure.pages) return;
+      const deleteElementFromStructure = (structure) => {
+        if (!structure.pages) return false;
         
-        // Filtrer les pages
+        // Supprimer des pages
         structure.pages = structure.pages.filter(page => {
           if (page.id === elementId) return false;
           
           if (page.layout?.sections) {
-            // Filtrer les sections
+            // Supprimer des sections
             page.layout.sections = page.layout.sections.filter(section => {
               if (section.id === elementId) return false;
               
-              // Filtrer tous les types de containers
+              // Supprimer des containers
               for (const containerType of ['divs', 'lists', 'forms']) {
                 if (Array.isArray(section[containerType])) {
                   section[containerType] = section[containerType].filter(container => {
                     if (container.id === elementId) return false;
                     
-                    // Filtrer les components
+                    // Supprimer des composants
                     if (Array.isArray(container.components)) {
-                      container.components = container.components.filter(
-                        component => component.id !== elementId
-                      );
-                    }
-                    
-                    // Filtrer les items de liste
-                    if (Array.isArray(container.items)) {
-                      container.items = container.items.filter(
-                        item => item.id !== elementId
-                      );
+                      container.components = container.components.filter(comp => comp.id !== elementId);
                     }
                     
                     return true;
@@ -396,333 +554,35 @@ export function useEditor() {
           
           return true;
         });
-      };
-      
-      deleteFromStructure(updatedProject);
-      
-      // Désélectionner l'élément si c'est celui qui était sélectionné
-      if (selectedElement?.id === elementId) {
-        setSelectedElement(null);
-      }
-      
-      return updatedProject;
-    });
-    
-    setIsDirty(true);
-  };
-
-  // Ajout de composant au container sélectionné
-  const handleComponentSelect = (componentType) => {
-    console.log('Component selected:', componentType);
-    
-    if (!selectedElement || !project) {
-      console.warn('Cannot add component: no container selected');
-      return;
-    }
-    
-    const newComponent = createElementFromTemplate('component', { type: componentType });
-    
-    setProject(prevProject => {
-      const updatedProject = JSON.parse(JSON.stringify(prevProject)); // Deep clone
-      
-      // Trouver le container et ajouter le composant
-      const addComponentToContainer = (structure) => {
-        if (!structure.pages) return;
         
-        for (const page of structure.pages) {
-          if (!page.layout?.sections) continue;
-          
-          for (const section of page.layout.sections) {
-            for (const containerType of ['divs', 'lists', 'forms']) {
-              const containers = section[containerType];
-              if (!Array.isArray(containers)) continue;
-              
-              for (const container of containers) {
-                if (container.id === selectedElement.id) {
-                  if (!container.components) container.components = [];
-                  container.components.push(newComponent);
-                  return;
-                }
-              }
-            }
-          }
-        }
+        return true;
       };
       
-      addComponentToContainer(updatedProject);
+      deleteElementFromStructure(updatedProject);
       return updatedProject;
     });
-    
-    setShowComponentSelector(false);
-    setIsDirty(true);
-  };
 
-  // CORRIGÉ : Ajout de container à la section sélectionnée ou spécifiée
-  const handleContainerSelect = (containerType) => {
-    console.log('Container selected:', containerType);
-    
-    if (!project) {
-      console.warn('Cannot add container: no project');
-      return;
+    // Désélectionner si l'élément supprimé était sélectionné
+    if (selectedElement?.id === elementId) {
+      setSelectedElement(null);
     }
 
-    // Utiliser pendingSectionId si disponible, sinon selectedElement.id
-    const targetSectionId = pendingSectionId || selectedElement?.id;
-    
-    if (!targetSectionId) {
-      console.warn('Cannot add container: no section specified');
-      return;
-    }
-    
-    const newContainer = createElementFromTemplate('container', { type: containerType });
-    
-    setProject(prevProject => {
-      const updatedProject = JSON.parse(JSON.stringify(prevProject)); // Deep clone
-      
-      // Trouver la section et ajouter le container
-      const addContainerToSection = (structure) => {
-        if (!structure.pages) return false;
-        
-        for (const page of structure.pages) {
-          if (!page.layout?.sections) continue;
-          
-          for (const section of page.layout.sections) {
-            if (section.id === targetSectionId) {
-              const containerKey = `${containerType}s`; // divs, lists, forms
-              if (!section[containerKey]) section[containerKey] = [];
-              section[containerKey].push(newContainer);
-              console.log(`Container ${containerType} added to section:`, targetSectionId);
-              return true;
-            }
-          }
-        }
-        return false;
-      };
-      
-      const success = addContainerToSection(updatedProject);
-      if (!success) {
-        console.warn('Section not found:', targetSectionId);
-      }
-      
-      return updatedProject;
-    });
-    
-    // Reset pending section et fermer sélecteur
-    setPendingSectionId(null);
-    setShowContainerSelector(false);
     setIsDirty(true);
+    console.log('Element deleted:', elementId);
   };
 
+  // Fermeture selectors
   const handleCloseComponentSelector = () => {
     setShowComponentSelector(false);
+    setPendingSectionId(null);
   };
 
   const handleCloseContainerSelector = () => {
     setShowContainerSelector(false);
-    setPendingSectionId(null); // Reset pending section
+    setPendingSectionId(null);
   };
 
-  // === FONCTIONS UTILITAIRES AVEC TEMPLATES ===
-
-  // Crée un élément à partir des templates ou fallback
-  const createElementFromTemplate = (elementType, overrides = {}) => {
-    const timestamp = Date.now();
-    const baseId = `${overrides.type || elementType}-${timestamp}`;
-    
-    switch (elementType) {
-      case 'page':
-        return {
-          id: baseId,
-          name: overrides.name || 'New Page',
-          title: overrides.title || 'New Page',
-          description: overrides.description || 'A new page',
-          layout: {
-            sections: []
-          },
-          ...overrides
-        };
-        
-      case 'section':
-        return {
-          id: baseId,
-          name: overrides.name || 'New Section',
-          classname: 'py-6',
-          divs: [],
-          lists: [],
-          forms: [],
-          ...overrides
-        };
-        
-      case 'component':
-        return createComponentFromTemplate(overrides.type, overrides);
-        
-      case 'container':
-        return createContainerFromTemplate(overrides.type, overrides);
-        
-      default:
-        return {
-          id: baseId,
-          name: `New ${elementType}`,
-          ...overrides
-        };
-    }
-  };
-
-  // Crée un composant à partir du template ou fallback
-  const createComponentFromTemplate = (componentType, overrides = {}) => {
-    const template = templatesCache.components.get(componentType);
-    const timestamp = Date.now();
-    const baseId = `${componentType}-${timestamp}`;
-    
-    if (template?.schema) {
-      // Utiliser le template avec ses defaults
-      const component = { 
-        id: baseId,
-        type: componentType,
-        ...overrides 
-      };
-      
-      // Appliquer les defaults du schema
-      Object.entries(template.schema.properties || {}).forEach(([key, prop]) => {
-        if (prop.default !== undefined && component[key] === undefined) {
-          component[key] = prop.default;
-        }
-      });
-      
-      return component;
-    }
-    
-    // Fallback si pas de template
-    return createComponentFallback(componentType, baseId, overrides);
-  };
-
-  // Crée un container à partir du template ou fallback
-  const createContainerFromTemplate = (containerType, overrides = {}) => {
-    const template = templatesCache.containers.get(containerType);
-    const timestamp = Date.now();
-    const baseId = `${containerType}-${timestamp}`;
-    
-    if (template?.schema) {
-      // Utiliser le template avec ses defaults
-      const container = { 
-        id: baseId,
-        type: containerType,
-        ...overrides 
-      };
-      
-      // Appliquer les defaults du schema
-      Object.entries(template.schema.properties || {}).forEach(([key, prop]) => {
-        if (prop.default !== undefined && container[key] === undefined) {
-          container[key] = prop.default;
-        }
-      });
-      
-      return container;
-    }
-    
-    // Fallback si pas de template
-    return createContainerFallback(containerType, baseId, overrides);
-  };
-
-  // Fallbacks pour components si templates non disponibles
-  const createComponentFallback = (type, baseId, overrides) => {
-    const baseComponent = { 
-      id: baseId, 
-      type, 
-      ...overrides 
-    };
-    
-    switch (type) {
-      case 'heading':
-        return {
-          ...baseComponent,
-          content: 'New Heading',
-          level: 2,
-          classname: 'text-2xl font-bold'
-        };
-      case 'paragraph':
-        return {
-          ...baseComponent,
-          content: 'New paragraph text',
-          classname: 'text-base'
-        };
-      case 'button':
-        return {
-          ...baseComponent,
-          content: 'Click me',
-          type: 'button',
-          classname: 'px-4 py-2 bg-blue-500 text-white rounded'
-        };
-      case 'image':
-        return {
-          ...baseComponent,
-          src: 'https://via.placeholder.com/300x200',
-          alt: 'New image',
-          classname: 'w-full h-auto'
-        };
-      case 'video':
-        return {
-          ...baseComponent,
-          src: '',
-          controls: true,
-          classname: 'w-full h-auto'
-        };
-      case 'link':
-        return {
-          ...baseComponent,
-          href: '#',
-          content: 'New Link',
-          target: '_self',
-          classname: 'text-blue-500 underline'
-        };
-      default:
-        return {
-          ...baseComponent,
-          content: `New ${type}`,
-          classname: 'text-base'
-        };
-    }
-  };
-
-  // Fallbacks pour containers si templates non disponibles
-  const createContainerFallback = (type, baseId, overrides) => {
-    const baseContainer = { 
-      id: baseId, 
-      type, 
-      name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
-      ...overrides 
-    };
-    
-    switch (type) {
-      case 'div':
-        return {
-          ...baseContainer,
-          classname: 'p-4',
-          components: []
-        };
-      case 'list':
-        return {
-          ...baseContainer,
-          tag: 'ul',
-          classname: 'space-y-2',
-          items: []
-        };
-      case 'form':
-        return {
-          ...baseContainer,
-          method: 'POST',
-          action: '#',
-          classname: 'space-y-4 p-4 border rounded',
-          components: []
-        };
-      default:
-        return {
-          ...baseContainer,
-          components: []
-        };
-    }
-  };
-
+  // Retour hook complet
   return {
     // États
     project,
@@ -734,26 +594,26 @@ export function useEditor() {
     showComponentSelector,
     showContainerSelector,
     templatesCache,
-    
-    // Fonctions projet
-    saveProject,
-    updateProject,
-    clearError,
-    
-    // Handlers éditeur
+
+    // Handlers éléments
     handleElementSelect,
     handleElementUpdate,
     handleDeviceChange,
     handleBackToDashboard,
-    
-    // CRUD Operations
+    clearError,
+
+    // Opérations projet
+    saveProject,
+    updateProject,
+
+    // Gestion éléments
     handleAddPage,
     handleAddSection,
     handleAddDiv,
     handleAddComponent,
     handleDeleteElement,
-    
-    // Component/Container Selector
+
+    // Sélecteurs
     handleComponentSelect,
     handleContainerSelect,
     handleCloseComponentSelector,

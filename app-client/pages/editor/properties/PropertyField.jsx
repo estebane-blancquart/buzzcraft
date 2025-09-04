@@ -16,41 +16,38 @@ function PropertyField({
   error = null,
   children = null
 }) {
-  // Debug pour vérifier les props reçues
-  console.log(`PropertyField ${label}:`, { value, type, disabled, hasOnChange: !!onChange });
-
   // Handler générique pour tous les types d'input
   const handleChange = (e) => {
-    console.log(`Input change for ${label}:`, e.target.value);
+    if (disabled || !onChange) return;
     
-    if (!disabled && onChange) {
-      let newValue = e.target.value;
-      
-      // Traitement spécial pour les checkbox
-      if (type === 'checkbox') {
-        newValue = e.target.checked;
-      }
-      
-      // Traitement spécial pour les numbers
-      if (type === 'number') {
-        newValue = e.target.value === '' ? '' : parseFloat(e.target.value) || 0;
-      }
-      
-      console.log(`Calling onChange for ${label} with:`, newValue);
-      onChange(newValue);
-    } else {
-      console.log(`Change blocked for ${label} - disabled:${disabled}, hasOnChange:${!!onChange}`);
+    let newValue = e.target.value;
+    
+    // Traitement spécial pour les checkbox
+    if (type === 'checkbox') {
+      newValue = e.target.checked;
     }
+    
+    // Traitement spécial pour les numbers - IMPORTANT: permettre string vide
+    if (type === 'number') {
+      // Si c'est vide, garder vide (ne pas forcer à 0)
+      newValue = e.target.value === '' ? '' : parseFloat(e.target.value) || 0;
+    }
+    
+    onChange(newValue);
   };
 
   // ID unique pour le champ
   const fieldId = `field-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
 
+  // 🔥 FIX CRITIQUE: Normaliser la valeur pour éviter undefined/null
+  const normalizedValue = value === null || value === undefined ? '' : String(value);
+
   // Render du champ selon le type
   const renderInput = () => {
     const baseProps = {
       id: fieldId,
-      value: type === 'checkbox' ? undefined : (value || ''),
+      // 🔥 FIX: Utiliser normalizedValue et gérer checkbox séparément
+      value: type === 'checkbox' ? undefined : normalizedValue,
       onChange: handleChange,
       disabled: disabled,
       className: `property-input property-input-${type}`,
@@ -84,7 +81,8 @@ function PropertyField({
             <input
               type="checkbox"
               id={fieldId}
-              checked={!!value}
+              // 🔥 FIX: Forcer boolean pour checked
+              checked={Boolean(value)}
               onChange={handleChange}
               disabled={disabled}
               className="property-checkbox"
@@ -112,14 +110,18 @@ function PropertyField({
             <input
               {...baseProps}
               type="color"
+              // 🔥 FIX: Default color si vide
+              value={normalizedValue || '#000000'}
               className="property-color-picker"
             />
             <input
               type="text"
-              value={value || '#000000'}
+              // 🔥 FIX: Même logique pour le text input
+              value={normalizedValue || '#000000'}
               onChange={(e) => {
-                console.log(`Color text change:`, e.target.value);
-                if (!disabled) onChange(e.target.value);
+                if (!disabled && onChange) {
+                  onChange(e.target.value);
+                }
               }}
               disabled={disabled}
               placeholder="#000000"
@@ -168,7 +170,6 @@ function PropertyField({
     <div className="property-field">
       <label htmlFor={fieldId} className="property-label">
         {label}
-        {disabled && <span className="disabled-indicator"> (read-only)</span>}
       </label>
       {renderInput()}
       {error && <div className="property-error">{error}</div>}

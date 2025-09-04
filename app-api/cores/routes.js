@@ -290,6 +290,106 @@ router.get("/projects/meta/templates", async (req, res) => {
   }
 });
 
+/**
+ * 🔥 NOUVEAU: GET /templates/components - Lister les templates de components
+ */
+router.get("/templates/components", async (req, res) => {
+  try {
+    const { PATHS } = await import("../../app-server/cores/constants.js");
+
+    let components = [];
+
+    try {
+      const files = await readdir(PATHS.componentTemplates);
+
+      for (const file of files.filter(f => f.endsWith('.json'))) {
+        try {
+          const filePath = join(PATHS.componentTemplates, file);
+          const content = await readFile(filePath, "utf8");
+          const componentData = JSON.parse(content);
+          
+          components.push({
+            type: file.replace('.json', ''),
+            ...componentData
+          });
+        } catch (fileError) {
+          console.log(`[ROUTES] Skipping invalid component template: ${file}`);
+          continue;
+        }
+      }
+    } catch (dirError) {
+      console.log(`[ROUTES] Component templates directory not accessible: ${dirError.message}`);
+      
+      return res.status(500).json({
+        success: false,
+        error: `Component templates directory not found: ${PATHS.componentTemplates}`,
+        details: dirError.message,
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        components,
+        count: components.length,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    handleRouteError(res, error, "load component templates");
+  }
+});
+
+/**
+ * 🔥 NOUVEAU: GET /templates/containers - Lister les templates de containers
+ */
+router.get("/templates/containers", async (req, res) => {
+  try {
+    const { PATHS } = await import("../../app-server/cores/constants.js");
+
+    let containers = [];
+
+    try {
+      const files = await readdir(PATHS.containerTemplates);
+
+      for (const file of files.filter(f => f.endsWith('.json'))) {
+        try {
+          const filePath = join(PATHS.containerTemplates, file);
+          const content = await readFile(filePath, "utf8");
+          const containerData = JSON.parse(content);
+          
+          containers.push({
+            type: file.replace('.json', ''),
+            ...containerData
+          });
+        } catch (fileError) {
+          console.log(`[ROUTES] Skipping invalid container template: ${file}`);
+          continue;
+        }
+      }
+    } catch (dirError) {
+      console.log(`[ROUTES] Container templates directory not accessible: ${dirError.message}`);
+      
+      return res.status(500).json({
+        success: false,
+        error: `Container templates directory not found: ${PATHS.containerTemplates}`,
+        details: dirError.message,
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        containers,
+        count: containers.length,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    handleRouteError(res, error, "load container templates");
+  }
+});
+
 // ===== ROUTES WORKFLOWS =====
 
 router.post("/projects", handleWorkflowRequest);

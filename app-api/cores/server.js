@@ -164,16 +164,20 @@ function setupMonitoringMiddleware(app) {
     });
   });
   
-  // Middleware de logging des requêtes (seulement les erreurs importantes)
+  // 🔧 FIX: Middleware de logging FILTRÉ - ne log que les vraies erreurs
   app.use((req, res, next) => {
     const startTime = Date.now();
     
-    // Log seulement les erreurs importantes
     res.on('finish', () => {
       const duration = Date.now() - startTime;
       const status = res.statusCode;
       
-      if (status >= 400) {
+      // Ignorer les requêtes communes qui polluent les logs
+      const ignoredPaths = ['/', '/favicon.ico', '/robots.txt'];
+      const isIgnoredPath = ignoredPaths.includes(req.path);
+      
+      // Log seulement si c'est une vraie erreur (500+) ET pas un path ignoré
+      if (status >= 500 && !isIgnoredPath) {
         console.log(`[SERVER] ${req.method} ${req.path} - ${status} (${duration}ms)`);
       }
     });
@@ -187,10 +191,24 @@ function setupMonitoringMiddleware(app) {
  * @param {express.Application} app - Application Express
  */
 function setupRoutes(app) {
+  // 🔧 FIX: Route pour favicon (éviter 404)
+  app.get('/favicon.ico', (req, res) => {
+    res.status(204).end();
+  });
+  
+  // 🔧 FIX: Route racine (éviter 404)
+  app.get('/', (req, res) => {
+    res.json({
+      success: true,
+      message: 'BuzzCraft API Server',
+      version: '1.0.0'
+    });
+  });
+  
   // Routes principales
   app.use('/', projectsRouter);
   
-  // Route 404 pour les endpoints non trouvés
+  // Route 404 pour les endpoints non trouvés - SILENCIEUSE
   app.use('*', (req, res) => {
     res.status(404).json({
       success: false,
@@ -257,6 +275,8 @@ function startServer(app) {
         return;
       }
       
+      console.log(`[SERVER] Running on http://${SERVER_CONFIG.host}:${SERVER_CONFIG.port}`);
+      console.log(`[SERVER] Environment: ${SERVER_CONFIG.environment}`);
       resolve(server);
     });
     

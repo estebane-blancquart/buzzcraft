@@ -301,7 +301,6 @@ function ElementTree({
         );
       })}
 
-      <div className="delete-hint">Suppr pour supprimer</div>
     </div>
   );
 }

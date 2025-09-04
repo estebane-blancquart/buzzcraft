@@ -99,6 +99,9 @@ function ElementTree({
   onCloseComponentSelector = () => {},
   onCloseContainerSelector = () => {}
 }) {
+  // FIX: Référence pour le focus
+  const treeRef = React.useRef(null);
+
   const [expandedItems, setExpandedItems] = React.useState(() => {
     if (!project) return new Set();
     
@@ -114,6 +117,7 @@ function ElementTree({
     return initialExpanded;
   });
 
+  // FIX: Event listener localisé au conteneur au lieu de document
   React.useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -125,8 +129,11 @@ function ElementTree({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    const treeElement = treeRef.current;
+    if (treeElement) {
+      treeElement.addEventListener('keydown', handleKeyDown);
+      return () => treeElement.removeEventListener('keydown', handleKeyDown);
+    }
   }, [selectedElement, onDeleteElement]);
 
   if (!project) {
@@ -246,7 +253,8 @@ function ElementTree({
 
   return (
     <>
-      <div className="tree-content">
+      {/* FIX: Ref + tabIndex pour permettre le focus */}
+      <div className="tree-content" ref={treeRef} tabIndex={0}>
         {/* Projet racine - PAS de ligne de connexion, PAS pliable */}
         <div 
           className={`tree-item ${isSelected({ id: project.id, type: 'project' }) ? 'selected' : ''}`}
@@ -409,8 +417,6 @@ function ElementTree({
             </React.Fragment>
           );
         })}
-
-        <div className="delete-hint">Suppr pour supprimer</div>
       </div>
 
       {/* Sélecteurs modaux */}
