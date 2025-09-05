@@ -12,6 +12,66 @@ function formatDate(dateString) {
 }
 
 function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
+  // Validation et debug du projet
+  console.log('ProjectCard received project:', project);
+  
+  const handleAction = (action) => {
+    console.log('ProjectCard handleAction called:', { 
+      action, 
+      projectId: project.id, 
+      projectName: project.name,
+      isValidId: project.id && project.id !== 'undefined'
+    });
+    
+    // Validation de l'ID avant d'envoyer l'action
+    if (!project.id || project.id === 'undefined') {
+      console.error('ProjectCard: Invalid project ID, cannot perform action', { project, action });
+      alert('Erreur: ID de projet invalide. Rechargez la page.');
+      return;
+    }
+    
+    if (onAction) {
+      onAction(project.id, action);
+    }
+  };
+
+  const handleDelete = () => {
+    console.log('ProjectCard handleDelete called:', { 
+      projectId: project.id, 
+      projectName: project.name 
+    });
+    
+    // Validation de l'ID avant suppression
+    if (!project.id || project.id === 'undefined') {
+      console.error('ProjectCard: Invalid project ID, cannot delete', project);
+      alert('Erreur: ID de projet invalide. Rechargez la page.');
+      return;
+    }
+    
+    if (onDeleteRequest) {
+      onDeleteRequest(project.id, project.name);
+    }
+  };
+
+  // Garde-fou si le projet est invalide
+  if (!project || !project.id || project.id === 'undefined') {
+    console.warn('ProjectCard: Invalid project, not rendering', project);
+    return (
+      <div className="project-card invalid-project">
+        <div className="project-info">
+          <div className="project-header">
+            <h3 className="project-name">Projet invalide</h3>
+            <p className="project-meta">ID manquant ou corrompu</p>
+          </div>
+          <span className="project-state error">ERROR</span>
+        </div>
+        <div className="project-actions">
+          <button disabled>Projet corrompu</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="project-card">
       <div className="project-info">
@@ -28,7 +88,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
         {project.state === PROJECT_STATES.DRAFT && (
           <>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.EDIT)}
+              onClick={() => handleAction(PROJECT_ACTIONS.EDIT)}
               disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.EDIT}`]}
             >
               {actionLoading[`${project.id}-${PROJECT_ACTIONS.EDIT}`]
@@ -36,7 +96,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
                 : "EDIT"}
             </button>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.BUILD)}
+              onClick={() => handleAction(PROJECT_ACTIONS.BUILD)}
               disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.BUILD}`]}
             >
               {actionLoading[`${project.id}-${PROJECT_ACTIONS.BUILD}`]
@@ -50,7 +110,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
         {project.state === PROJECT_STATES.BUILT && (
           <>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.REVERT)}
+              onClick={() => handleAction(PROJECT_ACTIONS.REVERT)}
               disabled={
                 actionLoading[`${project.id}-${PROJECT_ACTIONS.REVERT}`]
               }
@@ -60,7 +120,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
                 : "REVERT"}
             </button>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.DEPLOY)}
+              onClick={() => handleAction(PROJECT_ACTIONS.DEPLOY)}
               disabled={
                 actionLoading[`${project.id}-${PROJECT_ACTIONS.DEPLOY}`]
               }
@@ -76,7 +136,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
         {project.state === PROJECT_STATES.OFFLINE && (
           <>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.START)}
+              onClick={() => handleAction(PROJECT_ACTIONS.START)}
               disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.START}`]}
             >
               {actionLoading[`${project.id}-${PROJECT_ACTIONS.START}`]
@@ -84,7 +144,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
                 : "START"}
             </button>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.UPDATE)}
+              onClick={() => handleAction(PROJECT_ACTIONS.UPDATE)}
               disabled={
                 actionLoading[`${project.id}-${PROJECT_ACTIONS.UPDATE}`]
               }
@@ -100,7 +160,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
         {project.state === PROJECT_STATES.ONLINE && (
           <>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.STOP)}
+              onClick={() => handleAction(PROJECT_ACTIONS.STOP)}
               disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.STOP}`]}
             >
               {actionLoading[`${project.id}-${PROJECT_ACTIONS.STOP}`]
@@ -108,7 +168,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
                 : "STOP"}
             </button>
             <button
-              onClick={() => onAction(project.id, PROJECT_ACTIONS.UPDATE)}
+              onClick={() => handleAction(PROJECT_ACTIONS.UPDATE)}
               disabled={
                 actionLoading[`${project.id}-${PROJECT_ACTIONS.UPDATE}`]
               }
@@ -123,7 +183,7 @@ function ProjectCard({ project, onAction, onDeleteRequest, actionLoading }) {
         {/* DELETE: toujours disponible */}
         <button
           className="delete-btn"
-          onClick={() => onDeleteRequest(project.id, project.name)}
+          onClick={handleDelete}
           disabled={actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`]}
         >
           {actionLoading[`${project.id}-${PROJECT_ACTIONS.DELETE}`]

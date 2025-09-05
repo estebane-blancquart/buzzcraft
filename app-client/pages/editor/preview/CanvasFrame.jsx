@@ -2,10 +2,10 @@ import React from "react";
 import { DEVICES } from "@config/constants.js";
 
 /*
- * FAIT QUOI : Rendu depuis project.json structure réelle
+ * FAIT QUOI : Rendu visuel depuis project.json structure réelle
  * REÇOIT : project, device, selectedElement, onElementSelect
  * RETOURNE : Preview basée sur project.pages[].sections[].containers[].components[]
- * NOUVEAU : Plus de hardcodé - lecture vraie config
+ * ERREURS : Défensif avec project null + rendu placeholder vides
  */
 
 function CanvasFrame({
@@ -25,136 +25,125 @@ function CanvasFrame({
     return selectedElement && selectedElement.id === element?.id;
   };
 
+  // Rendu des composants selon leur type
   const renderComponent = (component) => {
     const isComponentSelected = isSelected(component);
-    const baseClass = isComponentSelected ? "selected" : "";
+    const baseClass = isComponentSelected ? 'selected' : '';
+
+    // Styles communs à tous les composants
+    const commonStyles = {
+      backgroundColor: component.backgroundColor || 'transparent',
+      color: component.color || 'inherit',
+      fontSize: component.fontSize || 'inherit',
+      fontWeight: component.fontWeight || 'normal',
+      textAlign: component.textAlign || 'left',
+      lineHeight: component.lineHeight || 'normal',
+      border: component.borderWidth ? 
+        `${component.borderWidth} ${component.borderStyle || 'solid'} ${component.borderColor || '#000'}` : 
+        'none',
+      borderRadius: component.borderRadius || '0',
+      boxShadow: component.boxShadow || 'none',
+      opacity: component.opacity || 1,
+      margin: component.margin || '0',
+      padding: component.padding || '0',
+      width: component.width || 'auto',
+      height: component.height || 'auto',
+      position: component.position || 'static',
+      zIndex: component.zIndex || 'auto',
+      cursor: 'pointer'
+    };
 
     return (
       <div
         key={component.id}
-        className={`preview-element ${baseClass}`}
+        className={`preview-element component ${baseClass}`}
         onClick={(e) => handleElementClick(component, e)}
-        style={{ cursor: "pointer" }}
+        style={{ ...commonStyles }}
       >
-        {component.type === "heading" &&
+        {component.type === "heading" && (
           React.createElement(
-            component.tag || component.level || "h2",
+            component.tag || 'h2',
             {
-              className: component.classname || "",
-              style: {
-                fontSize: component.fontSize || "2rem",
-                fontWeight: component.fontWeight || "600",
-                color: component.contentColor || "#1a1a1a",
-                textAlign: component.contentAlign || "left",
-                lineHeight: component.lineHeight || "1.2",
-                letterSpacing: component.letterSpacing || "normal",
-                backgroundColor: component.backgroundColor || "transparent",
-                border: component.border || "none",
-                borderRadius: component.borderRadius || "0",
-                boxShadow: component.boxShadow || "none",
-                // ✅ PLUS DE MARGIN PAR DÉFAUT
-                margin: component.margin || "0",
-                padding: component.padding || "0",
-              },
+              style: { margin: 0, padding: 0 }
             },
-            component.content || "Heading"
-          )}
+            component.content || 'New Heading'
+          )
+        )}
 
         {component.type === "paragraph" && (
-          <p
-            className={component.classname || ""}
-            style={{
-              fontSize: component.fontSize || "1rem",
-              fontWeight: component.fontWeight || "400",
-              color: component.contentColor || "#333",
-              textAlign: component.contentAlign || "left",
-              lineHeight: component.lineHeight || "1.6",
-              letterSpacing: component.letterSpacing || "normal",
-              backgroundColor: component.backgroundColor || "transparent",
-              border: component.border || "none",
-              borderRadius: component.borderRadius || "0",
-              boxShadow: component.boxShadow || "none",
-              // ✅ PLUS DE MARGIN PAR DÉFAUT
-              margin: component.margin || "0",
-              padding: component.padding || "0",
-            }}
-          >
-            {component.content ||
-              "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}
+          <p style={{ margin: 0, padding: 0 }}>
+            {component.content || 'New paragraph text...'}
           </p>
         )}
 
         {component.type === "button" && (
           <button
-            className={component.classname || ""}
+            type={component.buttonType || "button"}
+            disabled={component.disabled || false}
             style={{
-              backgroundColor: component.backgroundColor || "#007bff",
-              color: component.contentColor || "white",
-              fontSize: component.fontSize || "1rem",
-              fontWeight: component.fontWeight || "500",
-              textAlign: component.contentAlign || "center",
-              border: component.border || "none",
-              borderRadius: component.borderRadius || "6px",
-              boxShadow: component.boxShadow || "none",
-              cursor: "pointer",
-              // ✅ PLUS DE MARGIN PAR DÉFAUT
-              margin: component.margin || "0",
-              padding: component.padding || "12px 24px",
+              backgroundColor: component.hoverBackgroundColor && isComponentSelected ? 
+                component.hoverBackgroundColor : 
+                (component.backgroundColor || '#007bff'),
+              color: component.hoverColor && isComponentSelected ? 
+                component.hoverColor : 
+                (component.color || 'white'),
+              border: component.borderWidth ? 
+                `${component.borderWidth} ${component.borderStyle || 'solid'} ${component.borderColor || '#007bff'}` : 
+                '1px solid #007bff',
+              borderRadius: component.borderRadius || '4px',
+              padding: component.padding || '8px 16px',
+              cursor: component.disabled ? 'not-allowed' : 'pointer',
+              opacity: component.disabled ? 0.6 : (component.opacity || 1),
+              boxShadow: component.focusBoxShadow && isComponentSelected ? 
+                component.focusBoxShadow : 
+                (component.boxShadow || 'none')
             }}
           >
-            {component.icon && component.iconPosition === "left" && (
-              <span style={{ marginRight: "8px" }}>{component.icon}</span>
-            )}
-            {component.content || "Button"}
-            {component.icon && component.iconPosition === "right" && (
-              <span style={{ marginLeft: "8px" }}>{component.icon}</span>
-            )}
+            {component.content || 'Click me'}
           </button>
         )}
 
         {component.type === "image" && (
           <img
-            src={component.src || "https://picsum.photos/400/300"}
-            alt={component.alt || "Image"}
-            className={component.classname || ""}
+            src={component.src || 'https://via.placeholder.com/300x200?text=Image'}
+            alt={component.alt || 'Image'}
             style={{
-              width: component.width || "auto",
-              height: component.height || "auto",
-              maxWidth: "100%",
-              backgroundColor: component.backgroundColor || "transparent",
-              border: component.border || "none",
-              borderRadius: component.borderRadius || "0",
-              boxShadow: component.boxShadow || "none",
-              objectFit: component.objectFit || "cover",
-              opacity: component.opacity || 1,
-              // ✅ PLUS DE MARGIN PAR DÉFAUT
-              margin: component.margin || "0",
-              padding: component.padding || "0",
+              display: 'block',
+              maxWidth: '100%',
+              height: 'auto',
+              objectFit: component.objectFit || 'cover'
             }}
           />
+        )}
+
+        {component.type === "video" && (
+          <video
+            src={component.src}
+            poster={component.poster}
+            controls={component.controls || false}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              height: 'auto'
+            }}
+          >
+            {!component.src && 'Video source not specified'}
+          </video>
         )}
 
         {component.type === "link" && (
           <a
             href={component.href || "#"}
             target={component.target || "_self"}
-            className={component.classname || ""}
             style={{
-              backgroundColor: component.backgroundColor || "transparent",
-              color: component.contentColor || "#007bff",
-              fontSize: component.fontSize || "1rem",
-              fontWeight: component.fontWeight || "400",
-              textAlign: component.contentAlign || "left",
-              textDecoration: component.contentDecoration || "underline",
-              border: component.border || "none",
-              borderRadius: component.borderRadius || "0",
-              boxShadow: component.boxShadow || "none",
-              // ✅ PLUS DE MARGIN PAR DÉFAUT
-              margin: component.margin || "0",
-              padding: component.padding || "0",
+              color: component.hoverColor && isComponentSelected ? 
+                component.hoverColor : 
+                (component.color || '#007bff'),
+              textDecoration: 'underline'
             }}
+            onClick={(e) => e.preventDefault()} // Empêcher navigation en preview
           >
-            {component.content || "Link"}
+            {component.content || 'Link text'}
           </a>
         )}
 
@@ -162,166 +151,262 @@ function CanvasFrame({
           <input
             type={component.inputType || "text"}
             placeholder={component.placeholder || "Enter text..."}
-            value={component.value || ""}
-            className={component.classname || ""}
-            style={{
-              width: component.width || "100%",
-              backgroundColor: component.backgroundColor || "white",
-              color: component.contentColor || "#333",
-              fontSize: component.fontSize || "1rem",
-              padding: component.padding || "12px",
-              border: component.border || "1px solid #ddd",
-              borderRadius: component.borderRadius || "4px",
-              boxShadow: component.boxShadow || "none",
-              // ✅ PLUS DE MARGIN PAR DÉFAUT
-              margin: component.margin || "0",
-            }}
+            required={component.required || false}
             readOnly
+            style={{
+              width: '100%',
+              padding: component.padding || '8px 12px',
+              border: component.borderWidth ? 
+                `${component.borderWidth} ${component.borderStyle || 'solid'} ${component.borderColor || '#ddd'}` : 
+                '1px solid #ddd',
+              borderRadius: component.borderRadius || '4px',
+              backgroundColor: component.backgroundColor || 'white',
+              color: component.color || '#333'
+            }}
           />
         )}
       </div>
     );
   };
 
-const renderContainer = (container) => {
-  const isContainerSelected = isSelected(container);
-  const baseClass = isContainerSelected ? 'selected' : '';
-  
-  return (
-    <div
-      key={container.id}
-      className={`preview-element ${baseClass}`}
-      onClick={(e) => handleElementClick(container, e)}
-      style={{
-        backgroundColor: container.backgroundColor || 'transparent',
-        backgroundImage: container.backgroundImage ? `url(${container.backgroundImage})` : 'none',
-        textColor: container.textColor || 'inherit',
-        border: container.border || 'none',
-        borderRadius: container.borderRadius || '0',
-        boxShadow: container.boxShadow || 'none',
-        opacity: container.opacity || 1,
-        overflow: container.overflow || 'visible',
-        
-        // Layout Flexbox
-        display: container.display || 'block',
-        flexDirection: container.flexDirection || 'column',
-        justifyContent: container.justifyContent || 'flex-start',
-        alignItems: container.alignItems || 'flex-start',
-        flexWrap: container.flexWrap || 'nowrap',
-        gap: container.gap || '0',
-        
-        // ✅ PLUS DE MARGES/PADDING PAR DÉFAUT
-        margin: container.margin || '0',
-        padding: container.padding || '0',
-        
-        cursor: 'pointer'
-      }}
-    >
-      {container.components?.map(renderComponent)}
-      {(!container.components || container.components.length === 0) && (
-        <div className="empty-placeholder">
-          Click to add components
-        </div>
-      )}
-    </div>
-  );
-};
+  // Rendu des containers selon leur type
+  const renderContainer = (container) => {
+    const isContainerSelected = isSelected(container);
+    const baseClass = isContainerSelected ? 'selected' : '';
+    
+    const containerStyles = {
+      backgroundColor: container.backgroundColor || 'transparent',
+      backgroundImage: container.backgroundImage ? `url(${container.backgroundImage})` : 'none',
+      color: container.color || 'inherit',
+      border: container.borderWidth ? 
+        `${container.borderWidth} ${container.borderStyle || 'solid'} ${container.borderColor || '#000'}` : 
+        'none',
+      borderRadius: container.borderRadius || '0',
+      boxShadow: container.boxShadow || 'none',
+      opacity: container.opacity || 1,
+      overflow: container.overflow || 'visible',
+      
+      // Layout Flexbox
+      display: container.display || 'block',
+      flexDirection: container.flexDirection || 'column',
+      justifyContent: container.justifyContent || 'flex-start',
+      alignItems: container.alignItems || 'flex-start',
+      flexWrap: container.flexWrap || 'nowrap',
+      gap: container.gap || '0',
+      
+      // Spacing
+      margin: container.margin || '0',
+      padding: container.padding || '16px',
+      
+      // Dimensions
+      width: container.width || 'auto',
+      height: container.height || 'auto',
+      minWidth: container.minWidth || 'auto',
+      maxWidth: container.maxWidth || 'none',
+      
+      // Position
+      position: container.position || 'static',
+      zIndex: container.zIndex || 'auto',
+      
+      cursor: 'pointer'
+    };
 
-const renderSection = (section) => {
-  const isSectionSelected = isSelected(section);
-  const baseClass = isSectionSelected ? 'selected' : '';
-  
-  // Gestion responsive des colonnes
-  const getColumns = () => {
-    switch(device) {
-      case DEVICES.MOBILE:
-        return section.mobileColumns || 1;
-      case DEVICES.TABLET:
-        return section.tabletColumns || 2;
-      default:
-        return section.desktopColumns || 3;
+    const components = container.components || [];
+
+    // Rendu spécial pour les différents types de containers
+    if (container.type === 'form') {
+      return (
+        <div
+          key={container.id}
+          className={`preview-element container form ${baseClass}`}
+          onClick={(e) => handleElementClick(container, e)}
+          style={containerStyles}
+        >
+          {components.map(renderComponent)}
+          {components.length === 0 && (
+            <div className="empty-placeholder">
+              Click to add form fields
+            </div>
+          )}
+        </div>
+      );
     }
+
+    if (container.type === 'list') {
+      const ListTag = container.listType === 'ol' ? 'ol' : 'ul';
+      return (
+        <ListTag
+          key={container.id}
+          className={`preview-element container list ${baseClass}`}
+          onClick={(e) => handleElementClick(container, e)}
+          style={{
+            ...containerStyles,
+            listStyle: container.listType === 'ol' ? 'decimal' : 'disc',
+            paddingLeft: '20px'
+          }}
+        >
+          {components.map((component, index) => (
+            <li key={component.id || index} style={{ marginBottom: '8px' }}>
+              {renderComponent(component)}
+            </li>
+          ))}
+          {components.length === 0 && (
+            <li className="empty-placeholder">
+              Click to add list items
+            </li>
+          )}
+        </ListTag>
+      );
+    }
+
+    // Container div par défaut
+    return (
+      <div
+        key={container.id}
+        className={`preview-element container div ${baseClass}`}
+        onClick={(e) => handleElementClick(container, e)}
+        style={containerStyles}
+      >
+        {components.map(renderComponent)}
+        {components.length === 0 && (
+          <div className="empty-placeholder">
+            Click to add components
+          </div>
+        )}
+      </div>
+    );
   };
 
-  const columns = getColumns();
-  const containers = [
-    ...(section.divs || []).map(div => ({ ...div, type: 'div' })),
-    ...(section.lists || []).map(list => ({ ...list, type: 'list' })),
-    ...(section.forms || []).map(form => ({ ...form, type: 'form' })),
-    ...(section.containers || [])
-  ];
-  
-  return (
-    <section
-      key={section.id}
-      className={`preview-element ${baseClass}`}
-      onClick={(e) => handleElementClick(section, e)}
-      style={{
-        backgroundColor: section.backgroundColor || 'transparent',
-        backgroundImage: section.backgroundImage ? `url(${section.backgroundImage})` : 'none',
-        
-        // Grid Layout pour responsive
-        display: 'grid',
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        gap: section.gap || '0',
-        
-        // ✅ PLUS DE MARGES/PADDING PAR DÉFAUT
-        margin: section.margin || '0',
-        padding: section.padding || '0',
-        
-        cursor: 'pointer'
-      }}
-    >
-      {containers.map(renderContainer)}
-      {containers.length === 0 && (
-        <div className="empty-placeholder" style={{ gridColumn: '1 / -1' }}>
-          Click to add containers
-        </div>
-      )}
-    </section>
-  );
-};
+  // Rendu des sections
+  const renderSection = (section) => {
+    const isSectionSelected = isSelected(section);
+    const baseClass = isSectionSelected ? 'selected' : '';
+    
+    // Gestion responsive des colonnes
+    const getColumns = () => {
+      switch(device) {
+        case DEVICES.MOBILE:
+          return section.mobileColumns || 1;
+        case DEVICES.TABLET:
+          return section.tabletColumns || 2;
+        default:
+          return section.desktopColumns || 1;
+      }
+    };
+
+    const columns = getColumns();
+    
+    // Récupération de tous les containers
+    const containers = [
+      ...(section.divs || []).map(div => ({ ...div, type: 'div' })),
+      ...(section.lists || []).map(list => ({ ...list, type: 'list' })),
+      ...(section.forms || []).map(form => ({ ...form, type: 'form' })),
+      ...(section.containers || [])
+    ];
+
+    const sectionStyles = {
+      backgroundColor: section.backgroundColor || 'transparent',
+      backgroundImage: section.backgroundImage ? `url(${section.backgroundImage})` : 'none',
+      color: section.color || 'inherit',
+      border: section.borderWidth ? 
+        `${section.borderWidth} ${section.borderStyle || 'solid'} ${section.borderColor || '#000'}` : 
+        'none',
+      borderRadius: section.borderRadius || '0',
+      boxShadow: section.boxShadow || 'none',
+      opacity: section.opacity || 1,
+      
+      // Layout Grid pour responsive
+      display: 'grid',
+      gridTemplateColumns: `repeat(${columns}, 1fr)`,
+      gap: section.gap || '16px',
+      
+      // Spacing
+      margin: section.margin || '0',
+      padding: section.padding || '24px',
+      
+      // Dimensions
+      width: section.width || '100%',
+      minHeight: section.minHeight || 'auto',
+      
+      cursor: 'pointer'
+    };
+    
+    return (
+      <section
+        key={section.id}
+        className={`preview-element section ${baseClass}`}
+        onClick={(e) => handleElementClick(section, e)}
+        style={sectionStyles}
+      >
+        {containers.map(renderContainer)}
+        {containers.length === 0 && (
+          <div className="empty-placeholder" style={{ gridColumn: '1 / -1' }}>
+            Click to add containers
+          </div>
+        )}
+      </section>
+    );
+  };
+
+  // Rendu des pages
   const renderPage = (page) => {
     if (!page) return null;
 
     const sections = page.layout?.sections || page.sections || [];
     const isPageSelected = isSelected(page);
 
+    const pageStyles = {
+      minHeight: '100vh',
+      backgroundColor: page.backgroundColor || 'white',
+      color: page.color || 'inherit',
+      fontFamily: page.fontFamily || 'inherit',
+      cursor: 'pointer'
+    };
+
     return (
       <div
         key={page.id}
-        className={`preview-element page ${isPageSelected ? "selected" : ""}`}
+        className={`preview-element page ${isPageSelected ? 'selected' : ''}`}
         onClick={(e) => handleElementClick(page, e)}
-        style={{ cursor: "pointer" }}
+        style={pageStyles}
       >
         {sections.map(renderSection)}
+        {sections.length === 0 && (
+          <div className="empty-placeholder" style={{ 
+            textAlign: 'center', 
+            padding: '60px 20px',
+            color: '#666'
+          }}>
+            <h3>Empty Page</h3>
+            <p>Click to add sections</p>
+          </div>
+        )}
       </div>
     );
   };
 
-  // Si pas de projet, afficher état vide
+  // États vides
   if (!project) {
     return (
       <div className="preview-content">
         <div className={`preview-viewport device-${device}`}>
           <div className="empty-state">
-            <h2>Aucun projet</h2>
-            <p>Sélectionnez un projet pour voir la prévisualisation</p>
+            <h2>No Project</h2>
+            <p>Select a project to see the preview</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Si pas de pages, afficher placeholder
   const pages = project.pages || [];
   if (pages.length === 0) {
     return (
       <div className="preview-content">
         <div className={`preview-viewport device-${device}`}>
           <div className="empty-state">
-            <h2>Projet vide</h2>
-            <p>Ajoutez des pages pour voir le contenu</p>
+            <h2>Empty Project</h2>
+            <p>Add pages to see content</p>
           </div>
         </div>
       </div>
@@ -334,7 +419,9 @@ const renderSection = (section) => {
   return (
     <div className="preview-content">
       <div className={`preview-viewport device-${device}`}>
-        <div className="preview-website">{renderPage(currentPage)}</div>
+        <div className="preview-website">
+          {renderPage(currentPage)}
+        </div>
       </div>
     </div>
   );

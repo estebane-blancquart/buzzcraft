@@ -14,6 +14,9 @@ export function useEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
   
+  // Debug des params
+  console.log('🔗 useEditor params:', { id, allParams: useParams() });
+  
   // États éditeur
   const [project, setProject] = useState(null);
   const [selectedElement, setSelectedElement] = useState(null);
@@ -23,7 +26,7 @@ export function useEditor() {
   const [isDirty, setIsDirty] = useState(false);
   const [showComponentSelector, setShowComponentSelector] = useState(false);
   const [showContainerSelector, setShowContainerSelector] = useState(false);
-  const [pendingSectionId, setPendingSectionId] = useState(null); // Pour retenir l'ID section lors sélection container
+  const [pendingSectionId, setPendingSectionId] = useState(null);
 
   // Cache des templates pour éviter les re-fetch
   const [templatesCache, setTemplatesCache] = useState({
@@ -47,23 +50,58 @@ export function useEditor() {
     loadTemplates();
   }, []);
 
+  // === OPÉRATIONS PROJET ===
+
   // Chargement projet
   const loadProject = async (projectId) => {
     try {
       setLoading(true);
       setError(null);
       
+      console.log('🔄 Loading project:', projectId);
       const response = await fetch(apiUrl(`projects/${projectId}`));
       const data = await response.json();
       
+      console.log('📡 API Response:', data);
+      
       if (data.success) {
-        setProject(data.data.project);
-        console.log('Project loaded:', data.data.project);
+        let project = data.data.project;
+        
+        console.log('🗂️ Raw project data:', project);
+        
+        // Parser récursif pour gérer le JSON triple-nested
+        while (typeof project === 'object' && typeof project.content === 'string') {
+          try {
+            console.log('🔄 Parsing nested JSON content...');
+            project = JSON.parse(project.content);
+          } catch (parseError) {
+            console.error('❌ Failed to parse nested content:', parseError);
+            console.error('📄 Content was:', project.content);
+            throw new Error('Invalid nested JSON format');
+          }
+        }
+        
+        console.log('📋 Final parsed project:', project);
+        
+        // Vérifier que c'est un vrai projet avec pages
+        if (!project.id || !project.pages) {
+          console.error('❌ Invalid project structure:', project);
+          throw new Error('Project structure is invalid');
+        }
+        
+        // Vérifier la structure des pages
+        console.log('📄 Project pages:', project.pages);
+        if (project.pages && project.pages.length > 0) {
+          console.log('🔍 First page sections:', project.pages[0].layout?.sections);
+        }
+        
+        setProject(project);
+        console.log('✅ Project loaded successfully:', project);
       } else {
         throw new Error(data.error || 'Failed to load project');
       }
     } catch (error) {
-      console.error('Load project error:', error);
+      console.error('❌ Error loading project:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -72,151 +110,91 @@ export function useEditor() {
 
   // Chargement templates
   const loadTemplates = async () => {
+    if (templatesCache.loaded) return;
+
     try {
-      // Templates components
-      const componentsResponse = await fetch(apiUrl('templates/components'));
-      const componentsData = await componentsResponse.json();
+      console.log('Loading templates...');
       
-      if (componentsData.success) {
-        const componentsMap = new Map();
-        componentsData.data.components.forEach(comp => {
-          componentsMap.set(comp.type, comp);
-        });
-        
-        setTemplatesCache(prev => ({
-          ...prev,
-          components: componentsMap
-        }));
+      // Templates composants - avec fallback si API pas disponible
+      const componentTypes = ['heading', 'paragraph', 'button', 'image', 'video', 'link', 'input'];
+      for (const type of componentTypes) {
+        try {
+          const response = await fetch(apiUrl(`templates/components/${type}`));
+          const data = await response.json();
+          if (data.success) {
+            templatesCache.components.set(type, data.data.template);
+          }
+        } catch (error) {
+          console.warn(`Template ${type} not available, using defaults`);
+          // Pas grave, on utilise les defaults dans handleComponentSelect
+        }
       }
 
-      // Templates containers
-      const containersResponse = await fetch(apiUrl('templates/containers'));
-      const containersData = await containersResponse.json();
-      
-      if (containersData.success) {
-        const containersMap = new Map();
-        containersData.data.containers.forEach(container => {
-          containersMap.set(container.type, container);
-        });
-        
-        setTemplatesCache(prev => ({
-          ...prev,
-          containers: containersMap,
-          loaded: true
-        }));
+      // Templates containers - avec fallback si API pas disponible
+      const containerTypes = ['div', 'form', 'list'];
+      for (const type of containerTypes) {
+        try {
+          const response = await fetch(apiUrl(`templates/containers/${type}`));
+          const data = await response.json();
+          if (data.success) {
+            templatesCache.containers.set(type, data.data.template);
+          }
+        } catch (error) {
+          console.warn(`Template ${type} not available, using defaults`);
+          // Pas grave, on utilise les defaults dans handleContainerSelect
+        }
       }
-      
+
+      setTemplatesCache(prev => ({ ...prev, loaded: true }));
+      console.log('Templates loaded (with fallbacks):', templatesCache);
     } catch (error) {
-      console.error('Load templates error:', error);
+      console.error('Error loading templates:', error);
+      // Marquer comme loaded quand même pour éviter les re-tentatives
+      setTemplatesCache(prev => ({ ...prev, loaded: true }));
     }
   };
 
   // Sauvegarde projet
   const saveProject = async () => {
+    if (!project || !isDirty) return;
+
     try {
+      console.log('💾 Saving project:', project);
+      
       const response = await fetch(apiUrl(`projects/${project.id}`), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(project)
+        method: 'PATCH', // L'API utilise PATCH pour save, pas PUT
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project })
       });
-      
+
       const data = await response.json();
-      
       if (data.success) {
         setIsDirty(false);
-        console.log('Project saved successfully');
+        console.log('✅ Project saved successfully');
       } else {
-        throw new Error(data.error || 'Save failed');
+        throw new Error(data.error || 'Failed to save project');
       }
     } catch (error) {
-      console.error('Save project error:', error);
+      console.error('Error saving project:', error);
       throw error;
     }
   };
 
   // Mise à jour projet
   const updateProject = (updates) => {
+    if (!project) return;
+
     setProject(prevProject => ({
       ...prevProject,
-      ...updates
+      ...updates,
+      updated: new Date().toISOString()
     }));
+    
     setIsDirty(true);
   };
 
-  // Fonction helper pour trouver un élément par ID dans la structure
-  const findElementById = (structure, targetId) => {
-    console.log('🔍 Searching for element:', targetId);
-    
-    if (!structure || !structure.pages) {
-      console.log('❌ No structure or pages');
-      return null;
-    }
-    
-    // Vérifier si c'est le projet
-    if (structure.id === targetId) {
-      console.log('✅ Found project element');
-      return structure;
-    }
-    
-    for (const page of structure.pages) {
-      // Vérifier si c'est une page
-      if (page.id === targetId) {
-        console.log('✅ Found page element');
-        return page;
-      }
-      
-      if (!page.layout?.sections) continue;
-      
-      for (const section of page.layout.sections) {
-        // Vérifier si c'est une section
-        if (section.id === targetId) {
-          console.log('✅ Found section element');
-          return section;
-        }
-        
-        // Vérifier dans tous les types de containers (div, list, form)
-        for (const containerType of ['divs', 'lists', 'forms']) {
-          const containers = section[containerType];
-          if (!Array.isArray(containers)) continue;
-          
-          for (const container of containers) {
-            // Vérifier si c'est un container
-            if (container.id === targetId) {
-              console.log('✅ Found container element');
-              return container;
-            }
-            
-            // Vérifier dans les components
-            if (Array.isArray(container.components)) {
-              for (const component of container.components) {
-                if (component.id === targetId) {
-                  console.log('✅ Found component element');
-                  return component;
-                }
-              }
-            }
-            
-            // Vérifier dans les items de liste
-            if (Array.isArray(container.items)) {
-              for (const item of container.items) {
-                if (item.id === targetId) {
-                  console.log('✅ Found list item element');
-                  return item;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    console.log('❌ Element not found');
-    return null;
-  };
+  // === HANDLERS ÉDITEUR ===
 
-  // Handlers éditeur
   const handleElementSelect = (element) => {
     console.log('🎯 ELEMENT SELECTED:', element);
     setSelectedElement(element);
@@ -231,7 +209,7 @@ export function useEditor() {
     }
     
     setProject(prevProject => {
-      const updatedProject = JSON.parse(JSON.stringify(prevProject)); // Deep clone
+      const updatedProject = JSON.parse(JSON.stringify(prevProject));
       
       // Navigation hiérarchique pour mise à jour
       const findAndUpdateElement = (structure) => {
@@ -262,36 +240,24 @@ export function useEditor() {
               return true;
             }
             
-            // Vérifier dans tous les types de containers (div, list, form)
+            // Vérifier dans les containers
             for (const containerType of ['divs', 'lists', 'forms']) {
               const containers = section[containerType];
               if (!Array.isArray(containers)) continue;
               
               for (const container of containers) {
-                // Vérifier si c'est un container
                 if (container.id === elementId) {
                   Object.assign(container, updates);
                   console.log('✅ Updated container element');
                   return true;
                 }
                 
-                // Vérifier dans les components
+                // Vérifier dans les composants
                 if (Array.isArray(container.components)) {
                   for (const component of container.components) {
                     if (component.id === elementId) {
                       Object.assign(component, updates);
                       console.log('✅ Updated component element');
-                      return true;
-                    }
-                  }
-                }
-                
-                // Vérifier dans les items de liste
-                if (Array.isArray(container.items)) {
-                  for (const item of container.items) {
-                    if (item.id === elementId) {
-                      Object.assign(item, updates);
-                      console.log('✅ Updated list item element');
                       return true;
                     }
                   }
@@ -303,18 +269,11 @@ export function useEditor() {
         return false;
       };
       
-      const success = findAndUpdateElement(updatedProject);
-      
-      if (success) {
-        console.log('🎉 Element updated in project state');
-      } else {
-        console.error('❌ Failed to find and update element:', elementId);
-      }
-      
-      console.log("��� Forcing React re-render with new object"); return {...updatedProject};
+      findAndUpdateElement(updatedProject);
+      return updatedProject;
     });
-    
-    // 🔥 FIX CRITIQUE : Mettre à jour selectedElement aussi !
+
+    // Mettre à jour selectedElement si c'est lui qui est modifié
     setSelectedElement(prevSelected => {
       if (prevSelected && prevSelected.id === elementId) {
         const updatedElement = { ...prevSelected, ...updates };
@@ -349,12 +308,15 @@ export function useEditor() {
   // === GESTION ÉLÉMENTS ===
 
   // Ajout page
-  const handleAddPage = (pageData) => {
+  const handleAddPage = () => {
     if (!project) return;
 
     const newPage = {
-      ...pageData,
       id: `page-${Date.now()}`,
+      name: `Page ${(project.pages?.length || 0) + 1}`,
+      slug: `page-${(project.pages?.length || 0) + 1}`,
+      title: `Page ${(project.pages?.length || 0) + 1}`,
+      metaDescription: '',
       layout: {
         sections: []
       }
@@ -368,12 +330,13 @@ export function useEditor() {
   };
 
   // Ajout section
-  const handleAddSection = (pageId, sectionData) => {
+  const handleAddSection = (pageId) => {
     if (!project || !pageId) return;
 
     const newSection = {
-      ...sectionData,
       id: `section-${Date.now()}`,
+      name: `Section ${Date.now()}`,
+      tag: 'section',
       divs: [],
       lists: [],
       forms: []
@@ -390,7 +353,7 @@ export function useEditor() {
         page.layout.sections.push(newSection);
       }
       
-      console.log("��� Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
 
     setIsDirty(true);
@@ -399,31 +362,52 @@ export function useEditor() {
 
   // Ajout div/container
   const handleAddDiv = (sectionId) => {
-    console.log('Add div to section:', sectionId);
+    console.log('🎯 handleAddDiv called with sectionId:', sectionId);
+    
+    if (!sectionId) {
+      console.error('handleAddDiv: No sectionId provided!');
+      return;
+    }
+    
     setPendingSectionId(sectionId);
     setShowContainerSelector(true);
+    console.log('✅ Modal should open now, pendingSectionId set to:', sectionId);
   };
 
   // Ajout composant
   const handleAddComponent = (containerId) => {
     console.log('Add component to container:', containerId);
-    setPendingSectionId(containerId); // Réutilise la même logique
+    setPendingSectionId(containerId);
     setShowComponentSelector(true);
   };
 
-  // Sélection container
+  // Sélection container - VERSION SIMPLE SANS DÉPENDANCE TEMPLATES
   const handleContainerSelect = (containerType) => {
-    if (!pendingSectionId || !templatesCache.containers.has(containerType)) {
-      console.error('Cannot add container: missing sectionId or template');
+    console.log('🔧 handleContainerSelect called:', { containerType, pendingSectionId });
+    
+    if (!pendingSectionId) {
+      console.error('❌ Cannot add container: missing sectionId');
+      alert('Erreur: Aucune section sélectionnée');
       return;
     }
 
-    const template = templatesCache.containers.get(containerType);
+    // Créer le container avec propriétés par défaut (sans dépendre de templates)
     const newContainer = {
-      ...template,
+      type: containerType,
       id: `${containerType}-${Date.now()}`,
-      components: []
+      name: `${containerType.charAt(0).toUpperCase() + containerType.slice(1)}`,
+      components: [],
+      // Propriétés par défaut selon le type
+      ...(containerType === 'form' && {
+        action: '',
+        method: 'post'
+      }),
+      ...(containerType === 'list' && {
+        listType: 'ul'
+      })
     };
+
+    console.log('🆕 Creating container:', newContainer);
 
     setProject(prevProject => {
       const updatedProject = JSON.parse(JSON.stringify(prevProject));
@@ -443,6 +427,7 @@ export function useEditor() {
               
               if (!section[arrayKey]) section[arrayKey] = [];
               section[arrayKey].push(newContainer);
+              console.log(`✅ Container added to section.${arrayKey}`);
               return true;
             }
           }
@@ -450,27 +435,49 @@ export function useEditor() {
         return false;
       };
       
-      addContainerToSection(updatedProject);
-      console.log("��� Forcing React re-render with new object"); return {...updatedProject};
+      const success = addContainerToSection(updatedProject);
+      if (!success) {
+        console.error('❌ Failed to find section:', pendingSectionId);
+      }
+      
+      return updatedProject;
     });
 
     setIsDirty(true);
     setShowContainerSelector(false);
     setPendingSectionId(null);
-    console.log('Container added:', newContainer.id);
+    console.log('✅ Container added successfully:', newContainer.id);
   };
 
   // Sélection composant
   const handleComponentSelect = (componentType) => {
-    if (!pendingSectionId || !templatesCache.components.has(componentType)) {
-      console.error('Cannot add component: missing containerId or template');
+    if (!pendingSectionId) {
+      console.error('Cannot add component: missing containerId');
       return;
     }
 
-    const template = templatesCache.components.get(componentType);
+    // Créer le component avec propriétés par défaut
     const newComponent = {
-      ...template,
-      id: `${componentType}-${Date.now()}`
+      type: componentType,
+      id: `${componentType}-${Date.now()}`,
+      // Contenu par défaut selon le type
+      content: componentType === 'heading' ? 'New Heading' :
+               componentType === 'paragraph' ? 'New paragraph text...' :
+               componentType === 'button' ? 'Click me' :
+               componentType === 'link' ? 'Link text' : '',
+      // Propriétés par défaut selon le type
+      ...(componentType === 'heading' && { tag: 'h2' }),
+      ...(componentType === 'image' && { 
+        src: 'https://via.placeholder.com/300x200?text=Image',
+        alt: 'Image' 
+      }),
+      ...(componentType === 'input' && {
+        inputType: 'text',
+        placeholder: 'Enter text...'
+      }),
+      ...(componentType === 'link' && {
+        href: '#'
+      })
     };
 
     setProject(prevProject => {
@@ -503,7 +510,7 @@ export function useEditor() {
       };
       
       addComponentToContainer(updatedProject);
-      console.log("��� Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
 
     setIsDirty(true);
@@ -559,7 +566,7 @@ export function useEditor() {
       };
       
       deleteElementFromStructure(updatedProject);
-      console.log("��� Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
 
     // Désélectionner si l'élément supprimé était sélectionné

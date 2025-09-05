@@ -23,7 +23,7 @@ export function useWorkflows() {
   // Chargement projets au montage
   useEffect(() => {
     if (!didFetch.current) {
-      loadProjects(); // affichera le log
+      loadProjects();
       didFetch.current = true;
     }
   }, []);
@@ -36,7 +36,6 @@ export function useWorkflows() {
    */
   const loadProjects = async (silent = false) => {
     try {
-      // Log dev seulement si silent = false
       if (!silent) console.log("[useWorkflows] Loading projects...");
 
       setLoading(true);
@@ -46,15 +45,64 @@ export function useWorkflows() {
       const data = await response.json();
 
       if (data.success) {
-        const projectsList = data.data.projects || [];
-        setProjects(projectsList);
+        let projectsList = data.data.projects || [];
+        
+        // VALIDATION ET NETTOYAGE DES PROJETS
+        console.log("[useWorkflows] Raw projects before validation:", projectsList);
+        
+        // Filtrer les projets invalides et logger les problèmes
+        const validProjects = projectsList.filter((project, index) => {
+          if (!project || typeof project !== 'object') {
+            console.warn(`[useWorkflows] Project ${index} is not an object:`, project);
+            return false;
+          }
+          
+          if (!project.id || project.id === 'undefined') {
+            console.warn(`[useWorkflows] Project ${index} has invalid ID:`, project);
+            return false;
+          }
+          
+          if (!project.name) {
+            console.warn(`[useWorkflows] Project ${index} has no name:`, project);
+            return false;
+          }
+          
+          // Si le projet a un content string, essayer de le parser pour récupérer le vrai ID
+          if (typeof project.content === 'string') {
+            try {
+              const parsed = JSON.parse(project.content);
+              if (parsed.id && parsed.id !== 'undefined') {
+                project.id = parsed.id; // Utiliser l'ID du content parsé
+                project.name = parsed.name || project.name;
+                console.log(`[useWorkflows] Fixed project ID from content: ${parsed.id}`);
+              }
+            } catch (e) {
+              console.warn(`[useWorkflows] Could not parse project content:`, e);
+            }
+          }
+          
+          return true;
+        });
+        
+        console.log(`[useWorkflows] Filtered ${projectsList.length} → ${validProjects.length} valid projects`);
+        
+        // Logger chaque projet valide
+        validProjects.forEach((project, index) => {
+          console.log(`[useWorkflows] Valid project ${index}:`, {
+            id: project.id,
+            name: project.name,
+            state: project.state
+          });
+        });
+        
+        setProjects(validProjects);
 
         if (!silent) {
           addConsoleMessage(
             MESSAGE_TYPES.SUCCESS,
-            `${projectsList.length} projet(s) chargé(s)`
+            `${validProjects.length} projet(s) chargé(s)`
           );
-          console.log(`[useWorkflows] Loaded ${projectsList.length} projects`);
+          console.log(`[useWorkflows] Loaded ${validProjects.length} projects`);
         }
       } else {
         throw new Error(data.error || "Failed to load projects");
@@ -113,6 +161,11 @@ export function useWorkflows() {
 
     try {
       console.log(`[useWorkflows] Executing ${action} on project ${projectId}`);
+
+      // Validation de l'ID du projet
+      if (!projectId || projectId === 'undefined') {
+        throw new Error(`Invalid project ID: ${projectId}`);
+      }
 
       // État de chargement pour l'action spécifique
       setActionLoading((prev) => ({ ...prev, [actionKey]: true }));

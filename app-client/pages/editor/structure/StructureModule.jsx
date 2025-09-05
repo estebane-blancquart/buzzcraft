@@ -1,22 +1,32 @@
 import React from 'react';
-import './StructureModule.scss';
 
 /*
- * FAIT QUOI : Module structure avec arbre hiérarchique navigable
- * REÇOIT : project, selectedElement, onElementSelect, onAddPage, onAddSection, onAddDiv, onAddComponent, onDeleteElement
- * RETOURNE : Interface complète gestion structure
- * ERREURS : Défensif avec projet vide
+ * FAIT QUOI : Module structure avec arbre hiérarchique + sélecteurs modaux
+ * REÇOIT : project, selectedElement, handlers CRUD + modal states
+ * RETOURNE : Navigation DOM complète + ComponentSelector + ContainerSelector
+ * ERREURS : Défensif avec project null + states vides
  */
 
-// Composant sélecteur de container
+// Types disponibles pour les sélecteurs
+const componentTypes = [
+  { type: 'heading', label: 'Heading' },
+  { type: 'paragraph', label: 'Paragraph' },
+  { type: 'button', label: 'Button' },
+  { type: 'image', label: 'Image' },
+  { type: 'video', label: 'Video' },
+  { type: 'link', label: 'Link' },
+  { type: 'input', label: 'Input' }
+];
+
+const containerTypes = [
+  { type: 'div', label: 'Div' },
+  { type: 'form', label: 'Form' },
+  { type: 'list', label: 'List' }
+];
+
+// Modal sélecteur de containers
 function ContainerSelector({ isOpen, onSelect, onClose }) {
   if (!isOpen) return null;
-
-  const containerTypes = [
-    { type: 'div', label: 'Division' },
-    { type: 'list', label: 'Liste' },
-    { type: 'form', label: 'Formulaire' }
-  ];
 
   return (
     <div className="modal-overlay">
@@ -44,18 +54,9 @@ function ContainerSelector({ isOpen, onSelect, onClose }) {
   );
 }
 
-// Composant sélecteur de composant
+// Modal sélecteur de composants
 function ComponentSelector({ isOpen, onSelect, onClose }) {
   if (!isOpen) return null;
-
-  const componentTypes = [
-    { type: 'heading', label: 'Titre' },
-    { type: 'paragraph', label: 'Paragraphe' },
-    { type: 'button', label: 'Bouton' },
-    { type: 'image', label: 'Image' },
-    { type: 'video', label: 'Vidéo' },
-    { type: 'link', label: 'Lien' }
-  ];
 
   return (
     <div className="modal-overlay">
@@ -83,6 +84,7 @@ function ComponentSelector({ isOpen, onSelect, onClose }) {
   );
 }
 
+// Arbre des éléments principal
 function ElementTree({ 
   project = null, 
   selectedElement = null, 
@@ -99,9 +101,10 @@ function ElementTree({
   onCloseComponentSelector = () => {},
   onCloseContainerSelector = () => {}
 }) {
-  // FIX: Référence pour le focus
+  // Référence pour le focus clavier
   const treeRef = React.useRef(null);
 
+  // État des éléments étendus
   const [expandedItems, setExpandedItems] = React.useState(() => {
     if (!project) return new Set();
     
@@ -117,7 +120,7 @@ function ElementTree({
     return initialExpanded;
   });
 
-  // FIX: Event listener localisé au conteneur au lieu de document
+  // Navigation clavier
   React.useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -136,6 +139,7 @@ function ElementTree({
     }
   }, [selectedElement, onDeleteElement]);
 
+  // Garde-fou si pas de projet
   if (!project) {
     return (
       <div className="tree-content">
@@ -144,6 +148,7 @@ function ElementTree({
     );
   }
 
+  // Handlers locaux
   const handleElementClick = (element) => {
     if (onElementSelect) {
       onElementSelect(element);
@@ -175,6 +180,7 @@ function ElementTree({
     });
   };
 
+  // Utilitaires de vérification
   const isSelected = (element) => {
     return selectedElement && selectedElement.id === element?.id;
   };
@@ -183,10 +189,10 @@ function ElementTree({
     return expandedItems.has(itemId);
   };
 
+  // Rendu des indentations avec lignes de connexion
   const renderIndents = (level) => {
     const indents = [];
     for (let i = 0; i < level; i++) {
-      // Tous les niveaux d'indentation ont une ligne continue sauf le dernier
       const isLast = i === level - 1;
       indents.push(
         <div 
@@ -198,12 +204,11 @@ function ElementTree({
     return indents;
   };
 
-  // Fonction pour obtenir les sections d'une page selon la structure réelle
+  // Fonctions d'extraction de données selon structure réelle
   const getPageSections = (page) => {
     return page.layout?.sections || page.sections || [];
   };
 
-  // Fonction pour obtenir les containers d'une section
   const getSectionContainers = (section) => {
     const containers = [];
     
@@ -224,12 +229,11 @@ function ElementTree({
     return containers;
   };
 
-  // Fonction pour obtenir les composants d'un container
   const getContainerComponents = (container) => {
     return container.components || [];
   };
 
-  // Fonction pour obtenir un nom d'affichage propre pour les composants
+  // Nom d'affichage adaptatif pour les composants
   const getComponentDisplayName = (component) => {
     if (component.name) return component.name;
     
@@ -253,7 +257,7 @@ function ElementTree({
 
   return (
     <>
-      {/* FIX: Ref + tabIndex pour permettre le focus */}
+      {/* Arbre principal avec focus clavier */}
       <div className="tree-content" ref={treeRef} tabIndex={0}>
         {/* Projet racine - PAS de ligne de connexion, PAS pliable */}
         <div 
@@ -289,7 +293,7 @@ function ElementTree({
                 onClick={() => handleElementClick(page)}
               >
                 <div className="tree-item-content">
-                  {/* PAS de renderIndents(1) pour enlever la ligne */}
+                  {/* PAS de renderIndents pour les pages */}
                   {hasChildren && (
                     <span 
                       className={`tree-expand ${isExpanded(page.id) ? 'expanded' : 'collapsed'}`}
@@ -334,7 +338,7 @@ function ElementTree({
                           />
                         )}
                         {!hasChildren && <div style={{width: '16px'}} />}
-                        <span className="tree-label">{section.name || `Section ${section.id}`}</span>
+                        <span className="tree-label">{section.name}</span>
                       </div>
                       <span className="tree-type">section</span>
                       <button 
@@ -342,10 +346,8 @@ function ElementTree({
                         onClick={(e) => {
                           e.stopPropagation();
                           console.log('Adding container to section:', section.id);
-                          // Sélectionner la section ET auto-expand
-                          handleElementClick(section);
+                          // Auto-expand la section quand on ajoute un container
                           autoExpand(section.id);
-                          // Passer l'ID de la section à onAddDiv
                           onAddDiv(section.id);
                         }}
                       >
@@ -357,7 +359,6 @@ function ElementTree({
                     {containers.map(container => {
                       const components = getContainerComponents(container);
                       const hasChildren = components.length > 0;
-                      const containerType = container.type || 'div';
                       
                       return (
                         <React.Fragment key={container.id}>
@@ -374,16 +375,15 @@ function ElementTree({
                                 />
                               )}
                               {!hasChildren && <div style={{width: '16px'}} />}
-                              <span className="tree-label">{container.name || `${containerType} ${container.id}`}</span>
+                              <span className="tree-label">{container.name}</span>
                             </div>
-                            <span className="tree-type">{containerType}</span>
+                            <span className="tree-type">{container.type}</span>
                             <button 
                               className="tree-add-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 console.log('Adding component to container:', container.id);
-                                // Sélectionner le container ET auto-expand
-                                handleElementClick(container);
+                                // Auto-expand le container quand on ajoute un composant
                                 autoExpand(container.id);
                                 onAddComponent(container.id);
                               }}
@@ -435,6 +435,7 @@ function ElementTree({
   );
 }
 
+// Module principal
 function StructureModule({
   project,
   selectedElement,
