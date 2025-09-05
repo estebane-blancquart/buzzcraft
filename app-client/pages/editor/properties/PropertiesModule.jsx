@@ -3,10 +3,10 @@ import PropertyField from './PropertyField.jsx';
 import { DEVICES } from '@config/constants.js';
 
 /*
- * FAIT QUOI : Panel propriétés avec 3 onglets + sous-sections pliables
+ * FAIT QUOI : Panel propriétés COMPLET avec toutes les props des templates
  * REÇOIT : selectedElement, device, onElementUpdate
- * RETOURNE : Interface organisée Content/Style/Layout
- * ERREURS : Défensif avec element null + validation types
+ * RETOURNE : Interface organisée Content/Style/Layout avec TOUTES les propriétés
+ * NOUVEAU : Support de 100% des propriétés définies dans les templates JSON
  */
 
 // Composant section pliable
@@ -41,16 +41,16 @@ function PropertiesModule({
     metadata: true,
     seo: false,
     behavior: false,
-    // Style sections  
-    colors: false,
-    typography: false,
-    visual: false,
+    // Style sections - OUVERTS par défaut
+    colors: true,
+    typography: true,
+    visual: true,
     states: false,
-    // Layout sections
-    dimensions: false,
-    spacing: false,
-    flexbox: false,
-    advanced: false
+    // Layout sections - OUVERTS par défaut
+    dimensions: true,
+    spacing: true,
+    flexbox: true,
+    advanced: true
   });
 
   const toggleSection = (sectionKey) => {
@@ -104,10 +104,11 @@ function PropertiesModule({
       <div className="tab-content">
         {/* Metadata section - Pour tous les éléments */}
         <CollapsibleSection
-          title="Metadata"
+          title="Content Properties"
           isOpen={openSections.metadata}
           onToggle={() => toggleSection('metadata')}
         >
+          {/* PROJECT PROPERTIES */}
           {elementType === 'project' && (
             <>
               <PropertyField
@@ -134,24 +135,10 @@ function PropertiesModule({
                 type="text"
                 onChange={(value) => handlePropertyChange('version', value)}
               />
-              <PropertyField
-                label="Domain"
-                value={getPropertyValue('domain')}
-                type="text"
-                onChange={(value) => handlePropertyChange('domain', value)}
-              />
-              <PropertyField
-                label="Protocol"
-                value={getPropertyValue('protocol')}
-                type="select"
-                onChange={(value) => handlePropertyChange('protocol', value)}
-              >
-                <option value="https">HTTPS</option>
-                <option value="http">HTTP</option>
-              </PropertyField>
             </>
           )}
           
+          {/* PAGE PROPERTIES */}
           {elementType === 'page' && (
             <>
               <PropertyField
@@ -181,6 +168,7 @@ function PropertiesModule({
             </>
           )}
 
+          {/* CONTAINER PROPERTIES */}
           {(elementType === 'section' || elementType === 'div' || elementType === 'list' || elementType === 'form') && (
             <PropertyField
               label="Name"
@@ -190,6 +178,7 @@ function PropertiesModule({
             />
           )}
 
+          {/* TEXT COMPONENTS - Content + spécifiques */}
           {(elementType === 'heading' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link') && (
             <PropertyField
               label="Content"
@@ -199,22 +188,122 @@ function PropertiesModule({
             />
           )}
 
+          {/* HEADING SPECIFIC */}
           {elementType === 'heading' && (
-            <PropertyField
-              label="Tag"
-              value={getPropertyValue('tag')}
-              type="select"
-              onChange={(value) => handlePropertyChange('tag', value)}
-            >
-              <option value="h1">H1</option>
-              <option value="h2">H2</option>
-              <option value="h3">H3</option>
-              <option value="h4">H4</option>
-              <option value="h5">H5</option>
-              <option value="h6">H6</option>
-            </PropertyField>
+            <>
+              <PropertyField
+                label="Tag"
+                value={getPropertyValue('tag')}
+                type="select"
+                onChange={(value) => handlePropertyChange('tag', value)}
+              >
+                <option value="h1">H1</option>
+                <option value="h2">H2</option>
+                <option value="h3">H3</option>
+                <option value="h4">H4</option>
+                <option value="h5">H5</option>
+                <option value="h6">H6</option>
+              </PropertyField>
+              <PropertyField
+                label="Level"
+                value={getPropertyValue('level')}
+                type="select"
+                onChange={(value) => handlePropertyChange('level', value)}
+              >
+                <option value="h1">H1</option>
+                <option value="h2">H2</option>
+                <option value="h3">H3</option>
+                <option value="h4">H4</option>
+                <option value="h5">H5</option>
+                <option value="h6">H6</option>
+              </PropertyField>
+            </>
           )}
 
+          {/* BUTTON SPECIFIC */}
+          {elementType === 'button' && (
+            <>
+              <PropertyField
+                label="Button Type"
+                value={getPropertyValue('buttonType')}
+                type="select"
+                onChange={(value) => handlePropertyChange('buttonType', value)}
+              >
+                <option value="button">Button</option>
+                <option value="submit">Submit</option>
+                <option value="reset">Reset</option>
+              </PropertyField>
+              <PropertyField
+                label="Icon"
+                value={getPropertyValue('icon')}
+                type="text"
+                onChange={(value) => handlePropertyChange('icon', value)}
+              />
+              <PropertyField
+                label="Icon Position"
+                value={getPropertyValue('iconPosition')}
+                type="select"
+                onChange={(value) => handlePropertyChange('iconPosition', value)}
+              >
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+              </PropertyField>
+              <PropertyField
+                label="Action"
+                value={getPropertyValue('action')}
+                type="text"
+                onChange={(value) => handlePropertyChange('action', value)}
+              />
+              <PropertyField
+                label="Href"
+                value={getPropertyValue('href')}
+                type="url"
+                onChange={(value) => handlePropertyChange('href', value)}
+              />
+              <PropertyField
+                label="Disabled"
+                value={getPropertyValue('disabled')}
+                type="checkbox"
+                onChange={(value) => handlePropertyChange('disabled', value)}
+              />
+            </>
+          )}
+
+          {/* LINK SPECIFIC */}
+          {elementType === 'link' && (
+            <>
+              <PropertyField
+                label="Href"
+                value={getPropertyValue('href')}
+                type="url"
+                onChange={(value) => handlePropertyChange('href', value)}
+              />
+              <PropertyField
+                label="Target"
+                value={getPropertyValue('target')}
+                type="select"
+                onChange={(value) => handlePropertyChange('target', value)}
+              >
+                <option value="_self">Same Window</option>
+                <option value="_blank">New Window</option>
+                <option value="_parent">Parent</option>
+                <option value="_top">Top</option>
+              </PropertyField>
+              <PropertyField
+                label="Text Decoration"
+                value={getPropertyValue('textDecoration')}
+                type="select"
+                onChange={(value) => handlePropertyChange('textDecoration', value)}
+              >
+                <option value="none">None</option>
+                <option value="underline">Underline</option>
+                <option value="overline">Overline</option>
+                <option value="line-through">Line Through</option>
+              </PropertyField>
+            </>
+          )}
+
+          {/* IMAGE SPECIFIC */}
           {elementType === 'image' && (
             <>
               <PropertyField
@@ -229,9 +318,27 @@ function PropertiesModule({
                 type="text"
                 onChange={(value) => handlePropertyChange('alt', value)}
               />
+              <PropertyField
+                label="Lazy Loading"
+                value={getPropertyValue('lazy')}
+                type="checkbox"
+                onChange={(value) => handlePropertyChange('lazy', value)}
+              />
+              <PropertyField
+                label="Object Fit"
+                value={getPropertyValue('objectFit')}
+                type="select"
+                onChange={(value) => handlePropertyChange('objectFit', value)}
+              >
+                <option value="contain">Contain</option>
+                <option value="cover">Cover</option>
+                <option value="fill">Fill</option>
+                <option value="none">None</option>
+              </PropertyField>
             </>
           )}
 
+          {/* VIDEO SPECIFIC */}
           {elementType === 'video' && (
             <>
               <PropertyField
@@ -252,9 +359,28 @@ function PropertiesModule({
                 type="checkbox"
                 onChange={(value) => handlePropertyChange('controls', value)}
               />
+              <PropertyField
+                label="Autoplay"
+                value={getPropertyValue('autoplay')}
+                type="checkbox"
+                onChange={(value) => handlePropertyChange('autoplay', value)}
+              />
+              <PropertyField
+                label="Loop"
+                value={getPropertyValue('loop')}
+                type="checkbox"
+                onChange={(value) => handlePropertyChange('loop', value)}
+              />
+              <PropertyField
+                label="Muted"
+                value={getPropertyValue('muted')}
+                type="checkbox"
+                onChange={(value) => handlePropertyChange('muted', value)}
+              />
             </>
           )}
 
+          {/* INPUT SPECIFIC */}
           {elementType === 'input' && (
             <>
               <PropertyField
@@ -282,107 +408,63 @@ function PropertiesModule({
                 type="checkbox"
                 onChange={(value) => handlePropertyChange('required', value)}
               />
+              <PropertyField
+                label="Disabled"
+                value={getPropertyValue('disabled')}
+                type="checkbox"
+                onChange={(value) => handlePropertyChange('disabled', value)}
+              />
+              <PropertyField
+                label="Value"
+                value={getPropertyValue('value')}
+                type="text"
+                onChange={(value) => handlePropertyChange('value', value)}
+              />
             </>
           )}
+
+          {/* FORM SPECIFIC */}
+          {elementType === 'form' && (
+            <>
+              <PropertyField
+                label="Action"
+                value={getPropertyValue('action')}
+                type="url"
+                onChange={(value) => handlePropertyChange('action', value)}
+              />
+              <PropertyField
+                label="Method"
+                value={getPropertyValue('method')}
+                type="select"
+                onChange={(value) => handlePropertyChange('method', value)}
+              >
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+              </PropertyField>
+            </>
+          )}
+
+          {/* LIST SPECIFIC */}
+          {elementType === 'list' && (
+            <PropertyField
+              label="List Type"
+              value={getPropertyValue('listType')}
+              type="select"
+              onChange={(value) => handlePropertyChange('listType', value)}
+            >
+              <option value="ul">Unordered List (ul)</option>
+              <option value="ol">Ordered List (ol)</option>
+            </PropertyField>
+          )}
+
+          {/* CLASSNAME pour tous */}
+          <PropertyField
+            label="CSS Classes"
+            value={getPropertyValue('classname')}
+            type="text"
+            onChange={(value) => handlePropertyChange('classname', value)}
+          />
         </CollapsibleSection>
-
-        {/* SEO section - Pages seulement */}
-        {elementType === 'page' && (
-          <CollapsibleSection
-            title="SEO"
-            isOpen={openSections.seo}
-            onToggle={() => toggleSection('seo')}
-          >
-            <PropertyField
-              label="Keywords"
-              value={getPropertyValue('keywords')}
-              type="text"
-              onChange={(value) => handlePropertyChange('keywords', value)}
-            />
-            <PropertyField
-              label="OG Image"
-              value={getPropertyValue('ogImage')}
-              type="url"
-              onChange={(value) => handlePropertyChange('ogImage', value)}
-            />
-            <PropertyField
-              label="Index Page"
-              value={getPropertyValue('index')}
-              type="checkbox"
-              onChange={(value) => handlePropertyChange('index', value)}
-            />
-          </CollapsibleSection>
-        )}
-
-        {/* Behavior section - Composants interactifs */}
-        {(elementType === 'button' || elementType === 'link' || elementType === 'form') && (
-          <CollapsibleSection
-            title="Behavior"
-            isOpen={openSections.behavior}
-            onToggle={() => toggleSection('behavior')}
-          >
-            {elementType === 'button' && (
-              <>
-                <PropertyField
-                  label="Button Type"
-                  value={getPropertyValue('buttonType')}
-                  type="select"
-                  onChange={(value) => handlePropertyChange('buttonType', value)}
-                >
-                  <option value="button">Button</option>
-                  <option value="submit">Submit</option>
-                  <option value="reset">Reset</option>
-                </PropertyField>
-                <PropertyField
-                  label="Disabled"
-                  value={getPropertyValue('disabled')}
-                  type="checkbox"
-                  onChange={(value) => handlePropertyChange('disabled', value)}
-                />
-              </>
-            )}
-            
-            {elementType === 'link' && (
-              <>
-                <PropertyField
-                  label="URL"
-                  value={getPropertyValue('href')}
-                  type="url"
-                  onChange={(value) => handlePropertyChange('href', value)}
-                />
-                <PropertyField
-                  label="Target"
-                  value={getPropertyValue('target')}
-                  type="select"
-                  onChange={(value) => handlePropertyChange('target', value)}
-                >
-                  <option value="_self">Same Window</option>
-                  <option value="_blank">New Window</option>
-                </PropertyField>
-              </>
-            )}
-
-            {elementType === 'form' && (
-              <>
-                <PropertyField
-                  label="Action"
-                  value={getPropertyValue('action')}
-                  type="url"
-                  onChange={(value) => handlePropertyChange('action', value)}
-                />
-                <PropertyField
-                  label="Method"
-                  value={getPropertyValue('method')}
-                  type="select"
-                  onChange={(value) => handlePropertyChange('method', value)}
-                >
-                  <option value="get">GET</option>
-                  <option value="post">POST</option>
-                </PropertyField>
-              </>
-            )}
-          </CollapsibleSection>
-        )}
       </div>
     );
   };
@@ -404,15 +486,9 @@ function PropertiesModule({
           />
           <PropertyField
             label="Text Color"
-            value={getPropertyValue('color')}
+            value={getPropertyValue('textColor')}
             type="color"
-            onChange={(value) => handlePropertyChange('color', value)}
-          />
-          <PropertyField
-            label="Border Color"
-            value={getPropertyValue('borderColor')}
-            type="color"
-            onChange={(value) => handlePropertyChange('borderColor', value)}
+            onChange={(value) => handlePropertyChange('textColor', value)}
           />
         </CollapsibleSection>
 
@@ -434,18 +510,11 @@ function PropertiesModule({
             type="select"
             onChange={(value) => handlePropertyChange('fontWeight', value)}
           >
-            <option value="normal">Normal</option>
-            <option value="bold">Bold</option>
-            <option value="lighter">Lighter</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="300">300</option>
-            <option value="400">400</option>
-            <option value="500">500</option>
-            <option value="600">600</option>
-            <option value="700">700</option>
-            <option value="800">800</option>
-            <option value="900">900</option>
+            <option value="300">Light</option>
+            <option value="400">Normal</option>
+            <option value="500">Medium</option>
+            <option value="600">Semi Bold</option>
+            <option value="700">Bold</option>
           </PropertyField>
           <PropertyField
             label="Text Align"
@@ -464,6 +533,12 @@ function PropertiesModule({
             type="text"
             onChange={(value) => handlePropertyChange('lineHeight', value)}
           />
+          <PropertyField
+            label="Letter Spacing"
+            value={getPropertyValue('letterSpacing')}
+            type="text"
+            onChange={(value) => handlePropertyChange('letterSpacing', value)}
+          />
         </CollapsibleSection>
 
         {/* Visual section */}
@@ -473,22 +548,11 @@ function PropertiesModule({
           onToggle={() => toggleSection('visual')}
         >
           <PropertyField
-            label="Border Width"
-            value={getPropertyValue('borderWidth')}
+            label="Border"
+            value={getPropertyValue('border')}
             type="text"
-            onChange={(value) => handlePropertyChange('borderWidth', value)}
+            onChange={(value) => handlePropertyChange('border', value)}
           />
-          <PropertyField
-            label="Border Style"
-            value={getPropertyValue('borderStyle')}
-            type="select"
-            onChange={(value) => handlePropertyChange('borderStyle', value)}
-          >
-            <option value="none">None</option>
-            <option value="solid">Solid</option>
-            <option value="dashed">Dashed</option>
-            <option value="dotted">Dotted</option>
-          </PropertyField>
           <PropertyField
             label="Border Radius"
             value={getPropertyValue('borderRadius')}
@@ -508,34 +572,6 @@ function PropertiesModule({
             onChange={(value) => handlePropertyChange('opacity', value)}
           />
         </CollapsibleSection>
-
-        {/* States section - Composants interactifs seulement */}
-        {(selectedElement.type === 'button' || selectedElement.type === 'link') && (
-          <CollapsibleSection
-            title="States"
-            isOpen={openSections.states}
-            onToggle={() => toggleSection('states')}
-          >
-            <PropertyField
-              label="Hover Background"
-              value={getPropertyValue('hoverBackgroundColor')}
-              type="color"
-              onChange={(value) => handlePropertyChange('hoverBackgroundColor', value)}
-            />
-            <PropertyField
-              label="Hover Text Color"
-              value={getPropertyValue('hoverColor')}
-              type="color"
-              onChange={(value) => handlePropertyChange('hoverColor', value)}
-            />
-            <PropertyField
-              label="Focus Box Shadow"
-              value={getPropertyValue('focusBoxShadow')}
-              type="text"
-              onChange={(value) => handlePropertyChange('focusBoxShadow', value)}
-            />
-          </CollapsibleSection>
-        )}
       </div>
     );
   };
@@ -595,81 +631,12 @@ function PropertiesModule({
           />
         </CollapsibleSection>
 
-        {/* Flexbox section - Containers seulement */}
-        {(selectedElement.type === 'div' || selectedElement.type === 'section' || selectedElement.type === 'form') && (
-          <CollapsibleSection
-            title="Flexbox"
-            isOpen={openSections.flexbox}
-            onToggle={() => toggleSection('flexbox')}
-          >
-            <PropertyField
-              label="Display"
-              value={getPropertyValue('display')}
-              type="select"
-              onChange={(value) => handlePropertyChange('display', value)}
-            >
-              <option value="block">Block</option>
-              <option value="flex">Flex</option>
-              <option value="inline-flex">Inline Flex</option>
-              <option value="grid">Grid</option>
-            </PropertyField>
-            <PropertyField
-              label="Flex Direction"
-              value={getPropertyValue('flexDirection')}
-              type="select"
-              onChange={(value) => handlePropertyChange('flexDirection', value)}
-            >
-              <option value="row">Row</option>
-              <option value="column">Column</option>
-              <option value="row-reverse">Row Reverse</option>
-              <option value="column-reverse">Column Reverse</option>
-            </PropertyField>
-            <PropertyField
-              label="Justify Content"
-              value={getPropertyValue('justifyContent')}
-              type="select"
-              onChange={(value) => handlePropertyChange('justifyContent', value)}
-            >
-              <option value="flex-start">Start</option>
-              <option value="center">Center</option>
-              <option value="flex-end">End</option>
-              <option value="space-between">Space Between</option>
-              <option value="space-around">Space Around</option>
-              <option value="space-evenly">Space Evenly</option>
-            </PropertyField>
-            <PropertyField
-              label="Align Items"
-              value={getPropertyValue('alignItems')}
-              type="select"
-              onChange={(value) => handlePropertyChange('alignItems', value)}
-            >
-              <option value="stretch">Stretch</option>
-              <option value="center">Center</option>
-              <option value="flex-start">Start</option>
-              <option value="flex-end">End</option>
-              <option value="baseline">Baseline</option>
-            </PropertyField>
-            <PropertyField
-              label="Gap"
-              value={getPropertyValue('gap')}
-              type="text"
-              onChange={(value) => handlePropertyChange('gap', value)}
-            />
-          </CollapsibleSection>
-        )}
-
         {/* Advanced section */}
         <CollapsibleSection
           title="Advanced"
           isOpen={openSections.advanced}
           onToggle={() => toggleSection('advanced')}
         >
-          <PropertyField
-            label="CSS Classes"
-            value={getPropertyValue('className')}
-            type="text"
-            onChange={(value) => handlePropertyChange('className', value)}
-          />
           <PropertyField
             label="Position"
             value={getPropertyValue('position')}

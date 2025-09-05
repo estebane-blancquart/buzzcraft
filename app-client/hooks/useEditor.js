@@ -109,76 +109,95 @@ export function useEditor() {
   };
 
   // Chargement templates
-  const loadTemplates = async () => {
-    if (templatesCache.loaded) return;
+const loadTemplates = async () => {
+  if (templatesCache.loaded) return;
 
+  try {
+    console.log('Loading templates...');
+    
+    // 🔧 FIX: Charger TOUS les components d'un coup
     try {
-      console.log('Loading templates...');
+      console.log('Fetching component templates...');
+      const componentResponse = await fetch(apiUrl('templates/components'));
+      const componentData = await componentResponse.json();
       
-      // Templates composants - avec fallback si API pas disponible
-      const componentTypes = ['heading', 'paragraph', 'button', 'image', 'video', 'link', 'input'];
-      for (const type of componentTypes) {
-        try {
-          const response = await fetch(apiUrl(`templates/components/${type}`));
-          const data = await response.json();
-          if (data.success) {
-            templatesCache.components.set(type, data.data.template);
-          }
-        } catch (error) {
-          console.warn(`Template ${type} not available, using defaults`);
-          // Pas grave, on utilise les defaults dans handleComponentSelect
-        }
-      }
-
-      // Templates containers - avec fallback si API pas disponible
-      const containerTypes = ['div', 'form', 'list'];
-      for (const type of containerTypes) {
-        try {
-          const response = await fetch(apiUrl(`templates/containers/${type}`));
-          const data = await response.json();
-          if (data.success) {
-            templatesCache.containers.set(type, data.data.template);
-          }
-        } catch (error) {
-          console.warn(`Template ${type} not available, using defaults`);
-          // Pas grave, on utilise les defaults dans handleContainerSelect
-        }
-      }
-
-      setTemplatesCache(prev => ({ ...prev, loaded: true }));
-      console.log('Templates loaded (with fallbacks):', templatesCache);
-    } catch (error) {
-      console.error('Error loading templates:', error);
-      // Marquer comme loaded quand même pour éviter les re-tentatives
-      setTemplatesCache(prev => ({ ...prev, loaded: true }));
-    }
-  };
-
-  // Sauvegarde projet
-  const saveProject = async () => {
-    if (!project || !isDirty) return;
-
-    try {
-      console.log('💾 Saving project:', project);
-      
-      const response = await fetch(apiUrl(`projects/${project.id}`), {
-        method: 'PATCH', // L'API utilise PATCH pour save, pas PUT
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setIsDirty(false);
-        console.log('✅ Project saved successfully');
+      if (componentData.success) {
+        // Transformer l'array en Map par type
+        componentData.data.components.forEach(component => {
+          templatesCache.components.set(component.type, component);
+        });
+        console.log('✅ Loaded component templates:', componentData.data.components.map(c => c.type));
       } else {
-        throw new Error(data.error || 'Failed to save project');
+        throw new Error(`Component templates API failed: ${componentData.error}`);
       }
     } catch (error) {
-      console.error('Error saving project:', error);
-      throw error;
+      console.error('❌ Failed to load component templates:', error);
+      throw new Error(`Component templates unavailable: ${error.message}`);
     }
-  };
+
+    // 🔧 FIX: Charger TOUS les containers d'un coup
+    try {
+      console.log('Fetching container templates...');
+      const containerResponse = await fetch(apiUrl('templates/containers'));
+      const containerData = await containerResponse.json();
+      
+      if (containerData.success) {
+        // Transformer l'array en Map par type
+        containerData.data.containers.forEach(container => {
+          templatesCache.containers.set(container.type, container);
+        });
+        console.log('✅ Loaded container templates:', containerData.data.containers.map(c => c.type));
+      } else {
+        throw new Error(`Container templates API failed: ${containerData.error}`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load container templates:', error);
+      throw new Error(`Container templates unavailable: ${error.message}`);
+    }
+
+    // Marquer comme chargé seulement si tout a réussi
+    setTemplatesCache(prev => ({ ...prev, loaded: true }));
+    console.log('✅ All templates loaded successfully! Components:', templatesCache.components.size, 'Containers:', templatesCache.containers.size);
+    
+  } catch (error) {
+    console.error('❌ Template loading failed:', error);
+    
+    // ❌ FAIL FAST - Pas de fallback menteur
+    setError(`Template system failed: ${error.message}`);
+    setTemplatesCache(prev => ({ ...prev, loaded: false }));
+  }
+};
+
+const saveProject = async () => {
+  if (!project || !isDirty) return;
+
+  try {
+    console.log('💾 Saving project:', project);
+    
+    // 🔍 DEBUG: Vérifier la structure du projet avant envoi
+    console.log('📤 Project being sent to API:', JSON.stringify(project, null, 2));
+    
+    const response = await fetch(apiUrl(`projects/${project.id}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(project)
+    });
+
+    const data = await response.json();
+    
+    console.log('📥 API Response:', data);
+    
+    if (data.success) {
+      setIsDirty(false);
+      console.log('✅ Project saved successfully');
+    } else {
+      throw new Error(data.error || 'Failed to save project');
+    }
+  } catch (error) {
+    console.error('❌ Error saving project:', error);
+    throw error;
+  }
+};
 
   // Mise à jour projet
   const updateProject = (updates) => {
@@ -200,92 +219,100 @@ export function useEditor() {
     setSelectedElement(element);
   };
 
-  const handleElementUpdate = (elementId, updates) => {
-    console.log('🚀 Element update requested:', { elementId, updates });
+const handleElementUpdate = (elementId, updates) => {
+  console.log('🚀 Element update requested:', { elementId, updates });
+  
+  if (!project || !elementId) {
+    console.warn('Cannot update element: missing project or elementId');
+    return;
+  }
+  
+  setProject(prevProject => {
+    const updatedProject = JSON.parse(JSON.stringify(prevProject));
     
-    if (!project || !elementId) {
-      console.warn('Cannot update element: missing project or elementId');
-      return;
-    }
-    
-    setProject(prevProject => {
-      const updatedProject = JSON.parse(JSON.stringify(prevProject));
+    // Navigation hiérarchique pour mise à jour
+    const findAndUpdateElement = (structure) => {
+      if (!structure.pages) return false;
       
-      // Navigation hiérarchique pour mise à jour
-      const findAndUpdateElement = (structure) => {
-        if (!structure.pages) return false;
-        
-        // Vérifier si c'est le projet
-        if (structure.id === elementId) {
-          Object.assign(structure, updates);
-          console.log('✅ Updated project element');
+      // Vérifier si c'est le projet
+      if (structure.id === elementId) {
+        // 🔧 FIX: Retourner nouvel objet au lieu de muter
+        Object.assign(structure, updates);
+        console.log('✅ Updated project element');
+        return true;
+      }
+      
+      for (const page of structure.pages) {
+        // Vérifier si c'est une page
+        if (page.id === elementId) {
+          // 🔧 FIX: Retourner nouvel objet au lieu de muter
+          Object.assign(page, updates);
+          console.log('✅ Updated page element');
           return true;
         }
         
-        for (const page of structure.pages) {
-          // Vérifier si c'est une page
-          if (page.id === elementId) {
-            Object.assign(page, updates);
-            console.log('✅ Updated page element');
+        if (!page.layout?.sections) continue;
+        
+        for (const section of page.layout.sections) {
+          // Vérifier si c'est une section
+          if (section.id === elementId) {
+            // 🔧 FIX: Retourner nouvel objet au lieu de muter
+            Object.assign(section, updates);
+            console.log('✅ Updated section element');
             return true;
           }
           
-          if (!page.layout?.sections) continue;
-          
-          for (const section of page.layout.sections) {
-            // Vérifier si c'est une section
-            if (section.id === elementId) {
-              Object.assign(section, updates);
-              console.log('✅ Updated section element');
-              return true;
-            }
+          // Vérifier dans les containers
+          for (const containerType of ['divs', 'lists', 'forms']) {
+            const containers = section[containerType];
+            if (!Array.isArray(containers)) continue;
             
-            // Vérifier dans les containers
-            for (const containerType of ['divs', 'lists', 'forms']) {
-              const containers = section[containerType];
-              if (!Array.isArray(containers)) continue;
+            for (const container of containers) {
+              if (container.id === elementId) {
+                // 🔧 FIX: Retourner nouvel objet au lieu de muter
+                Object.assign(container, updates);
+                console.log('✅ Updated container element');
+                return true;
+              }
               
-              for (const container of containers) {
-                if (container.id === elementId) {
-                  Object.assign(container, updates);
-                  console.log('✅ Updated container element');
-                  return true;
-                }
-                
-                // Vérifier dans les composants
-                if (Array.isArray(container.components)) {
-                  for (const component of container.components) {
-                    if (component.id === elementId) {
-                      Object.assign(component, updates);
-                      console.log('✅ Updated component element');
-                      return true;
-                    }
+              // Vérifier dans les composants
+              if (Array.isArray(container.components)) {
+                for (const component of container.components) {
+                  if (component.id === elementId) {
+                    // 🔧 FIX: Retourner nouvel objet au lieu de muter
+                    Object.assign(component, updates);
+                    console.log('✅ Updated component element');
+                    return true;
                   }
                 }
               }
             }
           }
         }
-        return false;
-      };
-      
-      findAndUpdateElement(updatedProject);
-      return updatedProject;
-    });
-
-    // Mettre à jour selectedElement si c'est lui qui est modifié
-    setSelectedElement(prevSelected => {
-      if (prevSelected && prevSelected.id === elementId) {
-        const updatedElement = { ...prevSelected, ...updates };
-        console.log('🎯 Updated selectedElement:', updatedElement);
-        return updatedElement;
       }
-      return prevSelected;
-    });
+      return false;
+    };
     
-    setIsDirty(true);
-  };
+    findAndUpdateElement(updatedProject);
+    
+    // 🔧 FIX CRITIQUE: Créer nouveau timestamp pour forcer React re-render
+    updatedProject.lastModified = new Date().toISOString();
+    
+    return updatedProject;
+  });
 
+  // Mettre à jour selectedElement si c'est lui qui est modifié
+  setSelectedElement(prevSelected => {
+    if (prevSelected && prevSelected.id === elementId) {
+      const updatedElement = { ...prevSelected, ...updates };
+      console.log('🎯 Updated selectedElement:', updatedElement);
+      return updatedElement;
+    }
+    return prevSelected;
+  });
+  
+  setIsDirty(true);
+};
   const handleDeviceChange = (device) => {
     console.log('Device changed:', device);
     setSelectedDevice(device);

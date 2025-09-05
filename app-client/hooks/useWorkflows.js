@@ -47,11 +47,22 @@ export function useWorkflows() {
       if (data.success) {
         let projectsList = data.data.projects || [];
         
+        // 🔧 FIX: Extraire les vrais projets de la structure complexe
+        const extractedProjects = projectsList.map(item => {
+          // Si l'item a une propriété 'project', l'utiliser
+          if (item.project && typeof item.project === 'object') {
+            console.log("[useWorkflows] Extracting project from nested structure:", item.project.id);
+            return item.project;
+          }
+          // Sinon utiliser l'item directement
+          return item;
+        });
+        
         // VALIDATION ET NETTOYAGE DES PROJETS
-        console.log("[useWorkflows] Raw projects before validation:", projectsList);
+        console.log("[useWorkflows] Raw projects before validation:", extractedProjects);
         
         // Filtrer les projets invalides et logger les problèmes
-        const validProjects = projectsList.filter((project, index) => {
+        const validProjects = extractedProjects.filter((project, index) => {
           if (!project || typeof project !== 'object') {
             console.warn(`[useWorkflows] Project ${index} is not an object:`, project);
             return false;
@@ -84,7 +95,7 @@ export function useWorkflows() {
           return true;
         });
         
-        console.log(`[useWorkflows] Filtered ${projectsList.length} → ${validProjects.length} valid projects`);
+        console.log(`[useWorkflows] Filtered ${extractedProjects.length} → ${validProjects.length} valid projects`);
         
         // Logger chaque projet valide
         validProjects.forEach((project, index) => {

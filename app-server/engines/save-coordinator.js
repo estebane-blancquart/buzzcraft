@@ -43,7 +43,7 @@ export async function saveWorkflow(projectId, config = {}) {
   const projectFilePath = getProjectFilePath(projectId);
   
   try {
-    // Vérification que le projet existe (on skip la vérification DRAFT pour le SAVE)
+    // Vérification que le projet existe
     const currentProject = await readPath(projectFilePath);
     if (!currentProject.success) {
       console.log(`${LOG_COLORS.error}[SAVE] Project file not found: ${projectId}${LOG_COLORS.reset}`);
@@ -53,10 +53,9 @@ export async function saveWorkflow(projectId, config = {}) {
       };
     }
     
-    // Préparation des données à sauvegarder (merge avec projet existant)
+    // 🔧 FIX: Utiliser DIRECTEMENT les nouvelles données au lieu de merger
     const savedProject = {
-      ...currentProject.data,  // Données existantes
-      ...projectData,          // Nouvelles données du client
+      ...projectData,          // Nouvelles données du client (complètes)
       state: 'DRAFT',          // Force DRAFT
       lastModified: new Date().toISOString(),
       savedAt: new Date().toISOString()
@@ -67,8 +66,9 @@ export async function saveWorkflow(projectId, config = {}) {
     delete savedProject.error;
     delete savedProject.isDirty;
     
-    // Écriture du projet
+    // 🔍 DEBUG: Logger ce qui va être sauvegardé
     console.log(`${LOG_COLORS.info}[SAVE] Saving project ${projectId}...${LOG_COLORS.reset}`);
+    console.log(`${LOG_COLORS.info}[SAVE] Project has ${savedProject.pages?.[0]?.layout?.sections?.length || 0} sections${LOG_COLORS.reset}`);
     
     const writeResult = await writePath(projectFilePath, savedProject, {
       jsonIndent: 2,
