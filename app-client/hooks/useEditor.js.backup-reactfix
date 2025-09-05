@@ -311,7 +311,7 @@ export function useEditor() {
         console.error('‚ùå Failed to find and update element:', elementId);
       }
       
-      console.log("Ì¥Ñ Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
     
     // üî• FIX CRITIQUE : Mettre √† jour selectedElement aussi !
@@ -390,7 +390,7 @@ export function useEditor() {
         page.layout.sections.push(newSection);
       }
       
-      console.log("Ì¥Ñ Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
 
     setIsDirty(true);
@@ -451,7 +451,7 @@ export function useEditor() {
       };
       
       addContainerToSection(updatedProject);
-      console.log("Ì¥Ñ Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
 
     setIsDirty(true);
@@ -503,7 +503,7 @@ export function useEditor() {
       };
       
       addComponentToContainer(updatedProject);
-      console.log("Ì¥Ñ Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
 
     setIsDirty(true);
@@ -559,7 +559,7 @@ export function useEditor() {
       };
       
       deleteElementFromStructure(updatedProject);
-      console.log("Ì¥Ñ Forcing React re-render with new object"); return {...updatedProject};
+      return updatedProject;
     });
 
     // D√©s√©lectionner si l'√©l√©ment supprim√© √©tait s√©lectionn√©

@@ -1,34 +1,43 @@
 {
-  "id": "link",
-  "type": "link",
-  "name": "Link Component",
+  "id": "button",
+  "type": "button",
+  "name": "Button Component",
   "schema": {
-    "content": {
+    "text": {
       "type": "string",
-      "default": "Link text",
+      "default": "Click me",
       "required": true
     },
-    "href": {
+    "action": {
       "type": "string",
-      "default": "#",
-      "required": true
+      "default": ""
     },
-    "target": {
+    "buttonType": {
       "type": "enum",
-      "options": ["_self", "_blank", "_parent", "_top"],
-      "default": "_self"
+      "options": ["button", "submit", "reset"],
+      "default": "button"
+    },
+    "icon": {
+      "type": "string",
+      "default": ""
+    },
+    "iconPosition": {
+      "type": "enum",
+      "options": ["left", "right"],
+      "default": "left"
     },
     "classname": {
       "type": "string",
       "default": ""
     },
+    
     "backgroundColor": {
       "type": "color",
-      "default": ""
+      "default": "#007bff"
     },
     "textColor": {
       "type": "color",
-      "default": "#007bff"
+      "default": "white"
     },
     "fontSize": {
       "type": "string",
@@ -37,29 +46,28 @@
     "fontWeight": {
       "type": "enum",
       "options": ["300", "400", "500", "600", "700"],
-      "default": "400"
+      "default": "500"
     },
     "textAlign": {
       "type": "enum",
       "options": ["left", "center", "right"],
-      "default": "left"
-    },
-    "textDecoration": {
-      "type": "enum",
-      "options": ["none", "underline", "overline", "line-through"],
-      "default": "underline"
+      "default": "center"
     },
     "border": {
       "type": "string",
-      "default": ""
+      "default": "none"
     },
     "borderRadius": {
       "type": "string",
-      "default": "0"
+      "default": "6px"
     },
     "boxShadow": {
       "type": "string",
       "default": ""
+    },
+    "padding": {
+      "type": "string",
+      "default": "12px 24px"
     }
   }
 }

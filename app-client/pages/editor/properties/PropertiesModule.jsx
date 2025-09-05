@@ -23,13 +23,6 @@ function CollapsibleSection({ title, isOpen, onToggle, children }) {
   );
 }
 
-/*
- * FAIT QUOI : Panel propriétés avec 3 onglets + sous-sections pliables
- * REÇOIT : selectedElement, device, onElementUpdate
- * RETOURNE : Interface organisée Content/Style/Layout
- * NOUVEAU : Sections pliables + progression par niveau DOM
- */
-
 function PropertiesModule({ 
   selectedElement = null, 
   device = DEVICES.DESKTOP, 
@@ -37,11 +30,10 @@ function PropertiesModule({
 }) {
   const [activeTab, setActiveTab] = useState('content');
   const [openSections, setOpenSections] = useState({
-    // Content sections
-    metadata: true,
-    seo: false,
-    behavior: false,
-    // Style sections  
+    // Data sections (ouvertes par défaut)
+    data: true,
+    metadata: false,
+    // Style sections
     colors: false,
     typography: false,
     visual: false,
@@ -50,6 +42,7 @@ function PropertiesModule({
     dimensions: false,
     spacing: false,
     flexbox: false,
+    responsive: false,
     advanced: false
   });
 
@@ -60,38 +53,27 @@ function PropertiesModule({
     }));
   };
 
+  const getPropertyValue = (key) => {
+    if (!selectedElement) return '';
+    return selectedElement[key] || '';
+  };
+
   const handlePropertyChange = (propertyName, value) => {
     if (!selectedElement || !onElementUpdate) return;
     
     const updatedElement = {
       ...selectedElement,
-      [propertyName]: value,
-      properties: {
-        ...selectedElement.properties,
-        [propertyName]: value
-      }
+      [propertyName]: value
     };
     
-    // Auto-update timestamp pour PROJECT
     if (selectedElement.type === 'project') {
       updatedElement.updated = new Date().toISOString();
-      updatedElement.properties = {
-        ...updatedElement.properties,
-        updated: updatedElement.updated
-      };
     }
     
+    console.log(`��� Property changed: ${propertyName} = ${value}`);
     onElementUpdate(selectedElement.id, updatedElement);
   };
 
-  const getPropertyValue = (key) => {
-    if (!selectedElement) return '';
-    return selectedElement[key] || 
-           selectedElement.properties?.[key] || 
-           '';
-  };
-
-  // Rendu du contenu selon le type d'élément et l'onglet actif
   const renderTabContent = () => {
     if (!selectedElement) return null;
 
@@ -112,20 +94,23 @@ function PropertiesModule({
 
     return (
       <div className="tab-content">
-        {/* Metadata section - Pour tous les éléments */}
+        {/* DATA SECTION - TOUJOURS VISIBLE ET OUVERTE */}
         <CollapsibleSection
-          title="Metadata"
-          isOpen={openSections.metadata}
-          onToggle={() => toggleSection('metadata')}
+          title="Data"
+          isOpen={openSections.data}
+          onToggle={() => toggleSection('data')}
         >
+          {/* NAME - POUR TOUS LES ÉLÉMENTS */}
+          <PropertyField
+            label="Name"
+            value={getPropertyValue('name')}
+            type="text"
+            onChange={(value) => handlePropertyChange('name', value)}
+          />
+
+          {/* PROJECT - Métadonnées globales */}
           {elementType === 'project' && (
             <>
-              <PropertyField
-                label="Name"
-                value={getPropertyValue('name')}
-                type="text"
-                onChange={(value) => handlePropertyChange('name', value)}
-              />
               <PropertyField
                 label="Description"
                 value={getPropertyValue('description')}
@@ -161,134 +146,188 @@ function PropertiesModule({
               </PropertyField>
             </>
           )}
-          
+
+          {/* PAGE - SEO + routing */}
           {elementType === 'page' && (
             <>
-              <PropertyField
-                label="Name"
-                value={getPropertyValue('name')}
-                type="text"
-                onChange={(value) => handlePropertyChange('name', value)}
-              />
               <PropertyField
                 label="Slug"
                 value={getPropertyValue('slug')}
                 type="text"
                 onChange={(value) => handlePropertyChange('slug', value)}
               />
+              <PropertyField
+                label="Title"
+                value={getPropertyValue('title')}
+                type="text"
+                onChange={(value) => handlePropertyChange('title', value)}
+              />
+              <PropertyField
+                label="Meta Description"
+                value={getPropertyValue('metaDescription')}
+                type="textarea"
+                onChange={(value) => handlePropertyChange('metaDescription', value)}
+              />
             </>
           )}
 
-          {(elementType === 'section' || elementType === 'div' || elementType === 'list' || elementType === 'form') && (
+          {/* COMPONENTS - Contenu utilisateur */}
+          {(elementType === 'heading' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link') && (
             <PropertyField
-              label="Name"
-              value={getPropertyValue('name')}
-              type="text"
-              onChange={(value) => handlePropertyChange('name', value)}
+              label="Content"
+              value={getPropertyValue('content')}
+              type={elementType === 'paragraph' ? 'textarea' : 'text'}
+              onChange={(value) => handlePropertyChange('content', value)}
             />
           )}
 
-          {(elementType === 'title' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link') && (
+          {/* HEADING - Tag spécifique */}
+          {elementType === 'heading' && (
             <PropertyField
-              label="Text"
-              value={getPropertyValue('text')}
-              type={elementType === 'paragraph' ? 'textarea' : 'text'}
-              onChange={(value) => handlePropertyChange('text', value)}
-            />
+              label="Tag"
+              value={getPropertyValue('tag')}
+              type="select"
+              onChange={(value) => handlePropertyChange('tag', value)}
+            >
+              <option value="h1">H1</option>
+              <option value="h2">H2</option>
+              <option value="h3">H3</option>
+              <option value="h4">H4</option>
+              <option value="h5">H5</option>
+              <option value="h6">H6</option>
+            </PropertyField>
+          )}
+
+          {/* IMAGE - Source et alt */}
+          {elementType === 'image' && (
+            <>
+              <PropertyField
+                label="Source URL"
+                value={getPropertyValue('src')}
+                type="url"
+                onChange={(value) => handlePropertyChange('src', value)}
+              />
+              <PropertyField
+                label="Alt Text"
+                value={getPropertyValue('alt')}
+                type="text"
+                onChange={(value) => handlePropertyChange('alt', value)}
+              />
+            </>
+          )}
+
+          {/* BUTTON/LINK - URLs */}
+          {(elementType === 'button' || elementType === 'link') && (
+            <>
+              <PropertyField
+                label="Link URL"
+                value={getPropertyValue('href')}
+                type="url"
+                onChange={(value) => handlePropertyChange('href', value)}
+              />
+              <PropertyField
+                label="Target"
+                value={getPropertyValue('target')}
+                type="select"
+                onChange={(value) => handlePropertyChange('target', value)}
+              >
+                <option value="_self">Same Window</option>
+                <option value="_blank">New Window</option>
+              </PropertyField>
+            </>
+          )}
+
+          {/* INPUT - Propriétés spécifiques */}
+          {elementType === 'input' && (
+            <>
+              <PropertyField
+                label="Placeholder"
+                value={getPropertyValue('placeholder')}
+                type="text"
+                onChange={(value) => handlePropertyChange('placeholder', value)}
+              />
+              <PropertyField
+                label="Input Type"
+                value={getPropertyValue('inputType')}
+                type="select"
+                onChange={(value) => handlePropertyChange('inputType', value)}
+              >
+                <option value="text">Text</option>
+                <option value="email">Email</option>
+                <option value="password">Password</option>
+                <option value="number">Number</option>
+                <option value="tel">Phone</option>
+                <option value="url">URL</option>
+              </PropertyField>
+              <PropertyField
+                label="Required"
+                value={getPropertyValue('required')}
+                type="select"
+                onChange={(value) => handlePropertyChange('required', value)}
+              >
+                <option value="false">Optional</option>
+                <option value="true">Required</option>
+              </PropertyField>
+            </>
           )}
         </CollapsibleSection>
 
-        {/* SEO section - Pages seulement */}
-        {selectedElement.type === 'page' && (
-          <CollapsibleSection
-            title="SEO"
-            isOpen={openSections.seo}
-            onToggle={() => toggleSection('seo')}
-          >
-            <PropertyField
-              label="Title"
-              value={getPropertyValue('title')}
-              type="text"
-              onChange={(value) => handlePropertyChange('title', value)}
-            />
-            <PropertyField
-              label="Meta Description"
-              value={getPropertyValue('metaDescription')}
-              type="textarea"
-              onChange={(value) => handlePropertyChange('metaDescription', value)}
-            />
-            <PropertyField
-              label="Index Page"
-              value={getPropertyValue('index')}
-              type="checkbox"
-              onChange={(value) => handlePropertyChange('index', value)}
-            />
-          </CollapsibleSection>
-        )}
-
-        {/* Behavior section - Composants interactifs */}
-        {(selectedElement.type === 'button' || selectedElement.type === 'link' || selectedElement.type === 'form') && (
-          <CollapsibleSection
-            title="Behavior"
-            isOpen={openSections.behavior}
-            onToggle={() => toggleSection('behavior')}
-          >
-            {selectedElement.type === 'button' && (
-              <>
-                <PropertyField
-                  label="Action"
-                  value={getPropertyValue('action')}
-                  type="text"
-                  onChange={(value) => handlePropertyChange('action', value)}
-                />
-                <PropertyField
-                  label="Button Type"
-                  value={getPropertyValue('buttonType')}
-                  type="select"
-                  onChange={(value) => handlePropertyChange('buttonType', value)}
-                >
-                  <option value="button">Button</option>
-                  <option value="submit">Submit</option>
-                  <option value="reset">Reset</option>
-                </PropertyField>
-              </>
-            )}
-            
-            {selectedElement.type === 'link' && (
-              <>
-                <PropertyField
-                  label="URL"
-                  value={getPropertyValue('href')}
-                  type="url"
-                  onChange={(value) => handlePropertyChange('href', value)}
-                />
-                <PropertyField
-                  label="Target"
-                  value={getPropertyValue('target')}
-                  type="select"
-                  onChange={(value) => handlePropertyChange('target', value)}
-                >
-                  <option value="_self">Same Window</option>
-                  <option value="_blank">New Window</option>
-                </PropertyField>
-              </>
-            )}
-          </CollapsibleSection>
-        )}
+        {/* METADATA SECTION - FERMÉE PAR DÉFAUT */}
+        <CollapsibleSection
+          title="Metadata"
+          isOpen={openSections.metadata}
+          onToggle={() => toggleSection('metadata')}
+        >
+          <PropertyField
+            label="ID"
+            value={getPropertyValue('id')}
+            type="text"
+            onChange={() => {}} // Read-only
+            disabled={true}
+          />
+          <PropertyField
+            label="Type"
+            value={getPropertyValue('type')}
+            type="text"
+            onChange={() => {}} // Read-only
+            disabled={true}
+          />
+          {elementType === 'project' && (
+            <>
+              <PropertyField
+                label="Created"
+                value={getPropertyValue('created')}
+                type="text"
+                onChange={() => {}} // Read-only
+                disabled={true}
+              />
+              <PropertyField
+                label="Updated"
+                value={getPropertyValue('updated')}
+                type="text"
+                onChange={() => {}} // Read-only
+                disabled={true}
+              />
+            </>
+          )}
+        </CollapsibleSection>
       </div>
     );
   };
 
   const renderStyleTab = () => {
+    const elementType = selectedElement.type;
+
     return (
       <div className="tab-content">
-        {/* Colors section */}
+        {/* COLORS - Selon le type d'élément */}
         <CollapsibleSection
           title="Colors"
           isOpen={openSections.colors}
           onToggle={() => toggleSection('colors')}
         >
-          {selectedElement.type === 'project' && (
+          {/* PROJECT - Thème global */}
+          {elementType === 'project' && (
             <>
               <PropertyField
                 label="Light Primary Color"
@@ -317,7 +356,9 @@ function PropertiesModule({
             </>
           )}
           
-          {selectedElement.type !== 'project' && (
+          {/* SECTION/CONTAINER/COMPONENT - Couleurs locales */}
+          {(elementType === 'section' || elementType === 'div' || elementType === 'list' || elementType === 'form' || 
+            elementType === 'heading' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link' || elementType === 'image') && (
             <>
               <PropertyField
                 label="Background Color"
@@ -325,100 +366,108 @@ function PropertiesModule({
                 type="color"
                 onChange={(value) => handlePropertyChange('backgroundColor', value)}
               />
-              <PropertyField
-                label="Text Color"
-                value={getPropertyValue('textColor')}
-                type="color"
-                onChange={(value) => handlePropertyChange('textColor', value)}
-              />
-              <PropertyField
-                label="Border Color"
-                value={getPropertyValue('borderColor')}
-                type="color"
-                onChange={(value) => handlePropertyChange('borderColor', value)}
-              />
+              {/* Text Color seulement pour les éléments textuels */}
+              {(elementType === 'heading' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link') && (
+                <PropertyField
+                  label="Text Color"
+                  value={getPropertyValue('textColor')}
+                  type="color"
+                  onChange={(value) => handlePropertyChange('textColor', value)}
+                />
+              )}
             </>
           )}
         </CollapsibleSection>
 
-        {/* Typography section */}
-        <CollapsibleSection
-          title="Typography"
-          isOpen={openSections.typography}
-          onToggle={() => toggleSection('typography')}
-        >
-          {selectedElement.type === 'project' && (
-            <PropertyField
-              label="Font Family"
-              value={getPropertyValue('fontFamily')}
-              type="text"
-              onChange={(value) => handlePropertyChange('fontFamily', value)}
-            />
-          )}
-          
-          {selectedElement.type !== 'project' && (
-            <>
-              <PropertyField
-                label="Font Size"
-                value={getPropertyValue('fontSize')}
-                type="text"
-                onChange={(value) => handlePropertyChange('fontSize', value)}
-              />
-              <PropertyField
-                label="Font Weight"
-                value={getPropertyValue('fontWeight')}
-                type="select"
-                onChange={(value) => handlePropertyChange('fontWeight', value)}
-              >
-                <option value="normal">Normal</option>
-                <option value="bold">Bold</option>
-                <option value="lighter">Lighter</option>
-              </PropertyField>
-              <PropertyField
-                label="Text Align"
-                value={getPropertyValue('textAlign')}
-                type="select"
-                onChange={(value) => handlePropertyChange('textAlign', value)}
-              >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-                <option value="justify">Justify</option>
-              </PropertyField>
-            </>
-          )}
-        </CollapsibleSection>
-
-        {/* Visual section */}
-        <CollapsibleSection
-          title="Visual"
-          isOpen={openSections.visual}
-          onToggle={() => toggleSection('visual')}
-        >
-          <PropertyField
-            label="Border Radius"
-            value={getPropertyValue('borderRadius')}
-            type="text"
-            onChange={(value) => handlePropertyChange('borderRadius', value)}
-          />
-          <PropertyField
-            label="Box Shadow"
-            value={getPropertyValue('boxShadow')}
-            type="text"
-            onChange={(value) => handlePropertyChange('boxShadow', value)}
-          />
-          <PropertyField
-            label="Opacity"
-            value={getPropertyValue('opacity')}
-            type="number"
-            onChange={(value) => handlePropertyChange('opacity', value)}
-          />
-        </CollapsibleSection>
-
-        {/* States section - Composants interactifs seulement */}
-        {(selectedElement.type === 'button' || selectedElement.type === 'link') && (
+        {/* TYPOGRAPHY - COMPONENTS SEULEMENT */}
+        {(elementType === 'heading' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link') && (
           <CollapsibleSection
-            title="States"
+            title="Typography"
+            isOpen={openSections.typography}
+            onToggle={() => toggleSection('typography')}
+          >
+            <PropertyField
+              label="Font Size"
+              value={getPropertyValue('fontSize')}
+              type="text"
+              onChange={(value) => handlePropertyChange('fontSize', value)}
+            />
+            <PropertyField
+              label="Font Weight"
+              value={getPropertyValue('fontWeight')}
+              type="select"
+              onChange={(value) => handlePropertyChange('fontWeight', value)}
+            >
+              <option value="300">Light (300)</option>
+              <option value="400">Normal (400)</option>
+              <option value="500">Medium (500)</option>
+              <option value="600">Semi Bold (600)</option>
+              <option value="700">Bold (700)</option>
+            </PropertyField>
+            <PropertyField
+              label="Text Align"
+              value={getPropertyValue('textAlign')}
+              type="select"
+              onChange={(value) => handlePropertyChange('textAlign', value)}
+            >
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+              <option value="justify">Justify</option>
+            </PropertyField>
+            <PropertyField
+              label="Line Height"
+              value={getPropertyValue('lineHeight')}
+              type="text"
+              onChange={(value) => handlePropertyChange('lineHeight', value)}
+            />
+            <PropertyField
+              label="Letter Spacing"
+              value={getPropertyValue('letterSpacing')}
+              type="text"
+              onChange={(value) => handlePropertyChange('letterSpacing', value)}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* VISUAL - TOUS SAUF PAGE */}
+        {elementType !== 'page' && (
+          <CollapsibleSection
+            title="Visual"
+            isOpen={openSections.visual}
+            onToggle={() => toggleSection('visual')}
+          >
+            <PropertyField
+              label="Border"
+              value={getPropertyValue('border')}
+              type="text"
+              onChange={(value) => handlePropertyChange('border', value)}
+            />
+            <PropertyField
+              label="Border Radius"
+              value={getPropertyValue('borderRadius')}
+              type="text"
+              onChange={(value) => handlePropertyChange('borderRadius', value)}
+            />
+            <PropertyField
+              label="Box Shadow"
+              value={getPropertyValue('boxShadow')}
+              type="text"
+              onChange={(value) => handlePropertyChange('boxShadow', value)}
+            />
+            <PropertyField
+              label="Opacity"
+              value={getPropertyValue('opacity')}
+              type="number"
+              onChange={(value) => handlePropertyChange('opacity', value)}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* STATES - COMPONENTS INTERACTIFS SEULEMENT */}
+        {(elementType === 'button' || elementType === 'link') && (
+          <CollapsibleSection
+            title="Interactive States"
             isOpen={openSections.states}
             onToggle={() => toggleSection('states')}
           >
@@ -447,117 +496,59 @@ function PropertiesModule({
   };
 
   const renderLayoutTab = () => {
+    const elementType = selectedElement.type;
+
     return (
       <div className="tab-content">
-        {/* Dimensions section */}
-        <CollapsibleSection
-          title="Dimensions"
-          isOpen={openSections.dimensions}
-          onToggle={() => toggleSection('dimensions')}
-        >
-          {selectedElement.type === 'project' && (
-            <>
-              <PropertyField
-                label="Desktop Breakpoint"
-                value={getPropertyValue('breakpointDesktop')}
-                type="text"
-                onChange={(value) => handlePropertyChange('breakpointDesktop', value)}
-              />
-              <PropertyField
-                label="Tablet Breakpoint"
-                value={getPropertyValue('breakpointTablet')}
-                type="text"
-                onChange={(value) => handlePropertyChange('breakpointTablet', value)}
-              />
-              <PropertyField
-                label="Mobile Breakpoint"
-                value={getPropertyValue('breakpointMobile')}
-                type="text"
-                onChange={(value) => handlePropertyChange('breakpointMobile', value)}
-              />
-            </>
-          )}
-          
-          {selectedElement.type !== 'project' && (
-            <>
-              <PropertyField
-                label={`Width (${device})`}
-                value={getPropertyValue(`width${device.charAt(0).toUpperCase() + device.slice(1)}`)}
-                type="text"
-                onChange={(value) => handlePropertyChange(`width${device.charAt(0).toUpperCase() + device.slice(1)}`, value)}
-              />
-              <PropertyField
-                label={`Height (${device})`}
-                value={getPropertyValue(`height${device.charAt(0).toUpperCase() + device.slice(1)}`)}
-                type="text"
-                onChange={(value) => handlePropertyChange(`height${device.charAt(0).toUpperCase() + device.slice(1)}`, value)}
-              />
-            </>
-          )}
-        </CollapsibleSection>
+        {/* DIMENSIONS - TOUS SAUF PROJECT/PAGE */}
+        {(elementType !== 'project' && elementType !== 'page') && (
+          <CollapsibleSection
+            title="Dimensions"
+            isOpen={openSections.dimensions}
+            onToggle={() => toggleSection('dimensions')}
+          >
+            <PropertyField
+              label="Width"
+              value={getPropertyValue('width')}
+              type="text"
+              onChange={(value) => handlePropertyChange('width', value)}
+            />
+            <PropertyField
+              label="Height"
+              value={getPropertyValue('height')}
+              type="text"
+              onChange={(value) => handlePropertyChange('height', value)}
+            />
+          </CollapsibleSection>
+        )}
 
-        {/* Spacing section */}
-        {selectedElement.type !== 'project' && (
+        {/* SPACING - COMPONENTS ET CONTAINERS */}
+        {(elementType === 'section' || elementType === 'div' || elementType === 'list' || elementType === 'form' || 
+          elementType === 'heading' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link' || elementType === 'image') && (
           <CollapsibleSection
             title="Spacing"
             isOpen={openSections.spacing}
             onToggle={() => toggleSection('spacing')}
           >
             <PropertyField
-              label="Padding Top"
-              value={getPropertyValue('paddingTop')}
+              label="Padding"
+              value={getPropertyValue('padding')}
               type="text"
-              onChange={(value) => handlePropertyChange('paddingTop', value)}
+              onChange={(value) => handlePropertyChange('padding', value)}
             />
             <PropertyField
-              label="Padding Right"
-              value={getPropertyValue('paddingRight')}
+              label="Margin"
+              value={getPropertyValue('margin')}
               type="text"
-              onChange={(value) => handlePropertyChange('paddingRight', value)}
-            />
-            <PropertyField
-              label="Padding Bottom"
-              value={getPropertyValue('paddingBottom')}
-              type="text"
-              onChange={(value) => handlePropertyChange('paddingBottom', value)}
-            />
-            <PropertyField
-              label="Padding Left"
-              value={getPropertyValue('paddingLeft')}
-              type="text"
-              onChange={(value) => handlePropertyChange('paddingLeft', value)}
-            />
-            <PropertyField
-              label="Margin Top"
-              value={getPropertyValue('marginTop')}
-              type="text"
-              onChange={(value) => handlePropertyChange('marginTop', value)}
-            />
-            <PropertyField
-              label="Margin Right"
-              value={getPropertyValue('marginRight')}
-              type="text"
-              onChange={(value) => handlePropertyChange('marginRight', value)}
-            />
-            <PropertyField
-              label="Margin Bottom"
-              value={getPropertyValue('marginBottom')}
-              type="text"
-              onChange={(value) => handlePropertyChange('marginBottom', value)}
-            />
-            <PropertyField
-              label="Margin Left"
-              value={getPropertyValue('marginLeft')}
-              type="text"
-              onChange={(value) => handlePropertyChange('marginLeft', value)}
+              onChange={(value) => handlePropertyChange('margin', value)}
             />
           </CollapsibleSection>
         )}
 
-        {/* Flexbox section - Containers seulement */}
-        {(selectedElement.type === 'div' || selectedElement.type === 'section' || selectedElement.type === 'form') && (
+        {/* FLEXBOX - CONTAINERS SEULEMENT */}
+        {(elementType === 'div' || elementType === 'list' || elementType === 'form') && (
           <CollapsibleSection
-            title="Flexbox"
+            title="Flexbox Layout"
             isOpen={openSections.flexbox}
             onToggle={() => toggleSection('flexbox')}
           >
@@ -579,6 +570,8 @@ function PropertiesModule({
             >
               <option value="row">Row</option>
               <option value="column">Column</option>
+              <option value="row-reverse">Row Reverse</option>
+              <option value="column-reverse">Column Reverse</option>
             </PropertyField>
             <PropertyField
               label="Justify Content"
@@ -590,6 +583,8 @@ function PropertiesModule({
               <option value="center">Center</option>
               <option value="flex-end">End</option>
               <option value="space-between">Space Between</option>
+              <option value="space-around">Space Around</option>
+              <option value="space-evenly">Space Evenly</option>
             </PropertyField>
             <PropertyField
               label="Align Items"
@@ -601,6 +596,7 @@ function PropertiesModule({
               <option value="center">Center</option>
               <option value="flex-start">Start</option>
               <option value="flex-end">End</option>
+              <option value="baseline">Baseline</option>
             </PropertyField>
             <PropertyField
               label="Gap"
@@ -611,7 +607,61 @@ function PropertiesModule({
           </CollapsibleSection>
         )}
 
-        {/* Advanced section */}
+        {/* RESPONSIVE - SECTION ET PROJECT */}
+        {(elementType === 'section' || elementType === 'project') && (
+          <CollapsibleSection
+            title="Responsive"
+            isOpen={openSections.responsive}
+            onToggle={() => toggleSection('responsive')}
+          >
+            {elementType === 'project' && (
+              <>
+                <PropertyField
+                  label="Desktop Breakpoint"
+                  value={getPropertyValue('breakpointDesktop')}
+                  type="text"
+                  onChange={(value) => handlePropertyChange('breakpointDesktop', value)}
+                />
+                <PropertyField
+                  label="Tablet Breakpoint"
+                  value={getPropertyValue('breakpointTablet')}
+                  type="text"
+                  onChange={(value) => handlePropertyChange('breakpointTablet', value)}
+                />
+                <PropertyField
+                  label="Mobile Breakpoint"
+                  value={getPropertyValue('breakpointMobile')}
+                  type="text"
+                  onChange={(value) => handlePropertyChange('breakpointMobile', value)}
+                />
+              </>
+            )}
+            {elementType === 'section' && (
+              <>
+                <PropertyField
+                  label="Desktop Columns"
+                  value={getPropertyValue('desktopColumns')}
+                  type="number"
+                  onChange={(value) => handlePropertyChange('desktopColumns', value)}
+                />
+                <PropertyField
+                  label="Tablet Columns"
+                  value={getPropertyValue('tabletColumns')}
+                  type="number"
+                  onChange={(value) => handlePropertyChange('tabletColumns', value)}
+                />
+                <PropertyField
+                  label="Mobile Columns"
+                  value={getPropertyValue('mobileColumns')}
+                  type="number"
+                  onChange={(value) => handlePropertyChange('mobileColumns', value)}
+                />
+              </>
+            )}
+          </CollapsibleSection>
+        )}
+
+        {/* ADVANCED - TOUS */}
         <CollapsibleSection
           title="Advanced"
           isOpen={openSections.advanced}
@@ -619,23 +669,10 @@ function PropertiesModule({
         >
           <PropertyField
             label="CSS Classes"
-            value={getPropertyValue('cssClasses')}
+            value={getPropertyValue('classname')}
             type="text"
-            onChange={(value) => handlePropertyChange('cssClasses', value)}
+            onChange={(value) => handlePropertyChange('classname', value)}
           />
-          {selectedElement.type !== 'project' && (
-            <PropertyField
-              label="Overflow"
-              value={getPropertyValue('overflow')}
-              type="select"
-              onChange={(value) => handlePropertyChange('overflow', value)}
-            >
-              <option value="visible">Visible</option>
-              <option value="hidden">Hidden</option>
-              <option value="scroll">Scroll</option>
-              <option value="auto">Auto</option>
-            </PropertyField>
-          )}
         </CollapsibleSection>
       </div>
     );
@@ -646,7 +683,7 @@ function PropertiesModule({
       <div className="project-properties">
         <div className="properties-content">
           <div className="properties-empty">
-            <div className="empty-icon">🎯</div>
+            <div className="empty-icon">���</div>
             <div className="empty-text">
               <h4>No Element Selected</h4>
               <p>Select an element from the structure or preview to edit its properties</p>
@@ -684,16 +721,6 @@ function PropertiesModule({
 
         {/* Active Tab Content */}
         {renderTabContent()}
-
-        {/* Debug en développement */}
-        {process.env.NODE_ENV === 'development' && (
-          <details className="properties-debug" style={{ marginTop: '16px', fontSize: '11px' }}>
-            <summary>🔍 Debug Selected Element</summary>
-            <pre style={{ maxHeight: '200px', overflow: 'auto', background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
-              {JSON.stringify(selectedElement, null, 2)}
-            </pre>
-          </details>
-        )}
       </div>
     </div>
   );

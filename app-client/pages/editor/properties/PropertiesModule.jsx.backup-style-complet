@@ -1,0 +1,411 @@
+import React, { useState } from 'react';
+import PropertyField from './PropertyField.jsx';
+import { DEVICES } from '@config/constants.js';
+
+// Composant section pliable
+function CollapsibleSection({ title, isOpen, onToggle, children }) {
+  return (
+    <div className="collapsible-section">
+      <button 
+        className={`section-header ${isOpen ? 'open' : ''}`}
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="section-title">{title}</span>
+        <span className="section-arrow">{isOpen ? 'â–¼' : 'â–¶'}</span>
+      </button>
+      {isOpen && (
+        <div className="section-content">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PropertiesModule({ 
+  selectedElement = null, 
+  device = DEVICES.DESKTOP, 
+  onElementUpdate = () => {} 
+}) {
+  const [activeTab, setActiveTab] = useState('content');
+  const [openSections, setOpenSections] = useState({
+    // Advanced sections (fermÃ©es par dÃ©faut)
+    metadata: false,
+    seo: false,
+    behavior: false,
+    colors: false,
+    typography: false,
+    visual: false,
+    states: false,
+    dimensions: false,
+    spacing: false,
+    flexbox: false,
+    advanced: false
+  });
+
+  const toggleSection = (sectionKey) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
+
+  const getPropertyValue = (key) => {
+    if (!selectedElement) return '';
+    return selectedElement[key] || '';
+  };
+
+  const handlePropertyChange = (propertyName, value) => {
+    if (!selectedElement || !onElementUpdate) return;
+    
+    const updatedElement = {
+      ...selectedElement,
+      [propertyName]: value
+    };
+    
+    if (selectedElement.type === 'project') {
+      updatedElement.updated = new Date().toISOString();
+    }
+    
+    console.log(`í´§ Property changed: ${propertyName} = ${value}`);
+    onElementUpdate(selectedElement.id, updatedElement);
+  };
+
+  const renderTabContent = () => {
+    if (!selectedElement) return null;
+
+    switch (activeTab) {
+      case 'content':
+        return renderContentTab();
+      case 'style':
+        return renderStyleTab();
+      case 'layout':
+        return renderLayoutTab();
+      default:
+        return null;
+    }
+  };
+
+  const renderContentTab = () => {
+    const elementType = selectedElement.type;
+
+    return (
+      <div className="tab-content">
+        {/* í¾¯ CONTENT FIELDS - DIRECTEMENT VISIBLES */}
+        
+        {/* Content field pour tous les Ã©lÃ©ments textuels */}
+        {(elementType === 'heading' || elementType === 'paragraph' || elementType === 'button' || elementType === 'link') && (
+          <PropertyField
+            label="Content"
+            value={getPropertyValue('content')}
+            type={elementType === 'paragraph' ? 'textarea' : 'text'}
+            onChange={(value) => handlePropertyChange('content', value)}
+          />
+        )}
+
+        {/* Image fields */}
+        {elementType === 'image' && (
+          <>
+            <PropertyField
+              label="Source URL"
+              value={getPropertyValue('src')}
+              type="url"
+              onChange={(value) => handlePropertyChange('src', value)}
+            />
+            <PropertyField
+              label="Alt Text"
+              value={getPropertyValue('alt')}
+              type="text"
+              onChange={(value) => handlePropertyChange('alt', value)}
+            />
+          </>
+        )}
+
+        {/* Link fields pour buttons et links */}
+        {(elementType === 'button' || elementType === 'link') && (
+          <>
+            <PropertyField
+              label="Link URL"
+              value={getPropertyValue('href')}
+              type="url"
+              onChange={(value) => handlePropertyChange('href', value)}
+            />
+            <PropertyField
+              label="Target"
+              value={getPropertyValue('target')}
+              type="select"
+              onChange={(value) => handlePropertyChange('target', value)}
+            >
+              <option value="_self">Same Window</option>
+              <option value="_blank">New Window</option>
+            </PropertyField>
+          </>
+        )}
+
+        {/* Heading tag */}
+        {elementType === 'heading' && (
+          <PropertyField
+            label="Tag"
+            value={getPropertyValue('tag')}
+            type="select"
+            onChange={(value) => handlePropertyChange('tag', value)}
+          >
+            <option value="h1">H1</option>
+            <option value="h2">H2</option>
+            <option value="h3">H3</option>
+            <option value="h4">H4</option>
+            <option value="h5">H5</option>
+            <option value="h6">H6</option>
+          </PropertyField>
+        )}
+
+        {/* ADVANCED SECTIONS - RepliÃ©es par dÃ©faut */}
+        
+        {/* Metadata section */}
+        <CollapsibleSection
+          title="Metadata"
+          isOpen={openSections.metadata}
+          onToggle={() => toggleSection('metadata')}
+        >
+          {elementType === 'project' && (
+            <>
+              <PropertyField
+                label="Name"
+                value={getPropertyValue('name')}
+                type="text"
+                onChange={(value) => handlePropertyChange('name', value)}
+              />
+              <PropertyField
+                label="Description"
+                value={getPropertyValue('description')}
+                type="textarea"
+                onChange={(value) => handlePropertyChange('description', value)}
+              />
+              <PropertyField
+                label="Author"
+                value={getPropertyValue('author')}
+                type="text"
+                onChange={(value) => handlePropertyChange('author', value)}
+              />
+              <PropertyField
+                label="Version"
+                value={getPropertyValue('version')}
+                type="text"
+                onChange={(value) => handlePropertyChange('version', value)}
+              />
+            </>
+          )}
+          
+          {elementType === 'page' && (
+            <>
+              <PropertyField
+                label="Name"
+                value={getPropertyValue('name')}
+                type="text"
+                onChange={(value) => handlePropertyChange('name', value)}
+              />
+              <PropertyField
+                label="Slug"
+                value={getPropertyValue('slug')}
+                type="text"
+                onChange={(value) => handlePropertyChange('slug', value)}
+              />
+            </>
+          )}
+
+          {(elementType === 'section' || elementType === 'div' || elementType === 'list' || elementType === 'form') && (
+            <PropertyField
+              label="Name"
+              value={getPropertyValue('name')}
+              type="text"
+              onChange={(value) => handlePropertyChange('name', value)}
+            />
+          )}
+        </CollapsibleSection>
+      </div>
+    );
+  };
+
+  const renderStyleTab = () => {
+    return (
+      <div className="tab-content">
+        {/* Colors section */}
+        <CollapsibleSection
+          title="Colors"
+          isOpen={openSections.colors}
+          onToggle={() => toggleSection('colors')}
+        >
+          {selectedElement.type !== 'project' && (
+            <>
+              <PropertyField
+                label="Background Color"
+                value={getPropertyValue('backgroundColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('backgroundColor', value)}
+              />
+              <PropertyField
+                label="Text Color"
+                value={getPropertyValue('textColor')}
+                type="color"
+                onChange={(value) => handlePropertyChange('textColor', value)}
+              />
+            </>
+          )}
+        </CollapsibleSection>
+
+        {/* Typography section */}
+        <CollapsibleSection
+          title="Typography"
+          isOpen={openSections.typography}
+          onToggle={() => toggleSection('typography')}
+        >
+          <PropertyField
+            label="Font Size"
+            value={getPropertyValue('fontSize')}
+            type="text"
+            onChange={(value) => handlePropertyChange('fontSize', value)}
+          />
+          <PropertyField
+            label="Font Weight"
+            value={getPropertyValue('fontWeight')}
+            type="select"
+            onChange={(value) => handlePropertyChange('fontWeight', value)}
+          >
+            <option value="300">Light (300)</option>
+            <option value="400">Normal (400)</option>
+            <option value="500">Medium (500)</option>
+            <option value="600">Semi Bold (600)</option>
+            <option value="700">Bold (700)</option>
+          </PropertyField>
+          <PropertyField
+            label="Text Align"
+            value={getPropertyValue('textAlign')}
+            type="select"
+            onChange={(value) => handlePropertyChange('textAlign', value)}
+          >
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+            <option value="justify">Justify</option>
+          </PropertyField>
+        </CollapsibleSection>
+
+        {/* Visual section */}
+        <CollapsibleSection
+          title="Visual"
+          isOpen={openSections.visual}
+          onToggle={() => toggleSection('visual')}
+        >
+          <PropertyField
+            label="Border"
+            value={getPropertyValue('border')}
+            type="text"
+            onChange={(value) => handlePropertyChange('border', value)}
+          />
+          <PropertyField
+            label="Border Radius"
+            value={getPropertyValue('borderRadius')}
+            type="text"
+            onChange={(value) => handlePropertyChange('borderRadius', value)}
+          />
+        </CollapsibleSection>
+      </div>
+    );
+  };
+
+  const renderLayoutTab = () => {
+    return (
+      <div className="tab-content">
+        {/* Dimensions section */}
+        <CollapsibleSection
+          title="Dimensions"
+          isOpen={openSections.dimensions}
+          onToggle={() => toggleSection('dimensions')}
+        >
+          <PropertyField
+            label="Width"
+            value={getPropertyValue('width')}
+            type="text"
+            onChange={(value) => handlePropertyChange('width', value)}
+          />
+          <PropertyField
+            label="Height"
+            value={getPropertyValue('height')}
+            type="text"
+            onChange={(value) => handlePropertyChange('height', value)}
+          />
+        </CollapsibleSection>
+
+        {/* Spacing section */}
+        <CollapsibleSection
+          title="Spacing"
+          isOpen={openSections.spacing}
+          onToggle={() => toggleSection('spacing')}
+        >
+          <PropertyField
+            label="Padding"
+            value={getPropertyValue('padding')}
+            type="text"
+            onChange={(value) => handlePropertyChange('padding', value)}
+          />
+          <PropertyField
+            label="Margin"
+            value={getPropertyValue('margin')}
+            type="text"
+            onChange={(value) => handlePropertyChange('margin', value)}
+          />
+        </CollapsibleSection>
+      </div>
+    );
+  };
+
+  if (!selectedElement) {
+    return (
+      <div className="project-properties">
+        <div className="properties-content">
+          <div className="properties-empty">
+            <div className="empty-icon">í¾¯</div>
+            <div className="empty-text">
+              <h4>No Element Selected</h4>
+              <p>Select an element from the structure or preview to edit its properties</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="project-properties">
+      <div className="properties-content">
+        {/* Tabs Navigation */}
+        <div className="properties-tabs">
+          <button
+            className={`properties-tab ${activeTab === 'content' ? 'active' : ''}`}
+            onClick={() => setActiveTab('content')}
+          >
+            CONTENT
+          </button>
+          <button
+            className={`properties-tab ${activeTab === 'style' ? 'active' : ''}`}
+            onClick={() => setActiveTab('style')}
+          >
+            STYLE
+          </button>
+          <button
+            className={`properties-tab ${activeTab === 'layout' ? 'active' : ''}`}
+            onClick={() => setActiveTab('layout')}
+          >
+            LAYOUT
+          </button>
+        </div>
+
+        {/* Active Tab Content */}
+        {renderTabContent()}
+      </div>
+    </div>
+  );
+}
+
+export default PropertiesModule;

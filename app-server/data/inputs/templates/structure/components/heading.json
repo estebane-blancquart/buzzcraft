@@ -3,7 +3,7 @@
   "type": "heading",
   "name": "Heading Component",
   "schema": {
-    "text": {
+    "content": {
       "type": "string",
       "default": "Heading text",
       "required": true
@@ -14,11 +14,16 @@
       "default": "h2",
       "required": false
     },
+    "tag": {
+      "type": "enum",
+      "options": ["h1", "h2", "h3", "h4", "h5", "h6"],
+      "default": "h2",
+      "required": false
+    },
     "classname": {
       "type": "string",
       "default": ""
     },
-    
     "backgroundColor": {
       "type": "color",
       "default": ""

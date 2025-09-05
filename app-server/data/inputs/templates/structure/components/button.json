@@ -3,12 +3,16 @@
   "type": "button",
   "name": "Button Component",
   "schema": {
-    "text": {
+    "content": {
       "type": "string",
       "default": "Click me",
       "required": true
     },
     "action": {
+      "type": "string",
+      "default": ""
+    },
+    "href": {
       "type": "string",
       "default": ""
     },
@@ -30,7 +34,6 @@
       "type": "string",
       "default": ""
     },
-    
     "backgroundColor": {
       "type": "color",
       "default": "#007bff"

@@ -1,34 +1,33 @@
 {
-  "id": "link",
-  "type": "link",
-  "name": "Link Component",
+  "id": "paragraph",
+  "type": "paragraph",
+  "name": "Paragraph Component",
   "schema": {
-    "content": {
+    "text": {
       "type": "string",
-      "default": "Link text",
+      "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
       "required": true
     },
-    "href": {
-      "type": "string",
-      "default": "#",
-      "required": true
+    "maxLines": {
+      "type": "number",
+      "default": null
     },
-    "target": {
-      "type": "enum",
-      "options": ["_self", "_blank", "_parent", "_top"],
-      "default": "_self"
+    "allowHtml": {
+      "type": "boolean",
+      "default": false
     },
     "classname": {
       "type": "string",
       "default": ""
     },
+    
     "backgroundColor": {
       "type": "color",
       "default": ""
     },
     "textColor": {
       "type": "color",
-      "default": "#007bff"
+      "default": "#333"
     },
     "fontSize": {
       "type": "string",
@@ -41,13 +40,16 @@
     },
     "textAlign": {
       "type": "enum",
-      "options": ["left", "center", "right"],
+      "options": ["left", "center", "right", "justify"],
       "default": "left"
     },
-    "textDecoration": {
-      "type": "enum",
-      "options": ["none", "underline", "overline", "line-through"],
-      "default": "underline"
+    "lineHeight": {
+      "type": "string",
+      "default": "1.6"
+    },
+    "letterSpacing": {
+      "type": "string",
+      "default": "normal"
     },
     "border": {
       "type": "string",

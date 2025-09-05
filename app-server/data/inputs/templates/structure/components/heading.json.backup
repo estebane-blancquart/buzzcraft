@@ -1,53 +1,53 @@
 {
-  "id": "link",
-  "type": "link",
-  "name": "Link Component",
+  "id": "heading",
+  "type": "heading",
+  "name": "Heading Component",
   "schema": {
-    "content": {
+    "text": {
       "type": "string",
-      "default": "Link text",
+      "default": "Heading text",
       "required": true
     },
-    "href": {
-      "type": "string",
-      "default": "#",
-      "required": true
-    },
-    "target": {
+    "level": {
       "type": "enum",
-      "options": ["_self", "_blank", "_parent", "_top"],
-      "default": "_self"
+      "options": ["h1", "h2", "h3", "h4", "h5", "h6"],
+      "default": "h2",
+      "required": false
     },
     "classname": {
       "type": "string",
       "default": ""
     },
+    
     "backgroundColor": {
       "type": "color",
       "default": ""
     },
     "textColor": {
-      "type": "color",
-      "default": "#007bff"
+      "type": "color", 
+      "default": "#1a1a1a"
     },
     "fontSize": {
       "type": "string",
-      "default": "1rem"
+      "default": "2rem"
     },
     "fontWeight": {
       "type": "enum",
       "options": ["300", "400", "500", "600", "700"],
-      "default": "400"
+      "default": "600"
     },
     "textAlign": {
       "type": "enum",
-      "options": ["left", "center", "right"],
+      "options": ["left", "center", "right", "justify"],
       "default": "left"
     },
-    "textDecoration": {
-      "type": "enum",
-      "options": ["none", "underline", "overline", "line-through"],
-      "default": "underline"
+    "lineHeight": {
+      "type": "string",
+      "default": "1.2"
+    },
+    "letterSpacing": {
+      "type": "string",
+      "default": "normal"
     },
     "border": {
       "type": "string",

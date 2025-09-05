@@ -1,0 +1,2 @@
+# Dans handleElementUpdate, après la ligne "return updatedProject;"
+# On doit forcer React à voir le changement en créant un nouvel objet

@@ -44,8 +44,8 @@ function CanvasFrame({
               style: {
                 fontSize: component.fontSize || "2rem",
                 fontWeight: component.fontWeight || "600",
-                color: component.contentColor || "#1a1a1a",
-                textAlign: component.contentAlign || "left",
+                color: component.textColor || "#1a1a1a",
+                textAlign: component.textAlign || "left",
                 lineHeight: component.lineHeight || "1.2",
                 letterSpacing: component.letterSpacing || "normal",
                 backgroundColor: component.backgroundColor || "transparent",
@@ -57,7 +57,7 @@ function CanvasFrame({
                 padding: component.padding || "0",
               },
             },
-            component.content || "Heading"
+            component.text || "Heading"
           )}
 
         {component.type === "paragraph" && (
@@ -66,8 +66,8 @@ function CanvasFrame({
             style={{
               fontSize: component.fontSize || "1rem",
               fontWeight: component.fontWeight || "400",
-              color: component.contentColor || "#333",
-              textAlign: component.contentAlign || "left",
+              color: component.textColor || "#333",
+              textAlign: component.textAlign || "left",
               lineHeight: component.lineHeight || "1.6",
               letterSpacing: component.letterSpacing || "normal",
               backgroundColor: component.backgroundColor || "transparent",
@@ -79,7 +79,7 @@ function CanvasFrame({
               padding: component.padding || "0",
             }}
           >
-            {component.content ||
+            {component.text ||
               "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}
           </p>
         )}
@@ -89,10 +89,10 @@ function CanvasFrame({
             className={component.classname || ""}
             style={{
               backgroundColor: component.backgroundColor || "#007bff",
-              color: component.contentColor || "white",
+              color: component.textColor || "white",
               fontSize: component.fontSize || "1rem",
               fontWeight: component.fontWeight || "500",
-              textAlign: component.contentAlign || "center",
+              textAlign: component.textAlign || "center",
               border: component.border || "none",
               borderRadius: component.borderRadius || "6px",
               boxShadow: component.boxShadow || "none",
@@ -105,7 +105,7 @@ function CanvasFrame({
             {component.icon && component.iconPosition === "left" && (
               <span style={{ marginRight: "8px" }}>{component.icon}</span>
             )}
-            {component.content || "Button"}
+            {component.text || "Button"}
             {component.icon && component.iconPosition === "right" && (
               <span style={{ marginLeft: "8px" }}>{component.icon}</span>
             )}
@@ -141,11 +141,11 @@ function CanvasFrame({
             className={component.classname || ""}
             style={{
               backgroundColor: component.backgroundColor || "transparent",
-              color: component.contentColor || "#007bff",
+              color: component.textColor || "#007bff",
               fontSize: component.fontSize || "1rem",
               fontWeight: component.fontWeight || "400",
-              textAlign: component.contentAlign || "left",
-              textDecoration: component.contentDecoration || "underline",
+              textAlign: component.textAlign || "left",
+              textDecoration: component.textDecoration || "underline",
               border: component.border || "none",
               borderRadius: component.borderRadius || "0",
               boxShadow: component.boxShadow || "none",
@@ -154,7 +154,7 @@ function CanvasFrame({
               padding: component.padding || "0",
             }}
           >
-            {component.content || "Link"}
+            {component.text || "Link"}
           </a>
         )}
 
@@ -167,7 +167,7 @@ function CanvasFrame({
             style={{
               width: component.width || "100%",
               backgroundColor: component.backgroundColor || "white",
-              color: component.contentColor || "#333",
+              color: component.textColor || "#333",
               fontSize: component.fontSize || "1rem",
               padding: component.padding || "12px",
               border: component.border || "1px solid #ddd",
