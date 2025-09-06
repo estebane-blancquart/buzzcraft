@@ -92,7 +92,6 @@ function ElementTree({
   onAddPage = () => {},
   onAddSection = () => {},
   onAddDiv = () => {},
-  onAddComponent = () => {},
   onDeleteElement = () => {},
   showComponentSelector = false,
   showContainerSelector = false,
@@ -125,8 +124,11 @@ function ElementTree({
     const handleKeyDown = (event) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
         const selected = selectedElement;
-        if (selected && selected.type !== 'project') {
-          onDeleteElement(selected.id);
+        if (selected && selected.id !== project?.id) {
+          const confirmed = window.confirm('Supprimer cet élément ?');
+          if (confirmed) {
+            onDeleteElement(selected.id);
+          }
         }
         event.preventDefault();
       }
@@ -137,67 +139,53 @@ function ElementTree({
       treeElement.addEventListener('keydown', handleKeyDown);
       return () => treeElement.removeEventListener('keydown', handleKeyDown);
     }
-  }, [selectedElement, onDeleteElement]);
+  }, [selectedElement, project, onDeleteElement]);
 
-  // Garde-fou si pas de projet
+  // Protection défensive
   if (!project) {
-    return (
-      <div className="tree-content">
-        <div className="tree-empty">No project loaded</div>
-      </div>
-    );
+    return <div className="tree-content">Aucun projet chargé</div>;
   }
 
-  // Handlers locaux
+  // Handlers internes
   const handleElementClick = (element) => {
-    if (onElementSelect) {
-      onElementSelect(element);
-    }
+    console.log('🎯 Tree element clicked:', element);
+    onElementSelect(element);
   };
 
-  const toggleExpand = (event, itemId) => {
+  const isExpanded = (elementId) => {
+    return expandedItems.has(elementId);
+  };
+
+  const toggleExpand = (event, elementId) => {
     event.stopPropagation();
-    // Ne pas permettre de fermer le projet
-    if (itemId === project.id) return;
-    
     setExpandedItems(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
+      if (newSet.has(elementId)) {
+        newSet.delete(elementId);
       } else {
-        newSet.add(itemId);
+        newSet.add(elementId);
       }
       return newSet;
     });
   };
 
-  // Fonction pour auto-expand un élément parent
-  const autoExpand = (parentId) => {
-    setExpandedItems(prev => {
-      const newSet = new Set(prev);
-      newSet.add(parentId);
-      return newSet;
-    });
+  const autoExpand = (elementId) => {
+    setExpandedItems(prev => new Set([...prev, elementId]));
   };
 
-  // Utilitaires de vérification
   const isSelected = (element) => {
     return selectedElement && selectedElement.id === element?.id;
   };
 
-  const isExpanded = (itemId) => {
-    return expandedItems.has(itemId);
-  };
-
   // Rendu des indentations avec lignes de connexion
-  const renderIndents = (level) => {
+  const renderIndents = (level, hasMoreSiblings = false, isLast = false) => {
     const indents = [];
     for (let i = 0; i < level; i++) {
-      const isLast = i === level - 1;
       indents.push(
-        <div 
-          key={i} 
-          className={`tree-indent ${isLast ? 'has-line' : 'has-line continues'}`}
+        <div
+          key={i}
+          className={`tree-indent ${i === level - 1 ? 
+            (isLast ? 'has-line-last' : 'has-line') : 'has-line continues'}`}
         />
       );
     }
@@ -282,9 +270,10 @@ function ElementTree({
         </div>
 
         {/* Pages - PAS d'indentation car directement sous projet */}
-        {project.pages?.map(page => {
+        {project.pages?.map((page, pageIndex) => {
           const sections = getPageSections(page);
           const hasChildren = sections.length > 0;
+          const isLastPage = pageIndex === project.pages.length - 1;
           
           return (
             <React.Fragment key={page.id}>
@@ -293,7 +282,7 @@ function ElementTree({
                 onClick={() => handleElementClick(page)}
               >
                 <div className="tree-item-content">
-                  {/* PAS de renderIndents pour les pages */}
+                  {/* PAS de renderIndents(1) pour enlever la ligne */}
                   {hasChildren && (
                     <span 
                       className={`tree-expand ${isExpanded(page.id) ? 'expanded' : 'collapsed'}`}
@@ -319,9 +308,10 @@ function ElementTree({
               </div>
 
               {/* Sections de cette page */}
-              {sections.map(section => {
+              {sections.map((section, sectionIndex) => {
                 const containers = getSectionContainers(section);
-                const hasChildren = containers.length > 0;
+                const hasSectionChildren = containers.length > 0;
+                const isLastSection = sectionIndex === sections.length - 1;
                 
                 return (
                   <React.Fragment key={section.id}>
@@ -330,14 +320,14 @@ function ElementTree({
                       onClick={() => handleElementClick(section)}
                     >
                       <div className="tree-item-content">
-                        {renderIndents(1)}
-                        {hasChildren && (
+                        {renderIndents(1, !isLastSection, isLastSection)}
+                        {hasSectionChildren && (
                           <span 
                             className={`tree-expand ${isExpanded(section.id) ? 'expanded' : 'collapsed'}`}
                             onClick={(e) => toggleExpand(e, section.id)}
                           />
                         )}
-                        {!hasChildren && <div style={{width: '16px'}} />}
+                        {!hasSectionChildren && <div style={{width: '16px'}} />}
                         <span className="tree-label">{section.name}</span>
                       </div>
                       <span className="tree-type">section</span>
@@ -348,7 +338,7 @@ function ElementTree({
                           console.log('Adding container to section:', section.id);
                           // Auto-expand la section quand on ajoute un container
                           autoExpand(section.id);
-                          onAddDiv(section.id);
+                          onContainerSelect(null, section.id);
                         }}
                       >
                         +
@@ -356,9 +346,10 @@ function ElementTree({
                     </div>
 
                     {/* Containers de cette section */}
-                    {containers.map(container => {
+                    {containers.map((container, containerIndex) => {
                       const components = getContainerComponents(container);
-                      const hasChildren = components.length > 0;
+                      const hasContainerChildren = components.length > 0;
+                      const isLastContainer = containerIndex === containers.length - 1;
                       
                       return (
                         <React.Fragment key={container.id}>
@@ -367,14 +358,14 @@ function ElementTree({
                             onClick={() => handleElementClick(container)}
                           >
                             <div className="tree-item-content">
-                              {renderIndents(2)}
-                              {hasChildren && (
+                              {renderIndents(2, !isLastContainer, isLastContainer)}
+                              {hasContainerChildren && (
                                 <span 
                                   className={`tree-expand ${isExpanded(container.id) ? 'expanded' : 'collapsed'}`}
                                   onClick={(e) => toggleExpand(e, container.id)}
                                 />
                               )}
-                              {!hasChildren && <div style={{width: '16px'}} />}
+                              {!hasContainerChildren && <div style={{width: '16px'}} />}
                               <span className="tree-label">{container.name}</span>
                             </div>
                             <span className="tree-type">{container.type}</span>
@@ -382,10 +373,11 @@ function ElementTree({
                               className="tree-add-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log('Adding component to container:', container.id);
+                                console.log('🔧 Adding component to container:', container.id);
                                 // Auto-expand le container quand on ajoute un composant
                                 autoExpand(container.id);
-                                onAddComponent(container.id);
+                                // ✅ CORRECTION: Appeler onComponentSelect au lieu de onAddComponent
+                                onComponentSelect(null, container.id);
                               }}
                             >
                               +
@@ -393,21 +385,25 @@ function ElementTree({
                           </div>
 
                           {/* Composants de ce container */}
-                          {components.map(component => (
-                            <div 
-                              key={component.id}
-                              className={`tree-item ${isSelected(component) ? 'selected' : ''} ${(!isExpanded(page.id) || !isExpanded(section.id) || !isExpanded(container.id)) ? 'hidden' : ''}`}
-                              onClick={() => handleElementClick(component)}
-                            >
-                              <div className="tree-item-content">
-                                {renderIndents(3)}
-                                <div style={{width: '12px'}} />
-                                <span className="tree-label">{getComponentDisplayName(component)}</span>
+                          {components.map((component, componentIndex) => {
+                            const isLastComponent = componentIndex === components.length - 1;
+                            
+                            return (
+                              <div 
+                                key={component.id}
+                                className={`tree-item ${isSelected(component) ? 'selected' : ''} ${(!isExpanded(page.id) || !isExpanded(section.id) || !isExpanded(container.id)) ? 'hidden' : ''}`}
+                                onClick={() => handleElementClick(component)}
+                              >
+                                <div className="tree-item-content">
+                                  {renderIndents(3, !isLastComponent, isLastComponent)}
+                                  <div style={{width: '16px'}} />
+                                  <span className="tree-label">{getComponentDisplayName(component)}</span>
+                                </div>
+                                <span className="tree-type">{component.type}</span>
+                                <div style={{width: '16px', height: '16px'}} />
                               </div>
-                              <span className="tree-type">{component.type}</span>
-                              <div style={{width: '16px', height: '16px'}} />
-                            </div>
-                          ))}
+                            );
+                          })}
                         </React.Fragment>
                       );
                     })}
@@ -443,7 +439,6 @@ function StructureModule({
   onAddPage,
   onAddSection,
   onAddDiv,
-  onAddComponent,
   onDeleteElement,
   showComponentSelector,
   showContainerSelector,
@@ -461,7 +456,6 @@ function StructureModule({
         onAddPage={onAddPage}
         onAddSection={onAddSection}
         onAddDiv={onAddDiv}
-        onAddComponent={onAddComponent}
         onDeleteElement={onDeleteElement}
         showComponentSelector={showComponentSelector}
         showContainerSelector={showContainerSelector}

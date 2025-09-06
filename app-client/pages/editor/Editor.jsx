@@ -69,7 +69,6 @@ function Editor() {
           onAddPage={editor.handleAddPage}
           onAddSection={editor.handleAddSection}
           onAddDiv={editor.handleAddDiv}
-          onAddComponent={editor.handleAddComponent}
           onDeleteElement={editor.handleDeleteElement}
           showComponentSelector={editor.showComponentSelector}
           showContainerSelector={editor.showContainerSelector}
@@ -81,17 +80,58 @@ function Editor() {
 
         <PreviewModule
           project={editor.project}
-          device={editor.selectedDevice}
           selectedElement={editor.selectedElement}
+          selectedDevice={editor.selectedDevice}
           onElementSelect={editor.handleElementSelect}
         />
 
         <PropertiesModule
+          project={editor.project}
           selectedElement={editor.selectedElement}
-          device={editor.selectedDevice}
           onElementUpdate={handleElementUpdate}
+          templatesCache={editor.templatesCache}
         />
       </div>
+
+      {/* Modals intégrés dans Editor */}
+      {editor.showComponentSelector && (
+        <div className="modal-overlay" onClick={editor.handleCloseComponentSelector}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Choose Component Type</h3>
+              <button onClick={editor.handleCloseComponentSelector} className="modal-close">×</button>
+            </div>
+            <div className="modal-body">
+              <div className="component-types">
+                <button onClick={() => editor.onModalComponentSelect('heading')}>Heading</button>
+                <button onClick={() => editor.onModalComponentSelect('paragraph')}>Paragraph</button>
+                <button onClick={() => editor.onModalComponentSelect('button')}>Button</button>
+                <button onClick={() => editor.onModalComponentSelect('image')}>Image</button>
+                <button onClick={() => editor.onModalComponentSelect('link')}>Link</button>
+                <button onClick={() => editor.onModalComponentSelect('input')}>Input</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editor.showContainerSelector && (
+        <div className="modal-overlay" onClick={editor.handleCloseContainerSelector}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Choose Container Type</h3>
+              <button onClick={editor.handleCloseContainerSelector} className="modal-close">×</button>
+            </div>
+            <div className="modal-body">
+              <div className="container-types">
+                <button onClick={() => editor.onModalContainerSelect('div')}>Div Container</button>
+                <button onClick={() => editor.onModalContainerSelect('list')}>List Container</button>
+                <button onClick={() => editor.onModalContainerSelect('form')}>Form Container</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
